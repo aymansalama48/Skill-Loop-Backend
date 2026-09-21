@@ -1,0 +1,17 @@
+using FluentValidation;
+
+namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.AssignRoleToUser;
+
+public sealed class AssignRoleToUserCommandValidator : AbstractValidator<AssignRoleToUserCommand>
+{
+    public AssignRoleToUserCommandValidator()
+    {
+        RuleFor(x => x.UserId)
+            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
+            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+
+        RuleFor(x => x.RoleName)
+            .NotEmpty().WithMessage("اسم الدور (Role) مطلوب.")
+            .MaximumLength(50).WithMessage("اسم الدور لا يمكن أن يتجاوز 50 حرفاً.");
+    }
+}

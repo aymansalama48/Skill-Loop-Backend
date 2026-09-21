@@ -1,0 +1,11 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Skill-Loop.Api/Skill-Loop.Api.csproj" />
+    <Project Path="src/Skill-Loop.Application/Skill-Loop.Application.csproj" />
+    <Project Path="src/Skill-Loop.Domain/Skill-Loop.Domain.csproj" />
+    <Project Path="src/Skill-Loop.Infrastructure/Skill-Loop.Infrastructure.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Skill-Loop.UnitTests/Skill-Loop.UnitTests.csproj" />
+  </Folder>
+</Solution>
