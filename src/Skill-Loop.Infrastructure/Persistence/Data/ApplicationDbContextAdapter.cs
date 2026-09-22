@@ -22,6 +22,12 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
 
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Course> Courses => context.Courses;
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Category> Categories => context.Categories;
+    public IQueryable<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments => context.Enrollments;
+    public IQueryable<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets => context.UserWallets;
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks => context.CourseBookmarks;
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews => context.CourseReviews;
 
     // ==============================
     // عمليات الكتابة (عنصر واحد)

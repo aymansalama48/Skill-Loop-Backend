@@ -22,10 +22,16 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
 
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
-
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
+
+    public DbSet<Skill_Loop.Domain.Entities.Courses.Course> Courses => Set<Skill_Loop.Domain.Entities.Courses.Course>();
+    public DbSet<Skill_Loop.Domain.Entities.Courses.Category> Categories => Set<Skill_Loop.Domain.Entities.Courses.Category>();
+    public DbSet<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments => Set<Skill_Loop.Domain.Entities.Enrollments.Enrollment>();
+    public DbSet<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets => Set<Skill_Loop.Domain.Entities.Wallets.UserWallet>();
+    public DbSet<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks => Set<Skill_Loop.Domain.Entities.Courses.CourseBookmark>();
+    public DbSet<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews => Set<Skill_Loop.Domain.Entities.Courses.CourseReview>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

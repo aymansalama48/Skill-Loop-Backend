@@ -26,7 +26,9 @@ public static partial class DependencyInjection
             var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
             var insertOutboxInterceptor = sp.GetRequiredService<InsertOutboxMessagesInterceptor>();
 
-            options.UseSqlServer(configuration.GetConnectionString("DefaultConnection"))
+            options.UseSqlServer(
+                       configuration.GetConnectionString("DefaultConnection"),
+                       b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
                    .AddInterceptors(
                        softDeleteInterceptor,
                        auditableInterceptor,

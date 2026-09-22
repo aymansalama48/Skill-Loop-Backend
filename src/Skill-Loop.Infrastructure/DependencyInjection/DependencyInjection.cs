@@ -30,7 +30,7 @@ public static partial class DependencyInjection
     {
         services
                .AddCoreServices()                    // الخدمات الأساسية
-               .AddCaching()                         // تسجيل خدمات الـ Caching
+               .AddCaching(configuration)            // تسجيل خدمات الـ Caching
                .AddPersistence(configuration)        // قاعدة البيانات
                .AddHangfireJobs(configuration)       // تسجيل خدمات Hangfire
                .AddIdentityServices()               // 👈 1. تسجيل Identity أولاً (لتجهيز الجداول و الـ Stores)
