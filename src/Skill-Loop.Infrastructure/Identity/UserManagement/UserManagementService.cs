@@ -48,7 +48,21 @@ public class UserManagementService(
             LastLoginAt = user.LastLoginAt
         });
     }
+    public async Task<Result<UserDto>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user is null)
+            return Result<UserDto>.Failure(UserErrors.NotFound);
 
+        return Result<UserDto>.Success(new UserDto
+        {
+            Id = user.Id,
+            FirstName = user.FirstName,
+            LastName = user.LastName,
+            Email = user.Email!,
+            EmailConfirmed = user.EmailConfirmed 
+        });
+    }
     public async Task<List<UserDto>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken)
     {
         return await userManager.Users
@@ -332,6 +346,62 @@ public class UserManagementService(
         }
 
         logger.LogInformation("تم سحب الدور {RoleName} من للمستخدم {UserId} بنجاح", roleName, userId);
+        return Result.Success();
+    }
+
+    // ==========================================
+    // الدوال المشتركة لكل المستخدمين (تمت إضافتها)
+    // ==========================================
+
+    public async Task<Result<bool>> CheckUserExistsAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        return Result<bool>.Success(user != null);
+    }
+
+    public async Task<Result<bool>> IsEmailConfirmedAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return Result<bool>.Failure(UserErrors.NotFound); // تم تصحيح UserNotFound إلى NotFound
+
+        return Result<bool>.Success(user.EmailConfirmed);
+    }
+
+    public async Task<Result> CreateUserAsync(string firstName, string lastName, string email, string password, CancellationToken cancellationToken = default)
+    {
+        var user = new ApplicationUser
+        {
+            UserName = email,
+            Email = email,
+            FirstName = firstName,
+            LastName = lastName,
+            IsActive = true,
+            EmailConfirmed = false
+        };
+
+        var createResult = await userManager.CreateAsync(user, password);
+        if (!createResult.Succeeded)
+            return Result.Failure(UserErrors.CreationFailed(createResult.Errors.First().Description));
+
+        // تعيين دور افتراضي للمستخدم العادي (الطالب)
+        await userManager.AddToRoleAsync(user, "Student");
+
+        return Result.Success();
+    }
+
+    public async Task<Result> ConfirmUserEmailAsync(string email, CancellationToken cancellationToken = default)
+    {
+        var user = await userManager.FindByEmailAsync(email);
+        if (user == null)
+            return Result.Failure(UserErrors.NotFound);
+
+        user.EmailConfirmed = true;
+        var updateResult = await userManager.UpdateAsync(user);
+
+        if (!updateResult.Succeeded)
+            return Result.Failure(UserErrors.UpdateFailed(updateResult.Errors.First().Description));
+
         return Result.Success();
     }
 }

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
 using System.Numerics;
@@ -21,6 +22,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
 
 
+    public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();

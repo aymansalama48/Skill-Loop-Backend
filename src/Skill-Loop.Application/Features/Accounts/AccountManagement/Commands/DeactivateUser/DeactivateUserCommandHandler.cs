@@ -7,11 +7,10 @@ using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.DeactivateUser;
 
-
 public sealed class DeactivateUserCommandHandler : ICommandHandler<DeactivateUserCommand, bool>
 {
     private readonly IUserManagementService _userService;
-    private readonly IJobScheduler _jobScheduler; 
+    private readonly IJobScheduler _jobScheduler;
 
     public DeactivateUserCommandHandler(
         IUserManagementService userService,
@@ -31,15 +30,21 @@ public sealed class DeactivateUserCommandHandler : ICommandHandler<DeactivateUse
             return Result<bool>.Failure(result.Errors);
         }
 
-        // 2. جلب بيانات المستخدم عشان ناخد الإيميل بتاعه
+        // 2. جلب بيانات المستخدم بالكامل (الإيميل والاسم) في استعلام واحد
         var userResult = await _userService.GetByIdAsync(request.UserId, cancellationToken);
 
-        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data.Email))
+        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data?.Email))
         {
-            var templateModel = new AccountLockedTemplateModel();
-            var email = userResult.Data.Email; // حفظ الإيميل في متغير عشان الـ Expression Tree
+            // 3. تجهيز الموديل مع تمرير الاسم الحقيقي للمستخدم
+            var templateModel = new AccountLockedTemplateModel
+            {
+                UserName = userResult.Data.FirstName, // 👈 جلب الاسم الحقيقي
+                UserEmail = userResult.Data.Email         // 👈 تمرير الإيميل للموديل (تأكد أن اسم الخاصية Email وليس UserEmail بناءً على كلاس BaseEmailTemplateModel)
+            };
 
-            // 3. إرسال الإيميل في الخلفية (Fire and Forget) 🚀
+            var email = userResult.Data.Email; // حفظ الإيميل في متغير عشان الـ Expression Tree الخاص بـ Hangfire يشتغل صح
+
+            // 4. إرسال الإيميل في الخلفية (Fire and Forget) 🚀
             _jobScheduler.Enqueue<IIdentityNotificationService>(n =>
                 n.SendAccountLockedEmailAsync(email, templateModel));
         }

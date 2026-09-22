@@ -36,6 +36,8 @@ public sealed class StaffLoginCommandHandler(
         var templateModel = new LoginTemplateModel
         {
             UserName = result.Data!.FullName ?? string.Empty,
+            UserEmail = result.Data.Email,
+
             LoginTime = result.Data.LoggedInAt,
             IpAddress = clientContext.IpAddress ?? string.Empty,
             UserAgent = clientContext.UserAgent ?? string.Empty

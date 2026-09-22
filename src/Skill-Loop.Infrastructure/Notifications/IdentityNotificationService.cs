@@ -53,23 +53,13 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
 
     public async Task SendEmailConfirmationAsync(string email, EmailConfirmationTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        model.Email = string.IsNullOrWhiteSpace(model.Email) ? email : model.Email;
-        model.ConfirmationLink = string.IsNullOrWhiteSpace(model.ConfirmationLink)
-            ? $"{_baseUrlOptions.Frontend}/confirm-email"
-            : model.ConfirmationLink;
 
         await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
-        await SendTemplateEmailAsync(email, "تأكيد بريدك الإلكتروني", EmailTemplateNames.EmailConfirmation, model);
+        await SendTemplateEmailAsync(email, "كود تأكيد بريدك الإلكتروني", EmailTemplateNames.EmailConfirmation, model);
     }
 
     public async Task SendResetPasswordEmailAsync(string email, ResetPasswordTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        model.Email = string.IsNullOrWhiteSpace(model.Email) ? email : model.Email;
-        model.ResetLink = string.IsNullOrWhiteSpace(model.ResetLink)
-            ? $"{_baseUrlOptions.Frontend}/reset-password"
-            : model.ResetLink;
 
         await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
         await SendTemplateEmailAsync(email, "إعادة تعيين كلمة المرور", EmailTemplateNames.ResetPassword, model);

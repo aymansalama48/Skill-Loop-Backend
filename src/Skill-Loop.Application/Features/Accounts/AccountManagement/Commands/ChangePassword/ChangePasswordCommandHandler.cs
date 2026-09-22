@@ -46,8 +46,10 @@ public sealed class ChangePasswordCommandHandler(
         var templateModel = new PasswordChangedTemplateModel
         {
             UserName = currentUser.FullName ?? string.Empty,
+            UserEmail = userEmail, // 👈 تمرير الإيميل هنا ليتوافق مع BaseEmailTemplateModel
             IpAddress = clientContext.IpAddress ?? string.Empty,
             UserAgent = clientContext.UserAgent ?? string.Empty
+
         };
 
         // 5. جدولة إرسال بريد التأكيد في الخلفية

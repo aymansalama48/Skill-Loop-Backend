@@ -1,5 +1,8 @@
 namespace Skill_Loop.Api.Controllers;
 
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Skill_Loop.Api.Contracts.Accounts;
 using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ActivateUser;
@@ -17,17 +20,17 @@ using Skill_Loop.Application.Features.Accounts.Authentication.Commands.Logout;
 using Skill_Loop.Application.Features.Accounts.Authentication.Commands.RefreshToken;
 using Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffGoogleLogin;
 using Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffLogin;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-
+using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.RegisterUser;
+using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.ResendEmailOtp;
+using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.VerifyEmailOtp;
 
 [Route("api/[controller]")]
 public class AccountsController : BaseApiController
 {
-    /// <summary>
-    /// تسجيل دخول الموظفين (Admin / Doctor / Receptionist) عبر البريد وكلمة السر
-    /// </summary>
+    // =========================================================================
+    // 1. Authentication (المصادقة)
+    // =========================================================================
+
     [HttpPost("login")]
     [AllowAnonymous]
     public async Task<IResult> Login(
@@ -39,10 +42,7 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// تسجيل دخول الموظفين عبر Google OAuth
-    /// </summary>
-    [HttpPost("google-login")]
+    [HttpPost("login/google")]
     [AllowAnonymous]
     public async Task<IResult> GoogleLogin(
         [FromBody] StaffGoogleLoginRequest request,
@@ -53,9 +53,6 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// تجديد الـ Access Token باستخدام الـ Refresh Token
-    /// </summary>
     [HttpPost("refresh-token")]
     [AllowAnonymous]
     public async Task<IResult> RefreshToken(
@@ -67,9 +64,6 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// تسجيل الخروج وإبطال الـ Refresh Token
-    /// </summary>
     [HttpPost("logout")]
     [Authorize]
     public async Task<IResult> Logout(
@@ -81,10 +75,11 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// طلب رابط إعادة تعيين كلمة المرور (نسيت كلمة المرور)
-    /// </summary>
-    [HttpPost("forgot-password")]
+    // =========================================================================
+    // 2. Password Management (إدارة كلمة المرور)
+    // =========================================================================
+
+    [HttpPost("password/forgot")]
     [AllowAnonymous]
     public async Task<IResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
@@ -95,10 +90,7 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// إعادة تعيين كلمة المرور باستخدام الـ Token
-    /// </summary>
-    [HttpPost("reset-password")]
+    [HttpPost("password/reset")]
     [AllowAnonymous]
     public async Task<IResult> ResetPassword(
         [FromBody] ResetPasswordRequest request,
@@ -113,10 +105,7 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// تغيير كلمة المرور للمستخدم المسجل حالياً
-    /// </summary>
-    [HttpPost("change-password")]
+    [HttpPost("me/change-password")] 
     [Authorize]
     public async Task<IResult> ChangePassword(
         [FromBody] ChangePasswordRequest request,
@@ -130,34 +119,21 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    [HttpGet("me/profile")]
-    [Authorize] // متاح لأي مستخدم مسجل الدخول
-    public async Task<IResult> GetMyAccountProfile(CancellationToken cancellationToken)
+    // =========================================================================
+    // 3. Current User Profile Management (إدارة الملف الشخصي للمستخدم الحالي)
+    // =========================================================================
+
+    [HttpGet("me/get-profile")] 
+    [Authorize]
+    public async Task<IResult> GetMyProfile(CancellationToken cancellationToken)
     {
         var result = await Mediator.Send(new GetMyAccountProfileQuery(), cancellationToken);
         return HandleResult(result);
     }
-    [HttpGet]
-    [Authorize(Roles = "Admin")]
-    public async Task<IResult> GetAllUsers(
-        [FromQuery] GetUsersRequest request,
-        CancellationToken cancellationToken)
-    {
-        // Mapping من الـ Contract للـ Query
-        var query = new GetAllUsersQuery(
-            request.PageNumber,
-            request.PageSize,
-            request.Role,
-            request.SearchTerm);
 
-        var result = await Mediator.Send(query, cancellationToken);
-
-        return HandleResult(result);
-    }
-
-    [HttpPut("me/profile")]
+    [HttpPut("me/update-profile")]
     [Authorize]
-    public async Task<IResult> UpdateMyAccountProfile(
+    public async Task<IResult> UpdateMyProfile(
         [FromBody] UpdateMyAccountProfileRequest request,
         CancellationToken cancellationToken)
     {
@@ -169,7 +145,7 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    [HttpPut("me/profile/picture")]
+    [HttpPatch("me/update-profile-picture")] 
     [Authorize]
     public async Task<IResult> UpdateMyProfilePicture(
         [FromBody] UpdateMyProfilePictureRequest request,
@@ -179,8 +155,29 @@ public class AccountsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-    [HttpPut("{userId:guid}/deactivate")]
-    [Authorize(Roles = "Admin")] // 👈 حماية للآدمن فقط
+
+    // =========================================================================
+    // 4. User Administration (إدارة المستخدمين - للآدمن)
+    // =========================================================================
+
+    [HttpGet("get-all-users")] 
+    [Authorize(Roles = "Admin")]
+    public async Task<IResult> GetAllUsers(
+        [FromQuery] GetUsersRequest request,
+        CancellationToken cancellationToken)
+    {
+        var query = new GetAllUsersQuery(
+            request.PageNumber,
+            request.PageSize,
+            request.Role,
+            request.SearchTerm);
+
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    [HttpPatch("{userId:guid}/deactivate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IResult> DeactivateUser(
         Guid userId,
         CancellationToken cancellationToken)
@@ -190,8 +187,8 @@ public class AccountsController : BaseApiController
         return HandleResult(result);
     }
 
-    [HttpPut("{userId:guid}/activate")]
-    [Authorize(Roles = "Admin")] // 👈 حماية للآدمن فقط
+    [HttpPatch("{userId:guid}/activate")]
+    [Authorize(Roles = "Admin")]
     public async Task<IResult> ActivateUser(
         Guid userId,
         CancellationToken cancellationToken)
@@ -200,11 +197,13 @@ public class AccountsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-    /// <summary>
-    /// إضافة دور لمستخدم
-    /// </summary>
-    [HttpPost("{userId:guid}/roles")]
-    [Authorize(Roles = "Admin")] // تأكد من وضع الصلاحية المناسبة
+
+    // =========================================================================
+    // 5. Role Management (إدارة الصلاحيات والأدوار)
+    // =========================================================================
+
+    [HttpPost("{userId:guid}/assign-role")] 
+    [Authorize(Roles = "Admin")]
     public async Task<IResult> AssignRoleToUser(
         [FromRoute] Guid userId,
         [FromBody] AssignRoleRequest request,
@@ -212,14 +211,10 @@ public class AccountsController : BaseApiController
     {
         var command = new AssignRoleToUserCommand(userId, request.RoleName);
         var result = await Mediator.Send(command, cancellationToken);
-
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// سحب دور من مستخدم
-    /// </summary>
-    [HttpDelete("{userId:guid}/roles/{roleName}")]
+    [HttpDelete("{userId:guid}/remove-role/{roleName}")] // استخدام اسم صريح
     [Authorize(Roles = "Admin")]
     public async Task<IResult> RemoveRoleFromUser(
         [FromRoute] Guid userId,
@@ -228,7 +223,57 @@ public class AccountsController : BaseApiController
     {
         var command = new RemoveRoleFromUserCommand(userId, roleName);
         var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
 
+    // =========================================================================
+    // 6. Registration & Verification (التسجيل والتأكيد)
+    // =========================================================================
+
+    /// <summary>
+    /// تسجيل حساب جديد (وإرسال OTP للإيميل)
+    /// </summary>
+    [HttpPost("register")]
+    [AllowAnonymous]
+    public async Task<IResult> Register(
+        [FromBody] RegisterUserRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new RegisterUserCommand(
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.Password);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تأكيد البريد الإلكتروني باستخدام كود OTP
+    /// </summary>
+    [HttpPost("verify-email")]
+    [AllowAnonymous]
+    public async Task<IResult> VerifyEmail(
+        [FromBody] VerifyEmailRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new VerifyEmailOtpCommand(request.Email, request.OtpCode);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إعادة إرسال كود الـ OTP لتأكيد الإيميل
+    /// </summary>
+    [HttpPost("resend-verification-code")]
+    [AllowAnonymous]
+    public async Task<IResult> ResendVerificationCode(
+        [FromBody] ResendVerificationCodeRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new ResendEmailOtpCommand(request.Email);
+        var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 }

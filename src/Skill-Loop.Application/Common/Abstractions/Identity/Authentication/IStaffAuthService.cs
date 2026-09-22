@@ -11,12 +11,6 @@ public interface IStaffAuthService
         string password,
         CancellationToken cancellationToken = default);
 
-
-    Task<Result<bool>> LogoutAsync(
-        string refreshToken,
-        CancellationToken cancellationToken = default);
-
-
     Task<Result<StaffAuthResponse>> LoginWithGoogleAsync(
         string idToken,
         CancellationToken cancellationToken = default);

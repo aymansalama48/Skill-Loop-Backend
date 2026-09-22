@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.SiteSettings;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -11,6 +12,8 @@ public interface IApplicationDbContext
     // 1. عمليات القراءة (استخدمنا IQueryable المستقلة بدلاً من DbSet)
 
     //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    public IQueryable<SiteSettings> SiteSettings { get; }
 
     public IQueryable<OtpVerification> OtpVerifications { get; }
     public IQueryable<StaffInvitation> StaffInvitations { get; }

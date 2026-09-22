@@ -12,6 +12,8 @@ public sealed class SendStaffInvitationCommandHandler(
         SendStaffInvitationCommand request,
         CancellationToken cancellationToken)
     {
+        // خدمة الـ Invitation هتقوم بإنشاء الدعوة وحفظها
+        // وبمجرد الـ SaveChanges، سيتم إطلاق الـ Domain Event تلقائياً
         return await invitationService.SendStaffInvitationAsync(
             request.Email,
             request.Role,

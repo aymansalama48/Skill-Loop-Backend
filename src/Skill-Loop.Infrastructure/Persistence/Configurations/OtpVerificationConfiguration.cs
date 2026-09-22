@@ -13,7 +13,7 @@ namespace Skill_Loop.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("OtpVerifications");
 
-            builder.Property(o => o.Phone)
+            builder.Property(o => o.Identifier)
                 .HasMaxLength(20)
                 .IsRequired();
 
@@ -29,8 +29,8 @@ namespace Skill_Loop.Infrastructure.Persistence.Configurations
 
 
             // الفهرس الأهم عمليًا — كل الـ Queries في OtpService بتفلتر بالتلاتة دول مع بعض
-            builder.HasIndex(o => new { o.Phone, o.Purpose, o.IsConsumed })
-                .HasDatabaseName("IX_OtpVerifications_Phone_Purpose_IsConsumed");
+            builder.HasIndex(o => new { o.Identifier, o.Purpose, o.IsConsumed })
+                .HasDatabaseName("IX_OtpVerifications_Identifier_Purpose_IsConsumed");
 
             builder.HasIndex(o => o.Expiry)
                 .HasDatabaseName("IX_OtpVerifications_Expiry");

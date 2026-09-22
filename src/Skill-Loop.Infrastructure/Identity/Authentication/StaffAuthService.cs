@@ -23,7 +23,6 @@ public class StaffAuthService(
     IRefreshTokenService refreshTokenService,
     IPermissionService permissionService,   // 👈 مضافة بدل الـ Claims المباشرة
     IDateTime dateTime,
-    AppDbContext context,
     IEnumerable<IExternalAuthProvider> externalAuthProviders,   // 👈 جديدة في الكونستركتور
     ILogger<StaffAuthService> logger) : IStaffAuthService
 {
@@ -87,20 +86,6 @@ public class StaffAuthService(
         });
     }
 
-    /// <summary>
-    /// تسجيل خروج الموظف — إلغاء الـ Refresh Token و Sign-out
-    /// </summary>
-    public async Task<Result<bool>> LogoutAsync(
-        string refreshToken,
-        CancellationToken cancellationToken = default)
-    {
-        await refreshTokenService.RevokeRefreshTokenAsync(refreshToken, cancellationToken);
-        await signInManager.SignOutAsync();
-
-        logger.LogInformation("تم تسجيل خروج الموظف بنجاح (Refresh Token: {Token})", refreshToken);
-
-        return Result<bool>.Success(true);
-    }
 
     /// <summary>
     /// دخول Staff بجوجل — لا ينشئ حساب جديد أبدًا، لازم يكون الحساب موجود بالفعل

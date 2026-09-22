@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.SiteSettings;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -20,6 +21,7 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
 
 
 
+    public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
 

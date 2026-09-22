@@ -3,7 +3,7 @@ using Skill_Loop.Domain.Common.Results;
 namespace Skill_Loop.Application.Common.Errors.Identity;
 
 /// <summary>
-/// أخطاء عامة متعلقة بحسابات المستخدمين (تخص جميع أنواع المستخدمين: Staff، Patient، Admin).
+/// أخطاء عامة متعلقة بحسابات المستخدمين
 /// </summary>
 public static class UserErrors
 {
@@ -41,6 +41,12 @@ public static class UserErrors
     public static readonly Error LoginNotAllowed = new(
         "USER_LOGIN_NOT_ALLOWED",
         "تسجيل الدخول غير مسموح لهذا الحساب.",
+        ErrorType.Validation);
+
+    // 👇 تمت إضافة هذا الخطأ
+    public static readonly Error EmailAlreadyConfirmed = new(
+        "USER_EMAIL_ALREADY_CONFIRMED",
+        "هذا الحساب مفعل بالفعل.",
         ErrorType.Validation);
 
     // ----- أخطاء ديناميكية -----
