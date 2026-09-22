@@ -1,10 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Domain.Entities.Courses;
+using Skill_Loop.Domain.Entities.Enrollments;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.SiteSettings;
-using System.Numerics;
-using static System.Net.Mime.MediaTypeNames;
+using Skill_Loop.Domain.Entities.Wallets;
 
 namespace Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -24,12 +25,12 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
-    public IQueryable<Skill_Loop.Domain.Entities.Courses.Course> Courses => context.Courses;
-    public IQueryable<Skill_Loop.Domain.Entities.Courses.Category> Categories => context.Categories;
-    public IQueryable<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments => context.Enrollments;
-    public IQueryable<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets => context.UserWallets;
-    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks => context.CourseBookmarks;
-    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews => context.CourseReviews;
+    public IQueryable<Course> Courses => context.Courses;
+    public IQueryable<Category> Categories => context.Categories;
+    public IQueryable<Enrollment> Enrollments => context.Enrollments;
+    public IQueryable<UserWallet> UserWallets => context.UserWallets;
+    public IQueryable<CourseBookmark> CourseBookmarks => context.CourseBookmarks;
+    public IQueryable<CourseReview> CourseReviews => context.CourseReviews;
 
     // ==============================
     // عمليات الكتابة (عنصر واحد)

@@ -37,7 +37,7 @@ public static partial class DependencyInjection
             }
         }
 
-        services.AddSingleton<ICacheService, MemoryCacheService>();
+        //services.AddSingleton<ICacheService, MemoryCacheService>();
         return services;
     }
 }

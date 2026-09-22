@@ -43,6 +43,13 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
         if (!otpResult.IsSuccess)
             return Result<bool>.Failure(otpResult.Errors);
 
+
+
+        Console.WriteLine($@"
+Email: {request.Email}
+Otp: {otpResult.Data!.Code}
+");
+
         // 4. إرسال الكود في الخلفية (Background Job)
         var templateModel = new EmailConfirmationTemplateModel
         {

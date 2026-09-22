@@ -13,9 +13,9 @@ namespace Skill_Loop.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("OtpVerifications");
 
-            builder.Property(o => o.Identifier)
-                .HasMaxLength(20)
-                .IsRequired();
+            builder.Property(x => x.Identifier)
+                .IsRequired()
+                .HasMaxLength(256);   // 👈 كان أقصى حاجة ممكن 20، دلوقتي 256
 
             // Base64 لـ HMACSHA256 (32 بايت) بيطلع 44 حرف تقريبًا — سايبها مساحة زيادة بسيطة
             builder.Property(o => o.CodeHash)

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.Tokens;
@@ -6,8 +7,8 @@ using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
-using Microsoft.EntityFrameworkCore;
 
 namespace Skill_Loop.Infrastructure.Identity.UserManagement;
 
@@ -385,7 +386,7 @@ public class UserManagementService(
             return Result.Failure(UserErrors.CreationFailed(createResult.Errors.First().Description));
 
         // تعيين دور افتراضي للمستخدم العادي (الطالب)
-        await userManager.AddToRoleAsync(user, "Student");
+        await userManager.AddToRoleAsync(user, Roles.User);
 
         return Result.Success();
     }

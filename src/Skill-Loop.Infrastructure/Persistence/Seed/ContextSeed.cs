@@ -9,7 +9,7 @@ public static class ContextSeed
 {
     public static async Task SeedRolesAndPermissionsAsync(
         RoleManager<ApplicationRole> roleManager,
-        DbContext dbContext) // pass ApplicationDbContext here
+        DbContext dbContext)
     {
         // 1. إنشاء الأدوار الأساسية في النظام
         foreach (var roleName in Roles.All)
@@ -31,7 +31,6 @@ public static class ContextSeed
 
         var newPermissions = new List<TbPermission>();
 
-        // 👇 التعديل هنا: استخدام الدالة السحرية اللي عملناها
         var allPermissionsList = Permissions.GetAllPermissions();
 
         foreach (var permissionCode in allPermissionsList)
@@ -58,31 +57,56 @@ public static class ContextSeed
             await dbContext.SaveChangesAsync();
         }
 
-        // 3. ربط جميع الصلاحيات بدور الـ Admin تلقائياً
-        var adminRole = await roleManager.FindByNameAsync(Roles.Admin);
-        if (adminRole != null)
+        // 3. ربط الصلاحيات بالأدوار حسب الـ RolePermissionsMap
+        await LinkPermissionsToRolesAsync(roleManager, dbContext);
+    }
+
+    /// <summary>
+    /// يربط كل دور بالصلاحيات المحددة له في RolePermissionsMap.
+    /// آمن للتشغيل المتكرر (Idempotent) — بيتخطى الصلاحيات المربوطة بالفعل.
+    /// </summary>
+    private static async Task LinkPermissionsToRolesAsync(
+        RoleManager<ApplicationRole> roleManager,
+        DbContext dbContext)
+    {
+        // نجيب كل الصلاحيات من الـ DB ونعمل lookup بالـ Name
+        var allPermissions = await dbContext.Set<TbPermission>().ToListAsync();
+        var permissionsByName = allPermissions.ToDictionary(p => p.Name, p => p.Id);
+
+        foreach (var (roleName, permissionCodes) in RolePermissionsMap.Map)
         {
-            var allPermissions = await dbContext.Set<TbPermission>().ToListAsync();
-            var existingRolePermissions = await dbContext.Set<TbRolePermission>()
-                .Where(rp => rp.RoleId == adminRole.Id)
+            var role = await roleManager.FindByNameAsync(roleName);
+            if (role is null) continue;
+
+            // الصلاحيات المربوطة بالدور بالفعل
+            var existingRolePermissionIds = await dbContext.Set<TbRolePermission>()
+                .Where(rp => rp.RoleId == role.Id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync();
 
-            var newRolePermissions = allPermissions
-                .Where(p => !existingRolePermissions.Contains(p.Id))
-                .Select(p => new TbRolePermission
+            // الصلاحيات المطلوب ربطها
+            var targetPermissionIds = permissionCodes
+                .Where(permissionsByName.ContainsKey)
+                .Select(code => permissionsByName[code])
+                .ToList();
+
+            // اللي محتاج يتضاف بس
+            var toAdd = targetPermissionIds
+                .Where(pid => !existingRolePermissionIds.Contains(pid))
+                .Select(pid => new TbRolePermission
                 {
-                    RoleId = adminRole.Id,
-                    PermissionId = p.Id,
+                    RoleId = role.Id,
+                    PermissionId = pid,
                     GrantedAt = DateTime.UtcNow
                 })
                 .ToList();
 
-            if (newRolePermissions.Any())
+            if (toAdd.Any())
             {
-                await dbContext.Set<TbRolePermission>().AddRangeAsync(newRolePermissions);
-                await dbContext.SaveChangesAsync();
+                await dbContext.Set<TbRolePermission>().AddRangeAsync(toAdd);
             }
         }
+
+        await dbContext.SaveChangesAsync();
     }
 }
