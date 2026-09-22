@@ -17,6 +17,12 @@ public interface IApplicationDbContext
 
     public IQueryable<OtpVerification> OtpVerifications { get; }
     public IQueryable<StaffInvitation> StaffInvitations { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Course> Courses { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Category> Categories { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews { get; }
 
 
     // 2. عمليات الكتابة والإضافة والحذف (Generic Methods)

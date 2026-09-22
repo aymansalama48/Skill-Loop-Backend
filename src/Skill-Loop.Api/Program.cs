@@ -12,8 +12,10 @@ builder.Services.AddApplicationServices(builder.Configuration);
 var app = builder.Build();
 
 
-// 3. تطبيق خط سير الطلبات الموحد (Request Pipeline)
-app.UseApplicationPipeline();
-// 🚀 تشغيل الـ Database Seeder المعتمد
+// 3. 🚀 تشغيل الـ Database Migrations & Seeding أولاً لضمان إنشاء قاعدة البيانات قبل Hangfire
 await app.SeedDatabaseAsync();
+
+// 4. تطبيق خط سير الطلبات الموحد (Request Pipeline & Hangfire)
+app.UseApplicationPipeline();
+
 app.Run();
