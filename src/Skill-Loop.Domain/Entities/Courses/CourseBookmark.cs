@@ -2,7 +2,7 @@ using Skill_Loop.Domain.Common.Entities;
 
 namespace Skill_Loop.Domain.Entities.Courses;
 
-public sealed class CourseBookmark : AuditableEntity
+public sealed class CourseBookmark : SoftDeleteEntity
 {
     public Guid UserId { get; private set; }
     public Guid CourseId { get; private set; }

@@ -92,6 +92,7 @@ public sealed class CourseBookmarkConfiguration : IEntityTypeConfiguration<Cours
         builder.HasOne(b => b.Course)
             .WithMany()
             .HasForeignKey(b => b.CourseId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(b => new { b.UserId, b.CourseId }).IsUnique();
