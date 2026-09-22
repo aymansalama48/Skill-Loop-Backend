@@ -29,6 +29,7 @@ public static partial class DependencyInjection
             options.UseSqlServer(
                        configuration.GetConnectionString("DefaultConnection"),
                        b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
+                   .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
                    .AddInterceptors(
                        softDeleteInterceptor,
                        auditableInterceptor,
