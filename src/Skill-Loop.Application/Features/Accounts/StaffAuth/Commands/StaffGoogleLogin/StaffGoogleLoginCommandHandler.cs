@@ -28,18 +28,25 @@ public sealed class StaffGoogleLoginCommandHandler(
             return result;
         }
 
-        // 2. إرسال بريد إشعار بدخول الحساب عبر Google
+        // 2. تجهيز نموذج قالب البريد الإلكتروني بالبيانات الأساسية فقط
         var templateModel = new LoginTemplateModel
         {
             UserName = result.Data!.FullName ?? string.Empty,
             UserEmail = result.Data.Email,
-            IpAddress = clientContext.IpAddress ?? string.Empty,
-            Device = clientContext.UserAgent ?? string.Empty,
             LoginTime = result.Data.LoggedInAt
         };
 
+        // 3. التقاط بيانات الاتصال من الـ HTTP Request النشط قبل الانتقال لـ Hangfire
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+
+        // 4. جدولة إرسال بريد إشعار تسجيل الدخول في الخلفية مع تمرير المعاملات المنفصلة
         jobScheduler.Enqueue<IIdentityNotificationService>(sender =>
-            sender.SendLoginEmailAsync(result.Data.Email, templateModel));
+            sender.SendLoginEmailAsync(
+                result.Data.Email,
+                templateModel,
+                ipAddress,
+                userAgent));
 
         return result;
     }

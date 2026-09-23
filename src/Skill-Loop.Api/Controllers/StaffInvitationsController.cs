@@ -11,7 +11,7 @@ using Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptI
 using Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.SendInvitation;
 using Skill_Loop.Application.Features.Accounts.StaffInvitations.Queries.ValidateInvitation;
 
-[Route("api/staff-invitations")]
+[Route("api/v1/[controller]")]
 public class StaffInvitationsController : BaseApiController
 {
     /// <summary>

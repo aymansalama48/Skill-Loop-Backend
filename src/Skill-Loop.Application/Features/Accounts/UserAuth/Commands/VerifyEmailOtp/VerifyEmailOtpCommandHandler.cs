@@ -24,13 +24,13 @@ public sealed class VerifyEmailOtpCommandHandler : ICommandHandler<VerifyEmailOt
         // 1. التحقق من صحة الكود عبر خدمة الـ OTP
         var otpValidationResult = await _otpService.ValidateOtpAsync(request.Email, request.OtpCode, OtpPurpose.EmailVerification, cancellationToken);
 
-        if (!otpValidationResult.IsSuccess)
+        if (otpValidationResult.IsFailure)
             return Result<bool>.Failure(otpValidationResult.Errors);
 
         // 2. تفعيل الإيميل عبر خدمة إدارة المستخدمين
         var confirmResult = await _userManagementService.ConfirmUserEmailAsync(request.Email, cancellationToken);
 
-        if (!confirmResult.IsSuccess)
+        if (confirmResult.IsFailure)
             return Result<bool>.Failure(confirmResult.Errors);
 
         return Result<bool>.Success(true);

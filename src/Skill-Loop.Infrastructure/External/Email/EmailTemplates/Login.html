@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>إشعار تسجيل دخول</title>
+    <!--[if mso]><style type="text/css">table{border-collapse:collapse;}body,table,td{font-family:Arial,sans-serif !important;}</style><![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f2f4f7;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;text-align:right;-webkit-text-size-adjust:100%;">
+    <div style="display:none;font-size:1px;color:#f2f4f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">تم تسجيل دخول جديد لحسابك على {{AppName}}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f2f4f7;">
+        <tr>
+            <td align="center" style="padding:24px 12px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+
+                    <tr>
+                        <td bgcolor="#0b6e6e" style="background-color:#0b6e6e;padding:24px 32px;text-align:center;">
+                            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:0.5px;">{{AppName}}</h1>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:32px;color:#132238;font-size:15px;line-height:1.8;">
+                            <h2 style="margin:0 0 12px;color:#132238;font-size:20px;font-weight:600;">مرحباً {{UserName}}،</h2>
+                            <p style="margin:0 0 20px;color:#5b6b7f;">تم تسجيل دخول جديد لحسابك على <strong style="color:#0b6e6e;">{{AppName}}</strong>. لو ده أنت، مفيش داعي لأي إجراء. لو مش أنت، من فضلك غيّر كلمة المرور فورًا وتواصل معنا.</p>
+
+                            {{#if LoginTime}}
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f2f4f7;border-radius:8px;margin:20px 0;">
+                                <tr>
+                                    <td style="padding:16px 20px;">
+                                        <p style="margin:0 0 12px;color:#132238;font-size:14px;font-weight:700;">تفاصيل الجلسة:</p>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+                                            <tr><td style="padding:6px 0;color:#5b6b7f;font-size:13px;width:130px;vertical-align:top;">التاريخ والوقت:</td><td style="padding:6px 0;color:#132238;font-size:13px;font-weight:600;">{{LoginTime:yyyy/MM/dd hh:mm tt}}</td></tr>
+                                            {{#if Device}}
+                                            <tr><td style="padding:6px 0;color:#5b6b7f;font-size:13px;vertical-align:top;">الجهاز:</td><td style="padding:6px 0;color:#132238;font-size:13px;font-weight:600;">{{Device}}</td></tr>
+                                            {{/if}}
+                                            {{#if IpAddress}}
+                                            <tr><td style="padding:6px 0;color:#5b6b7f;font-size:13px;vertical-align:top;">عنوان IP:</td><td style="padding:6px 0;color:#132238;font-size:13px;font-weight:600;direction:ltr;text-align:right;">{{IpAddress}}</td></tr>
+                                            {{/if}}
+                                            {{#if Location}}
+                                            <tr><td style="padding:6px 0;color:#5b6b7f;font-size:13px;vertical-align:top;">الموقع التقريبي:</td><td style="padding:6px 0;color:#132238;font-size:13px;font-weight:600;">{{Location}}</td></tr>
+                                            {{/if}}
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#fbe4e2;border-right:4px solid #b3261e;border-radius:6px;margin:20px 0;">
+                                <tr>
+                                    <td style="padding:14px 18px;color:#b3261e;font-size:13px;line-height:1.7;">
+                                        <strong style="display:block;margin-bottom:4px;">مش أنت اللي سجلت دخول؟</strong>
+                                        غيّر كلمة المرور فورًا من إعدادات حسابك{{#if SupportEmail}}، ولو محتاج مساعدة تواصل معنا على <a href="mailto:{{SupportEmail}}" style="color:#b3261e;text-decoration:underline;">{{SupportEmail}}</a>{{/if}}
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td bgcolor="#132238" style="background-color:#132238;padding:24px 32px;text-align:center;color:#c9d4e2;font-size:12px;line-height:1.8;">
+                            <p style="margin:0 0 8px;"><strong style="color:#ffffff;font-size:13px;">{{AppName}}</strong></p>
+                            {{#if SupportEmail}}<p style="margin:0 0 8px;"><a href="mailto:{{SupportEmail}}" style="color:#4fd1c5;text-decoration:none;">{{SupportEmail}}</a>{{#if WebsiteUrl}}<span style="color:#5b6b7f;"> | </span><a href="{{WebsiteUrl}}" style="color:#4fd1c5;text-decoration:none;">{{WebsiteUrl}}</a>{{/if}}</p>{{/if}}
+                            {{#if ContactPhoneNumber}}<p style="margin:0 0 8px;color:#9db0c6;">&#128222; <span style="direction:ltr;unicode-bidi:embed;">{{ContactPhoneNumber}}</span></p>{{/if}}
+                            {{#if WhatsAppNumber}}<p style="margin:0 0 8px;color:#9db0c6;">&#128172; <span style="direction:ltr;unicode-bidi:embed;">{{WhatsAppNumber}}</span></p>{{/if}}
+                            <p style="margin:0;color:#9db0c6;">جميع الحقوق محفوظة &copy; {{AppName}}</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

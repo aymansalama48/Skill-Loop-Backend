@@ -6,7 +6,6 @@ public abstract class BaseEmailTemplateModel
     public string AppName { get; set; } = string.Empty; 
     public string SupportEmail { get; set; } = string.Empty;
     public string ContactPhoneNumber { get; set; } = string.Empty; 
-    public string Address { get; set; } = string.Empty;
     public string WebsiteUrl { get; set; } = string.Empty;
     public string FacebookUrl { get; set; } = string.Empty;
     public string InstagramUrl { get; set; } = string.Empty;

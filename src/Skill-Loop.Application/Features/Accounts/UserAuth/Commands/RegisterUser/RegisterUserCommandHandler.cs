@@ -4,6 +4,7 @@ using Skill_Loop.Application.Common.Abstractions.Identity.Security;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Application.Common.Abstractions.Web;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
@@ -15,15 +16,18 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
     private readonly IUserManagementService _userManagementService;
     private readonly IOtpService _otpService;
     private readonly IJobScheduler _jobScheduler;
+    private readonly IClientContext _clientContext;
 
     public RegisterUserCommandHandler(
         IUserManagementService userManagementService,
         IOtpService otpService,
-        IJobScheduler jobScheduler)
+        IJobScheduler jobScheduler,
+        IClientContext clientContext)
     {
         _userManagementService = userManagementService;
         _otpService = otpService;
         _jobScheduler = jobScheduler;
+        _clientContext = clientContext;
     }
 
     public async Task<Result<bool>> Handle(RegisterUserCommand request, CancellationToken cancellationToken)
@@ -34,23 +38,26 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
             return Result<bool>.Failure(UserErrors.EmailAlreadyExists);
 
         // 2. إنشاء المستخدم في قاعدة البيانات كغير مؤكد
-        var createResult = await _userManagementService.CreateUserAsync(request.FirstName, request.LastName, request.Email, request.Password, cancellationToken);
+        var createResult = await _userManagementService.CreateUserAsync(
+            request.FirstName,
+            request.LastName,
+            request.Email,
+            request.Password,
+            cancellationToken);
+
         if (!createResult.IsSuccess)
             return Result<bool>.Failure(createResult.Errors);
 
         // 3. توليد كود الـ OTP
-        var otpResult = await _otpService.GenerateOtpAsync(request.Email, OtpPurpose.EmailVerification, cancellationToken);
+        var otpResult = await _otpService.GenerateOtpAsync(
+            request.Email,
+            OtpPurpose.EmailVerification,
+            cancellationToken);
+
         if (!otpResult.IsSuccess)
             return Result<bool>.Failure(otpResult.Errors);
 
-
-
-        Console.WriteLine($@"
-Email: {request.Email}
-Otp: {otpResult.Data!.Code}
-");
-
-        // 4. إرسال الكود في الخلفية (Background Job)
+        // 4. تجهيز نموذج قالب البريد الإلكتروني بالبيانات الأساسية للعرض
         var templateModel = new EmailConfirmationTemplateModel
         {
             UserName = request.FirstName,
@@ -58,8 +65,17 @@ Otp: {otpResult.Data!.Code}
             OtpCode = otpResult.Data!.Code
         };
 
+        // 5. التقاط بيانات الاتصال من الـ HTTP Request الحالي
+        var ipAddress = _clientContext.IpAddress;
+        var userAgent = _clientContext.UserAgent;
+
+        // 6. إرسال الكود في الخلفية (Background Job) مع تمرير المعاملات المنفصلة
         _jobScheduler.Enqueue<IIdentityNotificationService>(n =>
-            n.SendEmailConfirmationAsync(request.Email, templateModel));
+            n.SendEmailConfirmationAsync(
+                request.Email,
+                templateModel,
+                ipAddress,
+                userAgent));
 
         return Result<bool>.Success(true);
     }

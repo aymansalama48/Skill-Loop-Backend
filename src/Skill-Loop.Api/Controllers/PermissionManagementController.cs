@@ -11,7 +11,7 @@ using Skill_Loop.Application.Features.Accounts.PermissionManagement.Queries.GetA
 using Skill_Loop.Application.Features.Accounts.PermissionManagement.Queries.GetRolePermissions;
 
 [Authorize] 
-[Route("api/permission-management")]
+[Route("api/v1/[controller]")]
 public class PermissionManagementController : BaseApiController
 {
     [HttpGet("permissions")]

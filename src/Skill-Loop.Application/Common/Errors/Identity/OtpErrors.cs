@@ -9,7 +9,7 @@ public static class OtpErrors
 {
     public static readonly Error NotFound = new(
         "OTP_NOT_FOUND",
-        "لا يوجد كود تحقق صالح لهذا الرقم، من فضلك اطلب كود جديد.",
+        "لا يوجد كود تحقق صالح لهذا الايميل ، من فضلك اطلب كود جديد.",
         ErrorType.NotFound);
 
     public static readonly Error Expired = new(

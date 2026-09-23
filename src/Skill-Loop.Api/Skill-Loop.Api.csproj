@@ -31,4 +31,8 @@
     <ProjectReference Include="..\Skill-Loop.Infrastructure\Skill-Loop.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="UploadedFiles\test-uploads\" />
+  </ItemGroup>
+
 </Project>

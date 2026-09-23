@@ -6,6 +6,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Routing;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Identity.Invitations;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Application.Common.Abstractions.Settings;
 using Skill_Loop.Application.Common.Abstractions.Web;
 using Skill_Loop.Infrastructure.Core;
 using Skill_Loop.Infrastructure.External.Client;
@@ -13,6 +14,7 @@ using Skill_Loop.Infrastructure.External.Routing;
 using Skill_Loop.Infrastructure.Identity.CurrentUser;
 using Skill_Loop.Infrastructure.Identity.Invitations;
 using Skill_Loop.Infrastructure.Notifications;
+using Skill_Loop.Infrastructure.Settings;
 
 namespace Skill_Loop.Infrastructure.DependencyInjection;
 
@@ -83,6 +85,7 @@ public static partial class DependencyInjection
 
 
         services.AddScoped<IInvitationService, InvitationService>();
+        services.AddScoped<ISiteSettingsService, SiteSettingsService>();
 
         return services;
     }
