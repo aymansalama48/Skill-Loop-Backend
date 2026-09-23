@@ -42,23 +42,26 @@ public sealed class ChangePasswordCommandHandler(
             return result;
         }
 
-        // 4. تجهيز نموذج البريد الإلكتروني مع بيانات المستخدم والاتصال
+        // 4. تجهيز نموذج البريد الإلكتروني مع البيانات الأساسية فقط
         var templateModel = new PasswordChangedTemplateModel
         {
             UserName = currentUser.FullName ?? string.Empty,
-            UserEmail = userEmail, // 👈 تمرير الإيميل هنا ليتوافق مع BaseEmailTemplateModel
-            IpAddress = clientContext.IpAddress ?? string.Empty,
-            UserAgent = clientContext.UserAgent ?? string.Empty
-
+            UserEmail = userEmail
         };
 
-        // 5. جدولة إرسال بريد التأكيد في الخلفية
+        // 5. التقاط بيانات الاتصال من الـ HTTP Request الحالي قبل إرسال المهمة للـ Background Job
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+
+        // 6. جدولة إرسال بريد الإشعار في الخلفية عبر Hangfire مع تمرير ipAddress و userAgent
         jobScheduler.Enqueue<IIdentityNotificationService>(sender =>
             sender.SendPasswordChangedEmailAsync(
                 userEmail,
-                templateModel));
+                templateModel,
+                ipAddress,
+                userAgent));
 
-        // 6. إرجاع استجابة النجاح فوراً
+        // 7. إرجاع استجابة النجاح فوراً
         return Result.Success("تم تغيير كلمة المرور بنجاح");
     }
 }

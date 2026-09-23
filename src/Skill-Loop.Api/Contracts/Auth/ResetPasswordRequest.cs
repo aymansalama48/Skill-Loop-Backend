@@ -1,7 +1,7 @@
-namespace Skill_Loop.Api.Contracts.Accounts;
+namespace Skill_Loop.Api.Contracts.Auth;
 
 public sealed record ResetPasswordRequest(
     string Email,
-    string Token,
+    string OtpCode,
     string NewPassword,
     string ConfirmPassword);

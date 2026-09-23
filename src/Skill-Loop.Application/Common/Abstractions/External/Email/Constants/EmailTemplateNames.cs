@@ -11,4 +11,5 @@ public static class EmailTemplateNames
     public const string Welcome = "Welcome";
     public const string RoleAssigned = "RoleAssigned";
     public const string RoleRemoved = "RoleRemoved";
+    public const string StaffInvitation = "StaffInvitation";
 }

@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Api.Contracts.Accounts;
+﻿namespace Skill_Loop.Api.Contracts.Auth;
 
     public sealed record GoogleLoginRequest(
         string IdToken);

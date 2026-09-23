@@ -6,6 +6,7 @@ using Skill_Loop.Application.Common.Abstractions.Events;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
 using Skill_Loop.Application.Common.Abstractions.External.Jobs;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Domain.Entities.Invitation.Events;
 using System;
 using System.Threading;
@@ -44,11 +45,14 @@ public sealed class StaffInvitationCreatedEventHandler(IJobScheduler jobSchedule
     }
 
     // دالة مساعدة لترجمة الـ Roles لتظهر في الإيميل بشكل جميل
-    private static string TranslateRole(string role) => role switch  
+    private static string TranslateRole(string role) => role switch
     {
-        "Doctor" => "طبيب",  
-        "Receptionist" => "موظف استقبال",  
-        "Admin" => "مدير نظام",  
-        _ => "موظف"  
+        Roles.SuperAdmin => "المدير العام",
+        Roles.Admin => "مدير النظام",
+        Roles.FinanceManager => "المسؤول المالي",
+        Roles.Support => "مسؤول الدعم",
+        Roles.Instructor => "معلم",
+        Roles.User => "مستخدم",
+        _ => role
     };
 }

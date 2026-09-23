@@ -1,5 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates;
-using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
+﻿using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
 using Skill_Loop.Application.Common.Abstractions.External.Jobs;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authentication;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -32,24 +31,27 @@ public sealed class StaffLoginCommandHandler(
             return result;
         }
 
-        // 3. تجهيز بيانات إشعار تسجيل الدخول
+        // 3. تجهيز بيانات إشعار تسجيل الدخول للعرض فقط
         var templateModel = new LoginTemplateModel
         {
             UserName = result.Data!.FullName ?? string.Empty,
             UserEmail = result.Data.Email,
-
-            LoginTime = result.Data.LoggedInAt,
-            IpAddress = clientContext.IpAddress ?? string.Empty,
-            UserAgent = clientContext.UserAgent ?? string.Empty
+            LoginTime = result.Data.LoggedInAt
         };
 
-        // 4. جدولة إرسال الإيميل كـ Background Job
+        // 4. التقاط بيانات الاتصال من الـ HTTP Request الحالي
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+
+        // 5. جدولة إرسال الإيميل كـ Background Job مع تمرير المعاملات المنفصلة
         jobScheduler.Enqueue<IIdentityNotificationService>(
             sender => sender.SendLoginEmailAsync(
                 request.Email,
-                templateModel));
+                templateModel,
+                ipAddress,
+                userAgent));
 
-        // 5. إرجاع النتيجة فوراً دون انتظار إرسال الإيميل
+        // 6. إرجاع النتيجة فوراً دون انتظار إرسال الإيميل
         return result;
     }
 }

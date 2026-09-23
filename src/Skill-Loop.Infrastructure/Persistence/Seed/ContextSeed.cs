@@ -1,12 +1,77 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Constants;
-using Skill_Loop.Infrastructure.Persistence.IdentityModels;
+using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Infrastructure.Persistence.IdentityModels; // تأكد أن ApplicationUser موجود هنا
 
 namespace Skill_Loop.Infrastructure.Persistence.Seed;
 
 public static class ContextSeed
 {
+    // =================================================================================
+    // 1. إضافة الإعدادات الافتراضية للموقع (Site Settings)
+    // =================================================================================
+    public static async Task SeedSiteSettingsAsync(DbContext dbContext)
+    {
+        // التحقق مما إذا كان الجدول فارغاً
+        if (!await dbContext.Set<SiteSettings>().AnyAsync())
+        {
+            var defaultSettings = new SiteSettings
+            {
+                AppName = "Skill Loop",
+                SupportEmail = "support@skillloop.com",
+                ContactPhoneNumber = "01000000000",
+                WebsiteUrl = "https://skillloop.com",
+                Address = "Cairo, Egypt",
+                FacebookUrl = "https://facebook.com/skillloop",
+                InstagramUrl = "https://instagram.com/skillloop",
+                WhatsAppNumber = "01000000000",
+                LogoName = "default-logo.png"
+            };
+
+            await dbContext.Set<SiteSettings>().AddAsync(defaultSettings);
+            await dbContext.SaveChangesAsync();
+        }
+    }
+
+    // =================================================================================
+    // 2. إضافة حساب السوبر آدمن الافتراضي
+    // =================================================================================
+    public static async Task SeedSuperAdminAsync(UserManager<ApplicationUser> userManager)
+    {
+        // بيانات الحساب الافتراضي (يمكنك تغييرها)
+        var superAdminEmail = "admin@skillloop.com";
+        var defaultPassword = "Password@123";
+
+        // التحقق مما إذا كان الحساب موجوداً بالفعل
+        var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
+
+        if (existingUser == null)
+        {
+            var superAdminUser = new ApplicationUser
+            {
+                FirstName = "Super",
+                LastName = "Admin",
+                UserName = superAdminEmail,
+                Email = superAdminEmail,
+                EmailConfirmed = true,
+                PhoneNumberConfirmed = true
+            };
+
+            // إنشاء الحساب
+            var result = await userManager.CreateAsync(superAdminUser, defaultPassword);
+
+            if (result.Succeeded)
+            {
+                // منحه صلاحية SuperAdmin
+                await userManager.AddToRoleAsync(superAdminUser, Roles.SuperAdmin);
+            }
+        }
+    }
+
+    // =================================================================================
+    // 3. الدوال القديمة: بناء الأدوار والصلاحيات (بدون تغيير)
+    // =================================================================================
     public static async Task SeedRolesAndPermissionsAsync(
         RoleManager<ApplicationRole> roleManager,
         DbContext dbContext)
@@ -61,15 +126,10 @@ public static class ContextSeed
         await LinkPermissionsToRolesAsync(roleManager, dbContext);
     }
 
-    /// <summary>
-    /// يربط كل دور بالصلاحيات المحددة له في RolePermissionsMap.
-    /// آمن للتشغيل المتكرر (Idempotent) — بيتخطى الصلاحيات المربوطة بالفعل.
-    /// </summary>
     private static async Task LinkPermissionsToRolesAsync(
         RoleManager<ApplicationRole> roleManager,
         DbContext dbContext)
     {
-        // نجيب كل الصلاحيات من الـ DB ونعمل lookup بالـ Name
         var allPermissions = await dbContext.Set<TbPermission>().ToListAsync();
         var permissionsByName = allPermissions.ToDictionary(p => p.Name, p => p.Id);
 
@@ -78,19 +138,16 @@ public static class ContextSeed
             var role = await roleManager.FindByNameAsync(roleName);
             if (role is null) continue;
 
-            // الصلاحيات المربوطة بالدور بالفعل
             var existingRolePermissionIds = await dbContext.Set<TbRolePermission>()
                 .Where(rp => rp.RoleId == role.Id)
                 .Select(rp => rp.PermissionId)
                 .ToListAsync();
 
-            // الصلاحيات المطلوب ربطها
             var targetPermissionIds = permissionCodes
                 .Where(permissionsByName.ContainsKey)
                 .Select(code => permissionsByName[code])
                 .ToList();
 
-            // اللي محتاج يتضاف بس
             var toAdd = targetPermissionIds
                 .Where(pid => !existingRolePermissionIds.Contains(pid))
                 .Select(pid => new TbRolePermission
