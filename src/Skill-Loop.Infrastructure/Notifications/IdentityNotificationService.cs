@@ -7,6 +7,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Email.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.Base;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
+using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.SessionsTemplates;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
 using Skill_Loop.Infrastructure.External.Email;
 using Skill_Loop.Infrastructure.Options;
@@ -145,6 +146,40 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
         }
 
         await SendTemplateEmailAsync(email, "دعوة للانضمام إلى فريق العمل", "StaffInvitation", model);
+    }
+
+    public async Task SendMaterialUploadedEmailAsync(string email, SessionMaterialUploadedTemplateModel model)
+    {
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? email : model.UserName;
+        await SendTemplateEmailAsync(email, $"تم رفع مادة جديدة: {model.MaterialName}", "SessionMaterialUploaded", model);
+    }
+
+    public async Task SendMaterialUploadedConfirmationAsync(string email, SessionMaterialUploadedTemplateModel model)
+    {
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? email : model.UserName;
+        await SendTemplateEmailAsync(email, $"تأكيد رفع مادة: {model.MaterialName}", "SessionMaterialUploaded", model);
+    }
+
+    public async Task SendStorageQuotaWarningAsync(long usedBytes, long totalBytes, double threshold)
+    {
+        var model = new StorageQuotaWarningTemplateModel
+        {
+            UsedBytes = usedBytes,
+            TotalBytes = totalBytes,
+            Threshold = threshold,
+            UsedFormatted = FormatBytes(usedBytes),
+            TotalFormatted = FormatBytes(totalBytes),
+        };
+
+        await SendTemplateEmailAsync("admin@skill-loop.com", "تنبيه: اقتراب حدود تخزين Google Drive", "StorageQuotaWarning", model);
+    }
+
+    private static string FormatBytes(long bytes)
+    {
+        if (bytes >= 1024 * 1024 * 1024) return $"{(bytes / (1024.0 * 1024 * 1024)):F2} GB";
+        if (bytes >= 1024 * 1024) return $"{(bytes / (1024.0 * 1024)):F2} MB";
+        if (bytes >= 1024) return $"{(bytes / 1024.0):F2} KB";
+        return $"{bytes} B";
     }
 
     // ============================================================

@@ -1,7 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.SessionMaterial;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -22,6 +25,10 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
 
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
+
+    public IQueryable<Session> Sessions => context.Sessions;
+    public IQueryable<Booking> Bookings => context.Bookings;
+    public IQueryable<SessionMaterial> SessionMaterials => context.SessionMaterials;
 
     // ==============================
     // عمليات الكتابة (عنصر واحد)

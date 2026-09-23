@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
 using System.Numerics;
@@ -26,6 +28,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
+
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial> SessionMaterials => Set<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

@@ -1,3 +1,5 @@
+using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.SessionsTemplates;
+
 namespace Skill_Loop.Application.Common.Abstractions.External.Email.Constants;
 
 public static class EmailTemplateNames
@@ -11,4 +13,6 @@ public static class EmailTemplateNames
     public const string Welcome = "Welcome";
     public const string RoleAssigned = "RoleAssigned";
     public const string RoleRemoved = "RoleRemoved";
+    public const string SessionMaterialUploaded = "SessionMaterialUploaded";
+    public const string StorageQuotaWarning = "StorageQuotaWarning";
 }

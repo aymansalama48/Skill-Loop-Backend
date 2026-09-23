@@ -2,8 +2,14 @@ using Hangfire;
 using Hangfire.SqlServer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Skill_Loop.Application.Common.Abstractions.External.Jobs;
+using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Infrastructure.BackgroundJobs;
 using Skill_Loop.Infrastructure.External.Jobs;
+using Skill_Loop.Infrastructure.External.Storage;
+using Skill_Loop.Infrastructure.Notifications;
+using Skill_Loop.Infrastructure.Options;
 
 namespace Skill_Loop.Infrastructure.DependencyInjection;
 
@@ -16,7 +22,6 @@ public static partial class DependencyInjection
         this IServiceCollection services,
         IConfiguration configuration)
     {
-        // 1. إعداد الـ Storage والـ Serializer الخاص بـ Hangfire
         services.AddHangfire(config => config
             .SetDataCompatibilityLevel(CompatibilityLevel.Version_180)
             .UseSimpleAssemblyNameTypeSerializer()
@@ -32,14 +37,13 @@ public static partial class DependencyInjection
                     DisableGlobalLocks = true
                 }));
 
-        // 2. تسجيل الـ Hangfire Processing Server في الخلفية
         services.AddHangfireServer(options =>
         {
-            options.WorkerCount = Environment.ProcessorCount * 2; // عدد الـ Workers بناءً على المعالج
+            options.WorkerCount = Environment.ProcessorCount * 2;
         });
 
-        // 3. تسجيل الـ Job Scheduler الخاص بنا والذي يستخدم Hangfire
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
+        services.AddTransient<RefreshDriveQuotaJob>();
 
         return services;
     }

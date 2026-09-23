@@ -4,8 +4,6 @@ namespace Skill_Loop.Domain.Constants;
 
 public class Permissions
 {
-
-
     /// <summary>
     /// دالة سحرية تستخدم الـ Reflection لجلب جميع الصلاحيات المعرفة في هذا الكلاس.
     /// هذا يمنع خطأ نسيان إضافة صلاحية جديدة إلى قائمة الـ Seed.
@@ -31,4 +29,12 @@ public class Permissions
         return permissions.AsReadOnly();
     }
 
+    public static class Sessions
+    {
+        public const string Moderate = "Sessions.Moderate";
+        public const string ViewMaterials = "Sessions.ViewMaterials";
+        public const string UploadMaterials = "Sessions.UploadMaterials";
+        public const string DeleteMaterials = "Sessions.DeleteMaterials";
+        public const string ReorderMaterials = "Sessions.ReorderMaterials";
+    }
 }

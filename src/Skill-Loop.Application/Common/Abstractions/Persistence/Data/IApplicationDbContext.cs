@@ -1,6 +1,9 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.SessionMaterial;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -14,6 +17,10 @@ public interface IApplicationDbContext
 
     public IQueryable<OtpVerification> OtpVerifications { get; }
     public IQueryable<StaffInvitation> StaffInvitations { get; }
+
+    public IQueryable<Session> Sessions { get; }
+    public IQueryable<Booking> Bookings { get; }
+    public IQueryable<SessionMaterial> SessionMaterials { get; }
 
 
     // 2. عمليات الكتابة والإضافة والحذف (Generic Methods)
