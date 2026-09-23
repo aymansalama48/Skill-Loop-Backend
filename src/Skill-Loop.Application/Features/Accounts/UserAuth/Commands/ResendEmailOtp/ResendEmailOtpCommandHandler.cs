@@ -4,6 +4,7 @@ using Skill_Loop.Application.Common.Abstractions.Identity.Security;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Application.Common.Abstractions.Web;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
@@ -15,15 +16,18 @@ public sealed class ResendEmailOtpCommandHandler : ICommandHandler<ResendEmailOt
     private readonly IUserManagementService _userManagementService;
     private readonly IOtpService _otpService;
     private readonly IJobScheduler _jobScheduler;
+    private readonly IClientContext _clientContext;
 
     public ResendEmailOtpCommandHandler(
         IUserManagementService userManagementService,
         IOtpService otpService,
-        IJobScheduler jobScheduler)
+        IJobScheduler jobScheduler,
+        IClientContext clientContext)
     {
         _userManagementService = userManagementService;
         _otpService = otpService;
         _jobScheduler = jobScheduler;
+        _clientContext = clientContext;
     }
 
     public async Task<Result<bool>> Handle(ResendEmailOtpCommand request, CancellationToken cancellationToken)
@@ -34,8 +38,7 @@ public sealed class ResendEmailOtpCommandHandler : ICommandHandler<ResendEmailOt
         if (userResult.IsFailure)
             return Result<bool>.Failure(userResult.Errors);
 
-        // 2. التحقق مما إذا كان الإيميل مؤكداً بالفعل (بافتراض أنك أضفت EmailConfirmed للـ Dto)
-        // أو يمكنك استخدام الدالة القديمة IsEmailConfirmedAsync لو أردت
+        // 2. التحقق مما إذا كان الإيميل مؤكداً بالفعل
         if (userResult.Data!.EmailConfirmed)
             return Result<bool>.Failure(UserErrors.EmailAlreadyConfirmed);
 
@@ -45,16 +48,25 @@ public sealed class ResendEmailOtpCommandHandler : ICommandHandler<ResendEmailOt
         if (resendOtpResult.IsFailure)
             return Result<bool>.Failure(resendOtpResult.Errors);
 
-        // 4. جدولة الإيميل للإرسال (مع استخدام الاسم الحقيقي!) 🚀
+        // 4. تجهيز نموذج قالب البريد الإلكتروني بالبيانات الأساسية للعرض
         var templateModel = new EmailConfirmationTemplateModel
         {
-            UserName = userResult.Data.FirstName, // 👈 الاسم الحقيقي من قاعدة البيانات
-            UserEmail = request.Email, // 👈 الإيميل من الطلب نفسه
-            OtpCode = resendOtpResult.Data.Code
+            UserName = userResult.Data.FirstName,
+            UserEmail = request.Email,
+            OtpCode = resendOtpResult.Data!.Code
         };
 
+        // 5. التقاط بيانات الاتصال من الـ HTTP Request الحالي
+        var ipAddress = _clientContext.IpAddress;
+        var userAgent = _clientContext.UserAgent;
+
+        // 6. جدولة الإيميل للإرسال عبر Hangfire مع تمرير المعاملات المنفصلة
         _jobScheduler.Enqueue<IIdentityNotificationService>(n =>
-            n.SendEmailConfirmationAsync(request.Email, templateModel));
+            n.SendEmailConfirmationAsync(
+                request.Email,
+                templateModel,
+                ipAddress,
+                userAgent));
 
         return Result<bool>.Success(true);
     }

@@ -13,6 +13,11 @@ public static class EmailTemplateNames
     public const string Welcome = "Welcome";
     public const string RoleAssigned = "RoleAssigned";
     public const string RoleRemoved = "RoleRemoved";
+    
+    // قوالب رنيم (Session Storage)
     public const string SessionMaterialUploaded = "SessionMaterialUploaded";
     public const string StorageQuotaWarning = "StorageQuotaWarning";
+    
+    // قالبك (Staff Invitation)
+    public const string StaffInvitation = "StaffInvitation";
 }

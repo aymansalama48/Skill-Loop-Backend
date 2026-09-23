@@ -11,8 +11,8 @@ using Skill_Loop.Domain.Enums;
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ResetPassword;
 
 public sealed class ResetPasswordCommandHandler(
-    IOtpService otpService,                     // 👈 للتحقق من الكود
-    IPasswordService passwordService,           // 👈 لتغيير كلمة المرور
+    IOtpService otpService,                       // 👈 للتحقق من الكود
+    IPasswordService passwordService,             // 👈 لتغيير كلمة المرور
     IUserManagementService userManagementService, // 👈 لجلب الاسم الحقيقي
     IJobScheduler jobScheduler,
     IClientContext clientContext) : ICommandHandler<ResetPasswordCommand>
@@ -33,8 +33,7 @@ public sealed class ResetPasswordCommandHandler(
             return otpValidationResult;
         }
 
-        // 2. إعادة تعيين كلمة المرور 
-        // 💡 ملاحظة هامة: يجب أن تعدل IPasswordService.ResetPasswordAsync لكي لا يطلب Token بعد الآن
+        // 2. إعادة تعيين كلمة المرور
         var resetResult = await passwordService.ResetPasswordAsync(
             request.Email,
             request.NewPassword,
@@ -49,22 +48,26 @@ public sealed class ResetPasswordCommandHandler(
         var userResult = await userManagementService.GetUserByEmailAsync(request.Email, cancellationToken);
         var userName = userResult.IsSuccess ? userResult.Data!.FirstName : string.Empty;
 
-        // 4. تجهيز نموذج البريد الإلكتروني مع بيانات الاتصال والاسم
+        // 4. تجهيز نموذج البريد الإلكتروني بالبيانات الأساسية فقط للعرض
         var templateModel = new PasswordChangedTemplateModel
         {
-            UserName = userName, // 👈 الاسم الحقيقي
-            UserEmail = request.Email,
-            IpAddress = clientContext.IpAddress ?? string.Empty,
-            UserAgent = clientContext.UserAgent ?? string.Empty
+            UserName = userName,
+            UserEmail = request.Email
         };
 
-        // 5. جدولة إرسال بريد "تم تغيير كلمة المرور" في الخلفية
+        // 5. التقاط بيانات الاتصال من الـ HTTP Request الحالي قبل جدولتها
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+
+        // 6. جدولة إرسال بريد "تم تغيير كلمة المرور" في الخلفية مع تمرير المعاملات
         jobScheduler.Enqueue<IIdentityNotificationService>(sender =>
             sender.SendPasswordChangedEmailAsync(
                 request.Email,
-                templateModel));
+                templateModel,
+                ipAddress,
+                userAgent));
 
-        // 6. إرجاع استجابة النجاح
+        // 7. إرجاع استجابة النجاح
         return Result.Success("تم تغيير كلمة المرور بنجاح");
     }
 }

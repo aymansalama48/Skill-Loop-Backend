@@ -13,10 +13,11 @@ using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 namespace Skill_Loop.Infrastructure.Identity.UserManagement;
 
 /// <summary>
-/// تنفيذ خدمة إدارة المستخدمين (تخدم Staff والمريض صاحب الحساب الدائم)
+/// تنفيذ خدمة إدارة المستخدمين
 /// </summary>
 public class UserManagementService(
     UserManager<ApplicationUser> userManager,
+    RoleManager<ApplicationRole> roleManager,
     IRefreshTokenService refreshTokenService,
     IDateTime dateTime,
     ILogger<UserManagementService> logger) : IUserManagementService
@@ -49,6 +50,7 @@ public class UserManagementService(
             LastLoginAt = user.LastLoginAt
         });
     }
+
     public async Task<Result<UserDto>> GetUserByEmailAsync(string email, CancellationToken cancellationToken = default)
     {
         var user = await userManager.FindByEmailAsync(email);
@@ -61,9 +63,10 @@ public class UserManagementService(
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email!,
-            EmailConfirmed = user.EmailConfirmed 
+            EmailConfirmed = user.EmailConfirmed
         });
     }
+
     public async Task<List<UserDto>> GetUsersByIdsAsync(IEnumerable<Guid> userIds, CancellationToken cancellationToken)
     {
         return await userManager.Users
@@ -226,7 +229,7 @@ public class UserManagementService(
     }
 
     /// <summary>
-    /// جلب قائمة المستخدمين لمدير النظام (CRM) مع البحث والتصفية وتقسيم الصفحات
+    /// جلب قائمة المستخدمين لمدير النظام مع البحث والتصفية وتقسيم الصفحات
     /// </summary>
     public async Task<PagedResult<UserDto>> GetAllUsersAsync(
         int pageNumber,
@@ -289,8 +292,8 @@ public class UserManagementService(
             });
         }
 
-        // 6. تجهيز الرد في شكل PagedResult مباشر
-        var pagedResult = new PagedResult<UserDto>
+        // 6. تجهيز الرد في شكل PagedResult
+        return new PagedResult<UserDto>
         {
             Items = userDtos,
             Pagination = new PaginationMetadata
@@ -300,17 +303,19 @@ public class UserManagementService(
                 TotalCount = totalCount
             }
         };
-
-        return pagedResult; // 👈 التعديل هنا: إرجاع مباشر بدون Result.Success
     }
 
     public async Task<Result> AssignRoleAsync(Guid userId, string roleName, CancellationToken cancellationToken)
     {
+        // 1. التحقق من وجود الدور في النظام أولاً لمنع حدوث 500 Unhandled Exception
+        if (!await roleManager.RoleExistsAsync(roleName))
+            return Result.Failure(UserErrors.ValidationFailed($"الدور '{roleName}' غير موجود في النظام"));
+
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
             return Result.Failure(UserErrors.NotFound);
 
-        // لو اليوزر معاه الرول أصلاً، مش محتاجين نعمل حاجة ونرجع نجاح
+        // 2. إذا كان المستخدم يمتلك الدور بالفعل
         if (await userManager.IsInRoleAsync(user, roleName))
             return Result.Success();
 
@@ -320,7 +325,7 @@ public class UserManagementService(
         {
             var errors = string.Join(", ", result.Errors.Select(e => e.Description));
             logger.LogWarning("فشل إضافة الدور {RoleName} للمستخدم {UserId}: {Errors}", roleName, userId, errors);
-            return Result.Failure(UserErrors.UpdateFailed(errors)); // تأكد إنك ضايف Error للـ UpdateFailed أو استخدم واحد مناسب
+            return Result.Failure(UserErrors.UpdateFailed(errors));
         }
 
         logger.LogInformation("تم إضافة الدور {RoleName} للمستخدم {UserId} بنجاح", roleName, userId);
@@ -329,11 +334,15 @@ public class UserManagementService(
 
     public async Task<Result> RemoveRoleAsync(Guid userId, string roleName, CancellationToken cancellationToken)
     {
+        // 1. التحقق من وجود الدور في النظام أولاً
+        if (!await roleManager.RoleExistsAsync(roleName))
+            return Result.Failure(UserErrors.ValidationFailed($"الدور '{roleName}' غير موجود في النظام"));
+
         var user = await userManager.FindByIdAsync(userId.ToString());
         if (user is null)
             return Result.Failure(UserErrors.NotFound);
 
-        // لو اليوزر معهوش الرول أصلاً، نرجع نجاح لأن الهدف متحقق
+        // 2. إذا كان المستخدم لا يمتلك الدور أصلاً
         if (!await userManager.IsInRoleAsync(user, roleName))
             return Result.Success();
 
@@ -351,7 +360,7 @@ public class UserManagementService(
     }
 
     // ==========================================
-    // الدوال المشتركة لكل المستخدمين (تمت إضافتها)
+    // الدوال المشتركة لكل المستخدمين
     // ==========================================
 
     public async Task<Result<bool>> CheckUserExistsAsync(string email, CancellationToken cancellationToken = default)
@@ -364,7 +373,7 @@ public class UserManagementService(
     {
         var user = await userManager.FindByEmailAsync(email);
         if (user == null)
-            return Result<bool>.Failure(UserErrors.NotFound); // تم تصحيح UserNotFound إلى NotFound
+            return Result<bool>.Failure(UserErrors.NotFound);
 
         return Result<bool>.Success(user.EmailConfirmed);
     }

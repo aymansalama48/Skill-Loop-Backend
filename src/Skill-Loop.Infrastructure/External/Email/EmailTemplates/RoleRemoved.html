@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="color-scheme" content="light dark">
+    <meta name="supported-color-schemes" content="light dark">
+    <title>تم إزالة دورك</title>
+    <!--[if mso]><style type="text/css">table{border-collapse:collapse;}body,table,td{font-family:Arial,sans-serif !important;}</style><![endif]-->
+</head>
+<body style="margin:0;padding:0;background-color:#f2f4f7;font-family:'Segoe UI',Tahoma,Arial,sans-serif;direction:rtl;text-align:right;-webkit-text-size-adjust:100%;">
+    <div style="display:none;font-size:1px;color:#f2f4f7;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">تم إزالة دور {{RoleName}} من حسابك على {{AppName}}</div>
+    <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f2f4f7;">
+        <tr>
+            <td align="center" style="padding:24px 12px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;width:100%;background-color:#ffffff;border-radius:8px;overflow:hidden;">
+
+                    <tr>
+                        <td bgcolor="#a15c07" style="background-color:#a15c07;padding:24px 32px;text-align:center;">
+                            <h1 style="margin:0;color:#ffffff;font-size:24px;font-weight:700;letter-spacing:0.5px;">{{AppName}}</h1>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style="padding:32px;color:#132238;font-size:15px;line-height:1.8;">
+                            <h2 style="margin:0 0 12px;color:#132238;font-size:20px;font-weight:600;">مرحباً {{UserName}}،</h2>
+                            <p style="margin:0 0 20px;color:#5b6b7f;">تم إزالة الدور التالي من حسابك على <strong style="color:#0b6e6e;">{{AppName}}</strong>:</p>
+
+                            {{#if RoleName}}
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:20px 0;">
+                                <tr>
+                                    <td align="center">
+                                        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="background-color:#fbeed8;border:2px solid #a15c07;border-radius:8px;">
+                                            <tr><td style="padding:16px 40px;font-size:20px;font-weight:700;color:#a15c07;text-align:center;">{{RoleName}}</td></tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                            {{/if}}
+
+                            <p style="margin:20px 0;color:#5b6b7f;">مش هتقدر تدخل للصلاحيات الخاصة بالدور ده بعد كده. لو ده حصل بالغلط، تواصل مع الإدارة.</p>
+
+                            {{#if SupportEmail}}
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background-color:#f2f4f7;border-radius:8px;margin:20px 0 0;">
+                                <tr><td style="padding:14px 18px;color:#5b6b7f;font-size:13px;line-height:1.7;">لأي استفسار، تواصل معنا على <a href="mailto:{{SupportEmail}}" style="color:#0b6e6e;text-decoration:underline;">{{SupportEmail}}</a></td></tr>
+                            </table>
+                            {{/if}}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td bgcolor="#132238" style="background-color:#132238;padding:24px 32px;text-align:center;color:#c9d4e2;font-size:12px;line-height:1.8;">
+                            <p style="margin:0 0 8px;"><strong style="color:#ffffff;font-size:13px;">{{AppName}}</strong></p>
+                            {{#if SupportEmail}}<p style="margin:0 0 8px;"><a href="mailto:{{SupportEmail}}" style="color:#4fd1c5;text-decoration:none;">{{SupportEmail}}</a>{{#if WebsiteUrl}}<span style="color:#5b6b7f;"> | </span><a href="{{WebsiteUrl}}" style="color:#4fd1c5;text-decoration:none;">{{WebsiteUrl}}</a>{{/if}}</p>{{/if}}
+                            {{#if ContactPhoneNumber}}<p style="margin:0 0 8px;color:#9db0c6;">&#128222; <span style="direction:ltr;unicode-bidi:embed;">{{ContactPhoneNumber}}</span></p>{{/if}}
+                            {{#if WhatsAppNumber}}<p style="margin:0 0 8px;color:#9db0c6;">&#128172; <span style="direction:ltr;unicode-bidi:embed;">{{WhatsAppNumber}}</span></p>{{/if}}
+                            <p style="margin:0;color:#9db0c6;">جميع الحقوق محفوظة &copy; {{AppName}}</p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

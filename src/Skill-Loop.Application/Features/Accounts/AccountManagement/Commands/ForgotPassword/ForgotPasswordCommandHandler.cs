@@ -41,23 +41,27 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success(); // نفس الحماية الأمنية
         }
 
-        // 4. تجهيز نموذج قالب البريد الإلكتروني بالاسم الحقيقي وبيانات الأمان
+        // 4. تجهيز نموذج قالب البريد الإلكتروني بالبيانات الأساسية فقط
         var templateModel = new ResetPasswordTemplateModel
         {
-            UserName = userResult.Data!.FirstName, // 👈 الاسم الحقيقي
+            UserName = userResult.Data!.FirstName,
             UserEmail = request.Email,
-            OtpCode = otpResult.Data.Code,         // 👈 الكود من 4 أرقام
-            IpAddress = clientContext.IpAddress ?? string.Empty,
-            UserAgent = clientContext.UserAgent ?? string.Empty
+            OtpCode = otpResult.Data!.Code
         };
 
-        // 5. جدولة إرسال البريد كـ Background Job
+        // 5. التقاط بيانات الاتصال من الـ HTTP Request النشط قبل الانتقال لـ Hangfire
+        var ipAddress = clientContext.IpAddress;
+        var userAgent = clientContext.UserAgent;
+
+        // 6. جدولة إرسال البريد كـ Background Job مع تمرير المعاملات المنفصلة
         jobScheduler.Enqueue<IIdentityNotificationService>(
             sender => sender.SendResetPasswordEmailAsync(
                 request.Email,
-                templateModel));
+                templateModel,
+                ipAddress,
+                userAgent));
 
-        // 6. إرجاع استجابة النجاح
-        return Result.Success();
+        // 7. إرجاع استجابة النجاح
+        return Result.Success("تم ارسال كود التحقق عبر الايميل الخاص بك");
     }
 }

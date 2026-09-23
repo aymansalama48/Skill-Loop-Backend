@@ -151,6 +151,346 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.ToTable("Bookings", (string)null);
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Category", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("int");
+
+                    b.Property<string>("IconUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Slug")
+                        .IsRequired()
+                        .HasMaxLength(120)
+                        .HasColumnType("nvarchar(120)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DisplayOrder");
+
+                    b.HasIndex("Slug")
+                        .IsUnique();
+
+                    b.ToTable("Categories", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Course", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CategoryId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("nvarchar(4000)");
+
+                    b.Property<Guid>("InstructorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("InstructorName")
+                        .IsRequired()
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("Level")
+                        .HasColumnType("int");
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ThumbnailUrl")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<TimeSpan>("TotalDuration")
+                        .HasColumnType("time");
+
+                    b.Property<int>("TotalLessonsCount")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("InstructorId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("Title");
+
+                    b.HasIndex("Status", "CategoryId", "Level");
+
+                    b.ToTable("Courses", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.CourseBookmark", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId");
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.ToTable("CourseBookmarks", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.CourseReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Stars")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("CourseReviews", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Lesson", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsPreviewable")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("SectionId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SectionId", "OrderIndex");
+
+                    b.ToTable("CourseLessons", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Section", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("OrderIndex")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CourseId", "OrderIndex");
+
+                    b.ToTable("CourseSections", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Enrollments.Enrollment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("CourseId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CreditsPaid")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime>("EnrolledAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("LastWatchedLessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<double>("ProgressPercentage")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(5, 2)
+                        .HasColumnType("float(5)")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<int>("Status")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CourseId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("Enrollments", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Enrollments.LessonProgress", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("CompletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("EnrollmentId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsCompleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LessonId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("EnrollmentId", "LessonId")
+                        .IsUnique();
+
+                    b.ToTable("LessonProgresses", (string)null);
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Invitation.StaffInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -228,6 +568,11 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<DateTime>("Expiry")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("Identifier")
+                        .IsRequired()
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
                     b.Property<bool>("IsConsumed")
                         .HasColumnType("bit");
 
@@ -236,11 +581,6 @@ namespace Skill_Loop.Infrastructure.Migrations
 
                     b.Property<DateTime>("NextResendAllowedAtUtc")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("Phone")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
@@ -255,8 +595,8 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("Expiry")
                         .HasDatabaseName("IX_OtpVerifications_Expiry");
 
-                    b.HasIndex("Phone", "Purpose", "IsConsumed")
-                        .HasDatabaseName("IX_OtpVerifications_Phone_Purpose_IsConsumed");
+                    b.HasIndex("Identifier", "Purpose", "IsConsumed")
+                        .HasDatabaseName("IX_OtpVerifications_Identifier_Purpose_IsConsumed");
 
                     b.ToTable("OtpVerifications", (string)null);
                 });
@@ -364,6 +704,126 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("SessionId");
 
                     b.ToTable("SessionMaterials", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.SiteSettings.SiteSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Address")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("AppName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("ContactPhoneNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.Property<string>("FacebookUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("InstagramUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LogoName")
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
+
+                    b.Property<string>("SupportEmail")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
+                    b.Property<string>("WebsiteUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("WhatsAppNumber")
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("SiteSettings", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Balance")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserWallets", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.WalletTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Amount")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("OccurredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("ReferenceId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Type")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("WalletId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("WalletId", "OccurredAt");
+
+                    b.ToTable("WalletTransactions", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Infrastructure.Persistence.IdentityModels.ApplicationRole", b =>
@@ -672,6 +1132,216 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Course", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Courses.Category", "Category")
+                        .WithMany("Courses")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.OwnsMany("Skill_Loop.Domain.Entities.Courses.ValueObjects.PdfAttachment", "Attachments", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<Guid>("CourseId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("FileName")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<long>("FileSizeBytes")
+                                .HasColumnType("bigint");
+
+                            b1.Property<string>("StorageUrl")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("CourseId");
+
+                            b1.ToTable("CourseAttachments", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("CourseId");
+                        });
+
+                    b.OwnsOne("Skill_Loop.Domain.Entities.Courses.ValueObjects.CoursePrice", "Price", b1 =>
+                        {
+                            b1.Property<Guid>("CourseId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<int>("Credits")
+                                .HasColumnType("int")
+                                .HasColumnName("Credits");
+
+                            b1.HasKey("CourseId");
+
+                            b1.ToTable("Courses");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CourseId");
+                        });
+
+                    b.OwnsOne("Skill_Loop.Domain.Entities.Courses.ValueObjects.CourseRating", "Rating", b1 =>
+                        {
+                            b1.Property<Guid>("CourseId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<double>("AverageRating")
+                                .ValueGeneratedOnAdd()
+                                .HasPrecision(3, 2)
+                                .HasColumnType("float(3)")
+                                .HasDefaultValue(0.0)
+                                .HasColumnName("AverageRating");
+
+                            b1.Property<int>("TotalReviews")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("int")
+                                .HasDefaultValue(0)
+                                .HasColumnName("TotalReviews");
+
+                            b1.HasKey("CourseId");
+
+                            b1.ToTable("Courses");
+
+                            b1.WithOwner()
+                                .HasForeignKey("CourseId");
+                        });
+
+                    b.Navigation("Attachments");
+
+                    b.Navigation("Category");
+
+                    b.Navigation("Price")
+                        .IsRequired();
+
+                    b.Navigation("Rating")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.CourseBookmark", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Courses.Course", "Course")
+                        .WithMany()
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.Navigation("Course");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.CourseReview", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Courses.Course", null)
+                        .WithMany("Reviews")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Lesson", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Courses.Section", null)
+                        .WithMany("Lessons")
+                        .HasForeignKey("SectionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.OwnsMany("Skill_Loop.Domain.Entities.Courses.ValueObjects.PdfAttachment", "Resources", b1 =>
+                        {
+                            b1.Property<Guid>("Id")
+                                .ValueGeneratedOnAdd()
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("FileName")
+                                .IsRequired()
+                                .HasMaxLength(256)
+                                .HasColumnType("nvarchar(256)");
+
+                            b1.Property<long>("FileSizeBytes")
+                                .HasColumnType("bigint");
+
+                            b1.Property<Guid>("LessonId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<string>("StorageUrl")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)");
+
+                            b1.HasKey("Id");
+
+                            b1.HasIndex("LessonId");
+
+                            b1.ToTable("LessonResources", (string)null);
+
+                            b1.WithOwner()
+                                .HasForeignKey("LessonId");
+                        });
+
+                    b.OwnsOne("Skill_Loop.Domain.Entities.Courses.ValueObjects.VideoResource", "Video", b1 =>
+                        {
+                            b1.Property<Guid>("LessonId")
+                                .HasColumnType("uniqueidentifier");
+
+                            b1.Property<TimeSpan>("Duration")
+                                .HasColumnType("time")
+                                .HasColumnName("Duration");
+
+                            b1.Property<string>("ExternalProviderId")
+                                .HasMaxLength(150)
+                                .HasColumnType("nvarchar(150)")
+                                .HasColumnName("ExternalProviderId");
+
+                            b1.Property<string>("StreamingResolution")
+                                .HasMaxLength(50)
+                                .HasColumnType("nvarchar(50)")
+                                .HasColumnName("StreamingResolution");
+
+                            b1.Property<string>("VideoUrl")
+                                .IsRequired()
+                                .HasMaxLength(1000)
+                                .HasColumnType("nvarchar(1000)")
+                                .HasColumnName("VideoUrl");
+
+                            b1.HasKey("LessonId");
+
+                            b1.ToTable("CourseLessons");
+
+                            b1.WithOwner()
+                                .HasForeignKey("LessonId");
+                        });
+
+                    b.Navigation("Resources");
+
+                    b.Navigation("Video")
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Section", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Courses.Course", null)
+                        .WithMany("Sections")
+                        .HasForeignKey("CourseId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Enrollments.LessonProgress", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Enrollments.Enrollment", null)
+                        .WithMany("LessonProgresses")
+                        .HasForeignKey("EnrollmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Session.Session", "Session")
@@ -681,6 +1351,15 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Session");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.WalletTransaction", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Wallets.UserWallet", null)
+                        .WithMany("Transactions")
+                        .HasForeignKey("WalletId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Skill_Loop.Infrastructure.Persistence.IdentityModels.RefreshToken", b =>
@@ -713,9 +1392,36 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("Role");
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Category", b =>
+                {
+                    b.Navigation("Courses");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Course", b =>
+                {
+                    b.Navigation("Reviews");
+
+                    b.Navigation("Sections");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Courses.Section", b =>
+                {
+                    b.Navigation("Lessons");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Enrollments.Enrollment", b =>
+                {
+                    b.Navigation("LessonProgresses");
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.Session", b =>
                 {
                     b.Navigation("Materials");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>
+                {
+                    b.Navigation("Transactions");
                 });
 
             modelBuilder.Entity("Skill_Loop.Infrastructure.Persistence.IdentityModels.ApplicationRole", b =>

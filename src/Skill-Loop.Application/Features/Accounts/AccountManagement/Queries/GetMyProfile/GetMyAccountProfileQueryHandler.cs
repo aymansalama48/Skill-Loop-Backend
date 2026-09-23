@@ -34,7 +34,7 @@ public sealed class GetMyAccountProfileQueryHandler : IQueryHandler<GetMyAccount
         var userDetails = userResult.Data;
 
         return Result<MyAccountProfileResponse>.Success(new MyAccountProfileResponse(
-            userDetails.FirstName,
+            userDetails!.FirstName,
             userDetails.LastName,
             userDetails.FullName,
             userDetails.Email,

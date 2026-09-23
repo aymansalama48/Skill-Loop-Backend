@@ -9,6 +9,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.SessionsTemplates;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
+using Skill_Loop.Application.Common.Abstractions.Settings;
 using Skill_Loop.Infrastructure.External.Email;
 using Skill_Loop.Infrastructure.Options;
 using System.Reflection;
@@ -23,8 +24,8 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
     private readonly IDateTime _dateTimeProvider;
     private readonly IUserAgentParser _userAgentParser;
     private readonly IGeoLocationService _geoLocationService;
+    private readonly ISiteSettingsService _siteSettingsService;
 
-    // تم تغيير اسم التطبيق الافتراضي
     private const string AppName = "Skill Loop";
 
     public IdentityNotificationService(
@@ -33,7 +34,8 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
         IOptions<BaseUrlOptions> baseUrlOptions,
         IDateTime dateTimeProvider,
         IUserAgentParser userAgentParser,
-        IGeoLocationService geoLocationService)
+        IGeoLocationService geoLocationService,
+        ISiteSettingsService siteSettingsService)
     {
         _emailSender = emailSender;
         _templateEngine = templateEngine;
@@ -41,116 +43,286 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
         _dateTimeProvider = dateTimeProvider;
         _userAgentParser = userAgentParser;
         _geoLocationService = geoLocationService;
+        _siteSettingsService = siteSettingsService;
     }
 
-    public async Task SendLoginEmailAsync(string email, LoginTemplateModel model)
+    // ============================================================
+    // 1) Login
+    // ============================================================
+    public async Task SendLoginEmailAsync(
+        string email,
+        LoginTemplateModel model,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        if (model.LoginTime == default) model.LoginTime = _dateTimeProvider.Now; // استخدام UtcNow
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
 
-        await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
-        await SendTemplateEmailAsync(email, "إشعار تسجيل دخول جديد", EmailTemplateNames.Login, model);
+        if (model.LoginTime == default)
+            model.LoginTime = _dateTimeProvider.Now;
+
+        await PopulateClientInfoAsync(model, userAgent, ipAddress);
+
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.Login,
+            EmailTemplateNames.Login,
+            model);
     }
 
-    public async Task SendEmailConfirmationAsync(string email, EmailConfirmationTemplateModel model)
+    // ============================================================
+    // 2) Email Confirmation
+    // ============================================================
+    public async Task SendEmailConfirmationAsync(
+        string email,
+        EmailConfirmationTemplateModel model,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
+        await PopulateClientInfoAsync(model, userAgent, ipAddress);
 
-        await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
-        await SendTemplateEmailAsync(email, "كود تأكيد بريدك الإلكتروني", EmailTemplateNames.EmailConfirmation, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.EmailConfirmation,
+            EmailTemplateNames.EmailConfirmation,
+            model);
     }
 
-    public async Task SendResetPasswordEmailAsync(string email, ResetPasswordTemplateModel model)
+    // ============================================================
+    // 3) Reset Password
+    // ============================================================
+    public async Task SendResetPasswordEmailAsync(
+        string email,
+        ResetPasswordTemplateModel model,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
+        await PopulateClientInfoAsync(model, userAgent, ipAddress);
 
-        await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
-        await SendTemplateEmailAsync(email, "إعادة تعيين كلمة المرور", EmailTemplateNames.ResetPassword, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.ResetPassword,
+            EmailTemplateNames.ResetPassword,
+            model);
     }
 
-    public async Task SendWelcomeEmailAsync(string email, WelcomeTemplateModel model)
+    // ============================================================
+    // 4) Welcome
+    // ============================================================
+    public async Task SendWelcomeEmailAsync(
+        string email,
+        WelcomeTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
+
         model.LoginUrl = string.IsNullOrWhiteSpace(model.LoginUrl)
             ? $"{_baseUrlOptions.Frontend}/login"
             : model.LoginUrl;
 
-        await SendTemplateEmailAsync(email, $"مرحباً بك في {AppName}", EmailTemplateNames.Welcome, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.Welcome,
+            EmailTemplateNames.Welcome,
+            model);
     }
 
-    public async Task SendPasswordChangedEmailAsync(string email, PasswordChangedTemplateModel model)
+    // ============================================================
+    // 5) Password Changed
+    // ============================================================
+    public async Task SendPasswordChangedEmailAsync(
+        string email,
+        PasswordChangedTemplateModel model,
+        string? ipAddress = null,
+        string? userAgent = null)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        if (model.ChangedAt == default) model.ChangedAt = _dateTimeProvider.Now; // استخدام UtcNow
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
 
-        await PopulateClientInfoAsync(model, model.UserAgent, model.IpAddress);
-        await SendTemplateEmailAsync(email, "تم تغيير كلمة المرور", EmailTemplateNames.PasswordChanged, model);
+        if (model.ChangedAt == default)
+            model.ChangedAt = _dateTimeProvider.Now;
+
+        await PopulateClientInfoAsync(model, userAgent, ipAddress);
+
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.PasswordChanged,
+            EmailTemplateNames.PasswordChanged,
+            model);
     }
 
-    public async Task SendAccountLockedEmailAsync(string email, AccountLockedTemplateModel model)
+    // ============================================================
+    // 6) Account Locked
+    // ============================================================
+    public async Task SendAccountLockedEmailAsync(
+        string email,
+        AccountLockedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
+
         model.UnlockUrl = string.IsNullOrWhiteSpace(model.UnlockUrl)
             ? $"{_baseUrlOptions.Frontend}/support"
             : model.UnlockUrl;
 
-        await SendTemplateEmailAsync(email, "تم قفل حسابك", EmailTemplateNames.AccountLocked, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.AccountLocked,
+            EmailTemplateNames.AccountLocked,
+            model);
     }
 
-    public async Task SendAccountUnlockedEmailAsync(string email, AccountUnlockedTemplateModel model)
+    // ============================================================
+    // 7) Account Unlocked
+    // ============================================================
+    public async Task SendAccountUnlockedEmailAsync(
+        string email,
+        AccountUnlockedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
+
         model.LoginUrl = string.IsNullOrWhiteSpace(model.LoginUrl)
             ? $"{_baseUrlOptions.Frontend}/login"
             : model.LoginUrl;
 
-        await SendTemplateEmailAsync(email, "تم فتح قفل حسابك", EmailTemplateNames.AccountUnlocked, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.AccountUnlocked,
+            EmailTemplateNames.AccountUnlocked,
+            model);
     }
 
-    public async Task SendRoleAssignedEmailAsync(string email, RoleAssignedTemplateModel model)
+    // ============================================================
+    // 8) Role Assigned
+    // ============================================================
+    public async Task SendRoleAssignedEmailAsync(
+        string email,
+        RoleAssignedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName) ? "مستخدم" : model.RoleName;
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
+
+        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName)
+            ? "مستخدم"
+            : model.RoleName;
+
         model.DashboardUrl = string.IsNullOrWhiteSpace(model.DashboardUrl)
             ? $"{_baseUrlOptions.Frontend}/dashboard"
             : model.DashboardUrl;
 
-        await SendTemplateEmailAsync(email, "تم تعيين دور جديد لك", EmailTemplateNames.RoleAssigned, model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.RoleAssigned,
+            EmailTemplateNames.RoleAssigned,
+            model);
     }
 
-    public async Task SendRoleRemovedEmailAsync(string email, RoleRemovedTemplateModel model)
+    // ============================================================
+    // 9) Role Removed
+    // ============================================================
+    public async Task SendRoleRemovedEmailAsync(
+        string email,
+        RoleRemovedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? "المستخدم العزيز" : model.UserName;
-        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName) ? "مستخدم" : model.RoleName;
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? "المستخدم العزيز"
+            : model.UserName;
 
-        await SendTemplateEmailAsync(email, "تم إزالة دورك", EmailTemplateNames.RoleRemoved, model);
+        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName)
+            ? "مستخدم"
+            : model.RoleName;
+
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.RoleRemoved,
+            EmailTemplateNames.RoleRemoved,
+            model);
     }
 
-    public async Task SendStaffInvitationEmailAsync(string email, StaffInvitationTemplateModel model)
+    // ============================================================
+    // 10) Staff Invitation
+    // ============================================================
+    public async Task SendStaffInvitationEmailAsync(
+        string email,
+        StaffInvitationTemplateModel model)
     {
-        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName) ? "موظف" : model.RoleName;
-        model.AdminName = string.IsNullOrWhiteSpace(model.AdminName) ? "إدارة النظام" : model.AdminName;
-        model.InvitedEmail = string.IsNullOrWhiteSpace(model.InvitedEmail) ? email : model.InvitedEmail;
+        model.RoleName = string.IsNullOrWhiteSpace(model.RoleName)
+            ? "موظف"
+            : model.RoleName;
 
-        if (string.IsNullOrWhiteSpace(model.InvitationLink) && !string.IsNullOrWhiteSpace(model.Token))
+        model.AdminName = string.IsNullOrWhiteSpace(model.AdminName)
+            ? "إدارة النظام"
+            : model.AdminName;
+
+        model.InvitedEmail = string.IsNullOrWhiteSpace(model.InvitedEmail)
+            ? email
+            : model.InvitedEmail;
+
+        if (string.IsNullOrWhiteSpace(model.InvitationLink)
+            && !string.IsNullOrWhiteSpace(model.Token))
         {
-            model.InvitationLink = $"{_baseUrlOptions.Frontend}/accept-invitation?token={model.Token}";
+            model.InvitationLink =
+                $"{_baseUrlOptions.Frontend}/accept-invitation?token={model.Token}";
         }
 
-        await SendTemplateEmailAsync(email, "دعوة للانضمام إلى فريق العمل", "StaffInvitation", model);
+        await SendTemplateEmailAsync(
+            email,
+            EmailSubjects.StaffInvitation,
+            EmailTemplateNames.StaffInvitation,
+            model);
     }
 
-    public async Task SendMaterialUploadedEmailAsync(string email, SessionMaterialUploadedTemplateModel model)
+    // ============================================================
+    // 11) Session Material Uploaded (إشعار للمستخدم)
+    // ============================================================
+    public async Task SendMaterialUploadedEmailAsync(
+        string email,
+        SessionMaterialUploadedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? email : model.UserName;
-        await SendTemplateEmailAsync(email, $"تم رفع مادة جديدة: {model.MaterialName}", "SessionMaterialUploaded", model);
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? email
+            : model.UserName;
+
+        // ✅ الـ subject factory بياخد اسم التطبيق من الـ Service بعد ما يتحدد
+        await SendTemplateEmailAsync(
+            email,
+            companyName => EmailSubjects.MaterialUploaded(model.MaterialName, companyName),
+            EmailTemplateNames.SessionMaterialUploaded,
+            model);
     }
 
-    public async Task SendMaterialUploadedConfirmationAsync(string email, SessionMaterialUploadedTemplateModel model)
+    // ============================================================
+    // 12) Session Material Uploaded — Confirmation (للمعلم/المشرف)
+    // ============================================================
+    public async Task SendMaterialUploadedConfirmationAsync(
+        string email,
+        SessionMaterialUploadedTemplateModel model)
     {
-        model.UserName = string.IsNullOrWhiteSpace(model.UserName) ? email : model.UserName;
-        await SendTemplateEmailAsync(email, $"تأكيد رفع مادة: {model.MaterialName}", "SessionMaterialUploaded", model);
+        model.UserName = string.IsNullOrWhiteSpace(model.UserName)
+            ? email
+            : model.UserName;
+
+        await SendTemplateEmailAsync(
+            email,
+            companyName => EmailSubjects.MaterialUploadedConfirmation(model.MaterialName, companyName),
+            EmailTemplateNames.SessionMaterialUploaded,
+            model);
     }
 
-    public async Task SendStorageQuotaWarningAsync(long usedBytes, long totalBytes, double threshold)
+    // ============================================================
+    // 13) Storage Quota Warning (تنبيه إداري)
+    // ============================================================
+    public async Task SendStorageQuotaWarningAsync(
+        long usedBytes,
+        long totalBytes,
+        double threshold)
     {
         var model = new StorageQuotaWarningTemplateModel
         {
@@ -161,89 +333,182 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
             TotalFormatted = FormatBytes(totalBytes),
         };
 
-        await SendTemplateEmailAsync("admin@skill-loop.com", "تنبيه: اقتراب حدود تخزين Google Drive", "StorageQuotaWarning", model);
+        // ✅ نسحب إيميل الأدمن من الإعدادات، مع fallback
+        var settings = await _siteSettingsService.GetSettingsAsync();
+        var adminEmail = !string.IsNullOrWhiteSpace(settings.SupportEmail)
+            ? settings.SupportEmail
+            : "support@skillloop.com";
+
+        await SendTemplateEmailAsync(
+            adminEmail,
+            EmailSubjects.StorageQuotaWarning,
+            EmailTemplateNames.StorageQuotaWarning,
+            model);
     }
 
+    // ============================================================
+    // Helper: Format Bytes
+    // ============================================================
     private static string FormatBytes(long bytes)
     {
-        if (bytes >= 1024 * 1024 * 1024) return $"{(bytes / (1024.0 * 1024 * 1024)):F2} GB";
-        if (bytes >= 1024 * 1024) return $"{(bytes / (1024.0 * 1024)):F2} MB";
-        if (bytes >= 1024) return $"{(bytes / 1024.0):F2} KB";
+        if (bytes >= 1024L * 1024 * 1024)
+            return $"{(bytes / (1024.0 * 1024 * 1024)):F2} GB";
+
+        if (bytes >= 1024L * 1024)
+            return $"{(bytes / (1024.0 * 1024)):F2} MB";
+
+        if (bytes >= 1024L)
+            return $"{(bytes / 1024.0):F2} KB";
+
         return $"{bytes} B";
     }
 
     // ============================================================
-    // الدوال المساعدة
+    // Helper: Populate Client Info (IP / Device / Location)
     // ============================================================
 
-    private async Task PopulateClientInfoAsync<TModel>(TModel model, string? userAgent, string? ipAddress)
+    /// <summary>
+    /// تعبئة بيانات العميل (IP، الجهاز، الموقع) على الـ Model.
+    /// القيم غير المتوفرة تتركها فاضية (string.Empty) — القالب يخفي الحقل تلقائياً
+    /// عبر {{#if Property}}.
+    ///
+    /// ⚠️ ملاحظة معمارية: الخدمة بتشتغل في Hangfire Worker Thread،
+    /// فما ينفعش نحقن IClientContext / IHttpContextAccessor هنا.
+    /// الـ ipAddress و userAgent بيتمرروا كـ Parameters من المستدعي (في HTTP Request).
+    /// </summary>
+    private async Task PopulateClientInfoAsync<TModel>(
+        TModel model,
+        string? userAgent,
+        string? ipAddress)
         where TModel : class
     {
-        SetPropertyValue(model, "IpAddress", string.IsNullOrWhiteSpace(ipAddress) ? "غير معروف" : ipAddress);
-        SetPropertyValue(model, "Device", "جهاز غير معروف");
-        SetPropertyValue(model, "Location", "موقع غير معروف");
+        // القيم الافتراضية: فاضية، مش "غير معروف"
+        SetPropertyValue(model, "IpAddress", ipAddress ?? string.Empty);
+        SetPropertyValue(model, "Device", string.Empty);
+        SetPropertyValue(model, "Location", string.Empty);
 
+        // Device من الـ User Agent
         try
         {
             if (!string.IsNullOrWhiteSpace(userAgent))
             {
                 var deviceInfo = _userAgentParser.Parse(userAgent);
-                SetPropertyValue(model, "Device", BuildDeviceName(deviceInfo));
+                var deviceName = BuildDeviceName(deviceInfo);
+
+                if (!string.IsNullOrWhiteSpace(deviceName))
+                {
+                    SetPropertyValue(model, "Device", deviceName);
+                }
             }
         }
-        catch { /* تجاهل الأخطاء */ }
+        catch
+        {
+            // نتجاهل أخطاء الـ Parsing — الحقل يبقى فاضي والقالب يخفيه
+        }
 
+        // Location من الـ IP
         try
         {
-            var currentIp = string.IsNullOrWhiteSpace(ipAddress) ? "غير معروف" : ipAddress;
-            if (currentIp != "غير معروف")
+            if (!string.IsNullOrWhiteSpace(ipAddress))
             {
-                var location = await _geoLocationService.GetLocationAsync(currentIp, CancellationToken.None);
+                var location = await _geoLocationService
+                    .GetLocationAsync(ipAddress, CancellationToken.None);
+
                 if (!string.IsNullOrWhiteSpace(location))
                 {
                     SetPropertyValue(model, "Location", location);
                 }
             }
         }
-        catch { /* تجاهل الأخطاء */ }
+        catch
+        {
+            // نتجاهل أخطاء الـ Geo Lookup
+        }
     }
 
-    private static void SetPropertyValue<TModel>(TModel model, string propertyName, string value)
+    /// <summary>
+    /// تعيين قيمة خاصية على الـ Model بالـ Reflection
+    /// (لو الخاصية موجودة وقابلة للكتابة).
+    /// </summary>
+    private static void SetPropertyValue<TModel>(
+        TModel model,
+        string propertyName,
+        string value)
         where TModel : class
     {
-        if (model == null) return;
+        if (model is null) return;
 
-        var prop = typeof(TModel).GetProperty(propertyName, BindingFlags.Public | BindingFlags.Instance);
-        if (prop != null && prop.CanWrite)
+        var prop = typeof(TModel).GetProperty(
+            propertyName,
+            BindingFlags.Public | BindingFlags.Instance);
+
+        if (prop is not null && prop.CanWrite)
         {
             prop.SetValue(model, value);
         }
     }
 
+    /// <summary>
+    /// بناء اسم الجهاز من الـ Browser و OperatingSystem.
+    /// يرجّع string.Empty لو مفيش بيانات مفيدة.
+    /// </summary>
     private static string BuildDeviceName(ClientDeviceInfo device)
     {
         var browser = device.Browser?.Trim();
         var operatingSystem = device.OperatingSystem?.Trim();
 
-        if (string.IsNullOrWhiteSpace(browser) && string.IsNullOrWhiteSpace(operatingSystem))
-            return "جهاز غير معروف";
+        if (string.IsNullOrWhiteSpace(browser)
+            && string.IsNullOrWhiteSpace(operatingSystem))
+        {
+            return string.Empty;
+        }
 
-        if (string.IsNullOrWhiteSpace(browser)) return operatingSystem!;
-        if (string.IsNullOrWhiteSpace(operatingSystem)) return browser!;
+        if (string.IsNullOrWhiteSpace(browser))
+            return operatingSystem!;
+
+        if (string.IsNullOrWhiteSpace(operatingSystem))
+            return browser!;
 
         return $"{browser} on {operatingSystem}";
     }
 
-    private async Task SendTemplateEmailAsync<TModel>(string to, string subject, string templateName, TModel model)
+    // ============================================================
+    // Helper: Send Template Email
+    // ============================================================
+
+    /// <summary>
+    /// تجهيز الـ Model بالبيانات الافتراضية، رندر القالب، ثم إرسال الإيميل.
+    ///
+    /// ⚠️ ملاحظة مهمة على subjectFactory:
+    /// الباراميتر دالة بتاخد اسم التطبيق وترجّع العنوان النهائي كاملاً.
+    /// السبب: عناوين EmailSubjects أصلاً بتحتوي على اسم التطبيق
+    /// (زي "تأكيد بريدك - Skill Loop")، فلو أضفنا اسم التطبيق هنا تاني
+    /// هيطلع مكرر: "تأكيد بريدك - Skill Loop - Skill Loop".
+    ///
+    /// للحالات الديناميكية (زي MaterialName)، مرّر lambda:
+    ///     companyName => EmailSubjects.MaterialUploaded(model.MaterialName, companyName)
+    /// </summary>
+    private async Task SendTemplateEmailAsync<TModel>(
+        string to,
+        Func<string, string> subjectFactory,
+        string templateName,
+        TModel model)
         where TModel : BaseEmailTemplateModel
     {
-        PopulateDefaultBaseData(model);
+        // 1. نعبّي الحقول الأساسية (AppName, SupportEmail, WebsiteUrl, ...)
+        await PopulateDefaultBaseDataAsync(model);
+
+        // 2. نرندر جسم الإيميل من القالب
         var body = await _templateEngine.RenderTemplateAsync(templateName, model);
 
+        // 3. نبني العنوان النهائي
+        var finalSubject = subjectFactory(model.AppName);
+
+        // 4. نبعت الإيميل
         var request = new EmailRequest
         {
             To = new() { to },
-            Subject = $"{subject} - {model.AppName}",
+            Subject = finalSubject,
             Body = body,
             IsHtml = true,
             SenderDisplayName = model.AppName
@@ -252,15 +517,46 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
         await _emailSender.SendEmailAsync(request);
     }
 
-    private void PopulateDefaultBaseData(BaseEmailTemplateModel model)
+    // ============================================================
+    // Helper: Populate Default Base Data
+    // ============================================================
+
+    /// <summary>
+    /// تعبئة الحقول الأساسية المشتركة من إعدادات الموقع (SiteSettings).
+    /// لو حقل مش موجود في الإعدادات، يبقى فاضي — القالب يخفيه عبر {{#if}}.
+    /// </summary>
+    private async Task PopulateDefaultBaseDataAsync(BaseEmailTemplateModel model)
     {
-        // تغيير الإعدادات الافتراضية لتناسب مشروع Skill Loop
-        model.AppName = string.IsNullOrWhiteSpace(model.AppName) ? AppName : model.AppName;
-        model.SupportEmail = string.IsNullOrWhiteSpace(model.SupportEmail) ? "support@skillloop.com" : model.SupportEmail;
-        // افتراضياً، قم بتغيير الروابط بناءً على المشروع
-        model.WebsiteUrl = string.IsNullOrWhiteSpace(model.WebsiteUrl) ? _baseUrlOptions.Frontend : model.WebsiteUrl;
-        model.FacebookUrl = string.IsNullOrWhiteSpace(model.FacebookUrl) ? "https://facebook.com/skillloop" : model.FacebookUrl;
-        model.InstagramUrl = string.IsNullOrWhiteSpace(model.InstagramUrl) ? "https://instagram.com/skillloop" : model.InstagramUrl;
-        model.ContactPhoneNumber = string.IsNullOrWhiteSpace(model.ContactPhoneNumber) ? "+201000000000" : model.ContactPhoneNumber;
+        // نجيب إعدادات الموقع (مرة واحدة لكل إيميل)
+        var settings = await _siteSettingsService.GetSettingsAsync();
+
+        model.AppName = string.IsNullOrWhiteSpace(model.AppName)
+            ? (!string.IsNullOrWhiteSpace(settings.AppName) ? settings.AppName : AppName)
+            : model.AppName;
+
+        model.SupportEmail = string.IsNullOrWhiteSpace(model.SupportEmail)
+            ? (!string.IsNullOrWhiteSpace(settings.SupportEmail) ? settings.SupportEmail : "support@skillloop.com")
+            : model.SupportEmail;
+
+        model.WebsiteUrl = string.IsNullOrWhiteSpace(model.WebsiteUrl)
+            ? (!string.IsNullOrWhiteSpace(settings.WebsiteUrl) ? settings.WebsiteUrl : _baseUrlOptions.Frontend)
+            : model.WebsiteUrl;
+
+        model.FacebookUrl = string.IsNullOrWhiteSpace(model.FacebookUrl)
+            ? (settings.FacebookUrl ?? string.Empty)
+            : model.FacebookUrl;
+
+        model.InstagramUrl = string.IsNullOrWhiteSpace(model.InstagramUrl)
+            ? (settings.InstagramUrl ?? string.Empty)
+            : model.InstagramUrl;
+
+        model.ContactPhoneNumber = string.IsNullOrWhiteSpace(model.ContactPhoneNumber)
+            ? (settings.ContactPhoneNumber ?? string.Empty)
+            : model.ContactPhoneNumber;
+
+        // ✅ إضافة WhatsAppNumber — كانت ناقصة
+        model.WhatsAppNumber = string.IsNullOrWhiteSpace(model.WhatsAppNumber)
+            ? (settings.WhatsAppNumber ?? string.Empty)
+            : model.WhatsAppNumber;
     }
 }

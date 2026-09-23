@@ -3,8 +3,10 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.UpdateMyProfilePicture;
 
-public sealed record UpdateMyProfilePictureCommand(string AvatarUrl) : ICommand<bool>, ICacheInvalidatorCommand
+public sealed record UpdateMyProfilePictureCommand(
+    Stream FileStream,
+    string FileName) : ICommand<string>, ICacheInvalidatorCommand
 {
-    // هيمسح كاش شاشة الـ CRM عشان صورته الجديدة تظهر للآدمن
+    // مسح الكاش لظهور الصورة للآدمن
     public IReadOnlyCollection<string> CacheKeys => ["users-list"];
 }
