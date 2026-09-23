@@ -1,4 +1,5 @@
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.IdentityTemplates;
+using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.SessionsTemplates;
 
 namespace Skill_Loop.Application.Common.Abstractions.Notifications;
 
@@ -13,6 +14,9 @@ namespace Skill_Loop.Application.Common.Abstractions.Notifications;
 /// </summary>
 public interface IIdentityNotificationService
 {
+    // ==========================================
+    // تعديلات أيمن (دعم Hangfire ودعوات الموظفين)
+    // ==========================================
     Task SendLoginEmailAsync(
         string email,
         LoginTemplateModel model,
@@ -60,4 +64,20 @@ public interface IIdentityNotificationService
     Task SendStaffInvitationEmailAsync(
         string email,
         StaffInvitationTemplateModel model);
+
+    // ==========================================
+    // إضافات رنيم (Session & Storage)
+    // ==========================================
+    Task SendMaterialUploadedEmailAsync(
+        string email, 
+        SessionMaterialUploadedTemplateModel model);
+
+    Task SendMaterialUploadedConfirmationAsync(
+        string email, 
+        SessionMaterialUploadedTemplateModel model);
+
+    Task SendStorageQuotaWarningAsync(
+        long usedBytes, 
+        long totalBytes, 
+        double threshold);
 }

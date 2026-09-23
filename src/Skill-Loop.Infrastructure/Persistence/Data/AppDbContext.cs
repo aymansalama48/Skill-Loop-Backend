@@ -1,7 +1,10 @@
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.SessionMaterial;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
@@ -18,7 +21,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // ==============================
     // DbSets الخاصة بـ Entity Framework
     // ==============================
- 
+  
 
 
 
@@ -34,6 +37,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets => Set<Skill_Loop.Domain.Entities.Wallets.UserWallet>();
     public DbSet<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks => Set<Skill_Loop.Domain.Entities.Courses.CourseBookmark>();
     public DbSet<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews => Set<Skill_Loop.Domain.Entities.Courses.CourseReview>();
+
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial> SessionMaterials => Set<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

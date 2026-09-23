@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.External.Client;
 using Skill_Loop.Application.Common.Abstractions.External.Routing;
+using Skill_Loop.Application.Common.Abstractions.External.Storage;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Identity.Invitations;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
@@ -11,9 +12,11 @@ using Skill_Loop.Application.Common.Abstractions.Web;
 using Skill_Loop.Infrastructure.Core;
 using Skill_Loop.Infrastructure.External.Client;
 using Skill_Loop.Infrastructure.External.Routing;
+using Skill_Loop.Infrastructure.External.Storage;
 using Skill_Loop.Infrastructure.Identity.CurrentUser;
 using Skill_Loop.Infrastructure.Identity.Invitations;
 using Skill_Loop.Infrastructure.Notifications;
+using Skill_Loop.Infrastructure.Options;
 using Skill_Loop.Infrastructure.Settings;
 
 namespace Skill_Loop.Infrastructure.DependencyInjection;
@@ -24,7 +27,7 @@ namespace Skill_Loop.Infrastructure.DependencyInjection;
 public static partial class DependencyInjection
 {
     /// <summary>
-    /// Extension method لتسجيل كافة مكونات الـ Infrastructure دفعة واحدة
+    /// تسجيل كافة مكونات الـ Infrastructure دفعة واحدة
     /// </summary>
     public static IServiceCollection AddInfrastructure(
         this IServiceCollection services,
@@ -40,6 +43,7 @@ public static partial class DependencyInjection
                .AddExternalAuth(configuration)       // تسجيل المصادقة الخارجية (Google Auth)
                .AddMail(configuration)               // البريد الإلكتروني
                .AddFileStorage(configuration)        // تخزين الملفات
+               .AddGoogleDriveStorage(configuration) // تخزين Google Drive
                .AddBaseUrl(configuration)            // الروابط الأساسية
                .AddOtpService(configuration);        // إضافة OTP Service
 
@@ -62,12 +66,8 @@ public static partial class DependencyInjection
         // تسجيل خدمة تتبع معرف الطلب الفريد (Correlation ID)
         services.AddScoped<ICorrelationContext, CorrelationContext>();
 
-     
-
         // تسجيل خدمة توليد الروابط الأساسية للتطبيق
         services.AddScoped<IApplicationUrlService, ApplicationUrlService>();
-
-
 
         // تسجيل خدمات العميل
         services.AddScoped<IClientContext, HttpClientContext>();
@@ -81,8 +81,6 @@ public static partial class DependencyInjection
 
         // خدمات الإشعارات الوظيفية
         services.AddTransient<IIdentityNotificationService, IdentityNotificationService>();
-
-
 
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ISiteSettingsService, SiteSettingsService>();

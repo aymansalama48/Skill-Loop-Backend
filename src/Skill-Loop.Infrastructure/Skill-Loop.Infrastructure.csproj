@@ -1,43 +1,46 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFramework>net9.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<RootNamespace>Skill_Loop.Infrastructure</RootNamespace>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
-	<!-- أضف هذا الجزء لتضمين ملفات القوالب -->
+	<!-- تضمين ملفات القوالب -->
 	<ItemGroup>
 		<EmbeddedResource Include="External\Email\EmailTemplates\**\*.html" />
 	</ItemGroup>
 
+	<!-- ربط المشاريع -->
 	<ItemGroup>
 		<ProjectReference Include="..\Skill-Loop.Domain\Skill-Loop.Domain.csproj" />
 		<ProjectReference Include="..\Skill-Loop.Application\Skill-Loop.Application.csproj" />
 	</ItemGroup>
 
+	<!-- الحزم المحدثة لتتوافق مع .NET 10 -->
 	<ItemGroup>
 		<PackageReference Include="Google.Apis.Auth" Version="1.76.0" />
+		<PackageReference Include="Google.Apis.Drive.v3" Version="1.68.0.3533" />
 		<PackageReference Include="Hangfire.AspNetCore" Version="1.8.25" />
 		<PackageReference Include="Hangfire.Core" Version="1.8.25" />
 		<PackageReference Include="Hangfire.NetCore" Version="1.8.25" />
 		<PackageReference Include="Hangfire.SqlServer" Version="1.8.25" />
 		<PackageReference Include="MailKit" Version="4.18.0" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.2" />
-		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.0.2" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.0.2">
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.12" />
+		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.0.12" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.0.12">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.2" />
-		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="9.0.2">
+		<PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="10.0.12" />
+		<PackageReference Include="Microsoft.EntityFrameworkCore.Tools" Version="10.0.12">
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="9.0.2" />
-		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.2" />
+		<PackageReference Include="Microsoft.Extensions.Caching.Memory" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Caching.StackExchangeRedis" Version="10.0.12" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="10.0.12" />
 		<PackageReference Include="StackExchange.Redis" Version="2.8.24" />
 		<PackageReference Include="UAParser" Version="3.1.47" />
 	</ItemGroup>

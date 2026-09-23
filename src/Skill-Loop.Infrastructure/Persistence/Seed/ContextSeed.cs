@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Constants;
 using Skill_Loop.Domain.Entities.SiteSettings;
-using Skill_Loop.Infrastructure.Persistence.IdentityModels; // تأكد أن ApplicationUser موجود هنا
+using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 
 namespace Skill_Loop.Infrastructure.Persistence.Seed;
 
@@ -13,7 +13,6 @@ public static class ContextSeed
     // =================================================================================
     public static async Task SeedSiteSettingsAsync(DbContext dbContext)
     {
-        // التحقق مما إذا كان الجدول فارغاً
         if (!await dbContext.Set<SiteSettings>().AnyAsync())
         {
             var defaultSettings = new SiteSettings
@@ -39,11 +38,9 @@ public static class ContextSeed
     // =================================================================================
     public static async Task SeedSuperAdminAsync(UserManager<ApplicationUser> userManager)
     {
-        // بيانات الحساب الافتراضي (يمكنك تغييرها)
         var superAdminEmail = "admin@skillloop.com";
         var defaultPassword = "Password@123";
 
-        // التحقق مما إذا كان الحساب موجوداً بالفعل
         var existingUser = await userManager.FindByEmailAsync(superAdminEmail);
 
         if (existingUser == null)
@@ -58,25 +55,22 @@ public static class ContextSeed
                 PhoneNumberConfirmed = true
             };
 
-            // إنشاء الحساب
             var result = await userManager.CreateAsync(superAdminUser, defaultPassword);
 
             if (result.Succeeded)
             {
-                // منحه صلاحية SuperAdmin
                 await userManager.AddToRoleAsync(superAdminUser, Roles.SuperAdmin);
             }
         }
     }
 
     // =================================================================================
-    // 3. الدوال القديمة: بناء الأدوار والصلاحيات (بدون تغيير)
+    // 3. بناء الأدوار والصلاحيات
     // =================================================================================
     public static async Task SeedRolesAndPermissionsAsync(
         RoleManager<ApplicationRole> roleManager,
         DbContext dbContext)
     {
-        // 1. إنشاء الأدوار الأساسية في النظام
         foreach (var roleName in Roles.All)
         {
             if (!await roleManager.RoleExistsAsync(roleName))
@@ -89,18 +83,17 @@ public static class ContextSeed
             }
         }
 
-        // 2. تعبئة جدول الصلاحيات (TbPermission)
         var existingPermissionNames = await dbContext.Set<TbPermission>()
             .Select(p => p.Name)
             .ToListAsync();
 
         var newPermissions = new List<TbPermission>();
-
         var allPermissionsList = Permissions.GetAllPermissions();
 
         foreach (var permissionCode in allPermissionsList)
         {
-            if (!existingPermissionNames.Contains(permissionCode))
+            if (!existingPermissionNames.Contains(permissionCode) &&
+                !newPermissions.Any(p => p.Name == permissionCode))
             {
                 var parts = permissionCode.Split('.');
                 var module = parts.Length > 0 ? parts[0] : "General";
@@ -122,7 +115,6 @@ public static class ContextSeed
             await dbContext.SaveChangesAsync();
         }
 
-        // 3. ربط الصلاحيات بالأدوار حسب الـ RolePermissionsMap
         await LinkPermissionsToRolesAsync(roleManager, dbContext);
     }
 
@@ -143,9 +135,11 @@ public static class ContextSeed
                 .Select(rp => rp.PermissionId)
                 .ToListAsync();
 
+            // 👈 إضافة .Distinct() هنا لمنع تكرار المعرفات لنفس الدور
             var targetPermissionIds = permissionCodes
                 .Where(permissionsByName.ContainsKey)
                 .Select(code => permissionsByName[code])
+                .Distinct()
                 .ToList();
 
             var toAdd = targetPermissionIds

@@ -45,7 +45,7 @@ public sealed class RedisCacheService : ICacheService
                 return default;
             }
 
-            return JsonSerializer.Deserialize<T>(value!, JsonOptions);
+            return JsonSerializer.Deserialize<T>((byte[])value!, JsonOptions);
         }
         catch (Exception ex)
         {
