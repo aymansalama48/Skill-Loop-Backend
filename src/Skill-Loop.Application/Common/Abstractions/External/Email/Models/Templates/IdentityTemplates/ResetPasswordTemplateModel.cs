@@ -4,7 +4,7 @@ namespace Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templ
 
 public class ResetPasswordTemplateModel : BaseEmailTemplateModel
 {
-    public string ResetLink { get; set; } = string.Empty;
+    public string OtpCode { get; set; } = string.Empty;
     public string UserAgent { get; set; } = string.Empty;
     public string IpAddress { get; set; } = string.Empty;
     public string Device { get; set; } = string.Empty;

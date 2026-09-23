@@ -25,12 +25,12 @@ public class OtpService(
     /// توليد OTP جديد — بيلغي أي كود سابق شغال لنفس الرقم/الغرض ويحفظ الكود بشكل مشفر
     /// </summary>
     public async Task<Result<OtpGenerationResult>> GenerateOtpAsync(
-        string phoneNumber,
+        string Identifier,
         OtpPurpose purpose,
         CancellationToken cancellationToken)
     {
         var oldActiveOtps = await context.OtpVerifications
-            .Where(o => o.Phone == phoneNumber
+            .Where(o => o.Identifier == Identifier
                      && o.Purpose == purpose
                      && !o.IsConsumed
                      && o.Expiry > dateTime.Now)
@@ -46,9 +46,9 @@ public class OtpService(
         var otp = new OtpVerification
         {
             Id = Guid.CreateVersion7(),
-            Phone = phoneNumber,
+            Identifier = Identifier,
             Purpose = purpose,
-            CodeHash = HashCode(code, phoneNumber),
+            CodeHash = HashCode(code, Identifier),
             Expiry = nowUtc.Add(options.Value.Expiry),
             NextResendAllowedAtUtc = nowUtc.Add(options.Value.ResendCooldown),
             AttemptsCount = 0,
@@ -72,13 +72,13 @@ public class OtpService(
     /// التحقق من الـ OTP — مع عدد محاولات محدود ومقارنة آمنة ضد الـ Timing Attacks
     /// </summary>
     public async Task<Result> ValidateOtpAsync(
-        string phoneNumber,
+        string Identifier,
         string code,
         OtpPurpose purpose,
         CancellationToken cancellationToken)
     {
         var otp = await context.OtpVerifications
-            .Where(o => o.Phone == phoneNumber && o.Purpose == purpose && !o.IsConsumed)
+            .Where(o => o.Identifier == Identifier && o.Purpose == purpose && !o.IsConsumed)
             .OrderByDescending(o => o.Expiry)
             .FirstOrDefaultAsync(cancellationToken);
 
@@ -96,7 +96,7 @@ public class OtpService(
             return Result.Failure(OtpErrors.MaxAttemptsExceeded);
         }
 
-        var expectedHash = HashCode(code, phoneNumber);
+        var expectedHash = HashCode(code, Identifier);
         var isMatch = CryptographicOperations.FixedTimeEquals(
             Convert.FromBase64String(expectedHash),
             Convert.FromBase64String(otp.CodeHash));
@@ -127,25 +127,25 @@ public class OtpService(
     /// إعادة إرسال OTP — مع احترام فترة الـ Cooldown
     /// </summary>
     public async Task<Result<OtpGenerationResult>> ResendOtpAsync(
-        string phoneNumber,
+        string Identifier,
         OtpPurpose purpose,
         CancellationToken cancellationToken)
     {
         var lastOtp = await context.OtpVerifications
-            .Where(o => o.Phone == phoneNumber && o.Purpose == purpose)
+            .Where(o => o.Identifier == Identifier && o.Purpose == purpose)
             .OrderByDescending(o => o.Expiry)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (lastOtp is not null && lastOtp.NextResendAllowedAtUtc > dateTime.Now) 
             return Result<OtpGenerationResult>.Failure(OtpErrors.ResendTooSoon);
 
-        return await GenerateOtpAsync(phoneNumber, purpose, cancellationToken);
+        return await GenerateOtpAsync(Identifier, purpose, cancellationToken);
     }
 
-    private string HashCode(string code, string phoneNumber)
+    private string HashCode(string code, string Identifier)
     {
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(options.Value.HashingSecret));
-        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes($"{phoneNumber}:{code}"));
+        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes($"{Identifier}:{code}"));
         return Convert.ToBase64String(bytes);
     }
 

@@ -28,12 +28,17 @@ public sealed class AssignRoleToUserCommandHandler : ICommandHandler<AssignRoleT
         }
 
         var userResult = await _userService.GetByIdAsync(request.UserId, cancellationToken);
-        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data.Email))
+
+        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data?.Email))
         {
+            // 👈 تجهيز الموديل مع تمرير الاسم الحقيقي والإيميل
             var templateModel = new RoleAssignedTemplateModel
             {
-                RoleName = request.RoleName
+                RoleName = request.RoleName,
+                UserName = userResult.Data.FirstName,
+                UserEmail = userResult.Data.Email
             };
+
             var email = userResult.Data.Email;
 
             // إرسال الإيميل في الخلفية

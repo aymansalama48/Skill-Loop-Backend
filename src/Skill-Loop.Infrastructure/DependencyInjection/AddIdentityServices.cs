@@ -82,6 +82,8 @@ public static partial class DependencyInjection
 
         // ----- خدمات المصادقة -----
         services.AddScoped<IStaffAuthService, StaffAuthService>();
+        services.AddScoped<IUserAuthService, UserAuthService>();
+        services.AddScoped<IAuthService, AuthService>();
 
         // ----- خدمات إدارة المستخدمين -----
         services.AddScoped<IUserManagementService, UserManagementService>();

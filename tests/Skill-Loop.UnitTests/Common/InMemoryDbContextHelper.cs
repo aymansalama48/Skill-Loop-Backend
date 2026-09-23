@@ -7,10 +7,14 @@ using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Booking;
+using Skill_Loop.Domain.Entities.Courses;
+using Skill_Loop.Domain.Entities.Enrollments;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Wallets;
 
 public static class InMemoryDbContextHelper
 {
@@ -33,8 +37,15 @@ public static class InMemoryDbContextHelper
             _dbContext = dbContext;
         }
 
+        public IQueryable<SiteSettings> SiteSettings => _dbContext.SiteSettings;
         public IQueryable<OtpVerification> OtpVerifications => _dbContext.OtpVerifications;
         public IQueryable<StaffInvitation> StaffInvitations => _dbContext.StaffInvitations;
+        public IQueryable<Course> Courses => _dbContext.Courses;
+        public IQueryable<Category> Categories => _dbContext.Categories;
+        public IQueryable<Enrollment> Enrollments => _dbContext.Enrollments;
+        public IQueryable<UserWallet> UserWallets => _dbContext.UserWallets;
+        public IQueryable<CourseBookmark> CourseBookmarks => _dbContext.CourseBookmarks;
+        public IQueryable<CourseReview> CourseReviews => _dbContext.CourseReviews;
         public IQueryable<Session> Sessions => _dbContext.Sessions;
         public IQueryable<Booking> Bookings => _dbContext.Bookings;
         public IQueryable<SessionMaterial> SessionMaterials => _dbContext.SessionMaterials;

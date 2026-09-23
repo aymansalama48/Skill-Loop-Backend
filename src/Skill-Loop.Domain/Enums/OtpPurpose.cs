@@ -9,9 +9,8 @@ namespace Skill_Loop.Domain.Enums
     /// </summary>
     public enum OtpPurpose
     {
-        AppointmentBooking,   // تأكيد حجز جديد
-        ViewAppointments,     // مشاهدة الحجوزات
-        LinkAccount,          // ربط حساب دائم
-        VerifyPhone           // تغيير رقم الهاتف أو تأكيده
+        VerifyPhone,          // تغيير رقم الهاتف أو تأكيده
+        EmailVerification,    // 👈 تأكيد البريد الإلكتروني (تسجيل حساب جديد)
+        PasswordReset         // 👈 إعادة تعيين كلمة المرور
     }
 }

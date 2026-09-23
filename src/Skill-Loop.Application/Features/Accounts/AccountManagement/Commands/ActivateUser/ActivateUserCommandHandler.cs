@@ -10,7 +10,7 @@ namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.Ac
 public sealed class ActivateUserCommandHandler : ICommandHandler<ActivateUserCommand, bool>
 {
     private readonly IUserManagementService _userService;
-    private readonly IJobScheduler _jobScheduler; // 👈 استخدام الـ Scheduler
+    private readonly IJobScheduler _jobScheduler;
 
     public ActivateUserCommandHandler(
         IUserManagementService userService,
@@ -30,15 +30,21 @@ public sealed class ActivateUserCommandHandler : ICommandHandler<ActivateUserCom
             return Result<bool>.Failure(result.Errors);
         }
 
-        // 2. جلب بيانات المستخدم عشان ناخد الإيميل بتاعه
+        // 2. جلب بيانات المستخدم بالكامل (الإيميل والاسم) في استعلام واحد
         var userResult = await _userService.GetByIdAsync(request.UserId, cancellationToken);
 
-        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data.Email))
+        if (userResult.IsSuccess && !string.IsNullOrWhiteSpace(userResult.Data?.Email))
         {
-            var templateModel = new AccountUnlockedTemplateModel();
+            // 3. تجهيز الموديل مع تمرير الاسم الحقيقي للمستخدم
+            var templateModel = new AccountUnlockedTemplateModel
+            {
+                UserName = userResult.Data.FirstName, // 👈 هنا تم استغلال الاستعلام لجلب الاسم
+                UserEmail = userResult.Data.Email // 👈 هنا تم استغلال الاستعلام لجلب البريد الإلكتروني
+            };
+
             var email = userResult.Data.Email;
 
-            // 3. إرسال الإيميل في الخلفية (Fire and Forget) 🚀
+            // 4. إرسال الإيميل في الخلفية (Fire and Forget) عبر Hangfire
             _jobScheduler.Enqueue<IIdentityNotificationService>(n =>
                 n.SendAccountUnlockedEmailAsync(email, templateModel));
         }

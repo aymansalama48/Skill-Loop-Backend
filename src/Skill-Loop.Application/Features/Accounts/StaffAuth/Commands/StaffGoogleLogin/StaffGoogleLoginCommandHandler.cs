@@ -32,6 +32,7 @@ public sealed class StaffGoogleLoginCommandHandler(
         var templateModel = new LoginTemplateModel
         {
             UserName = result.Data!.FullName ?? string.Empty,
+            UserEmail = result.Data.Email,
             IpAddress = clientContext.IpAddress ?? string.Empty,
             Device = clientContext.UserAgent ?? string.Empty,
             LoginTime = result.Data.LoggedInAt

@@ -4,6 +4,6 @@ namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.Re
 
 public sealed record ResetPasswordCommand(
     string Email,
-    string Token,
+    string OtpCode, 
     string NewPassword,
     string ConfirmPassword) : ICommand;

@@ -12,6 +12,7 @@ public record UserDto
     public string? PhoneNumber { get; init; }
     public string? AvatarUrl { get; init; }
     public bool IsActive { get; init; }
+    public bool EmailConfirmed { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? LastLoginAt { get; init; }
 

@@ -5,4 +5,6 @@ public interface IApplicationUrlService
     string GeneratePasswordResetUrl(
         string email,
         string token);
+
+    string GenerateStaffInvitationUrl(string token);
 }

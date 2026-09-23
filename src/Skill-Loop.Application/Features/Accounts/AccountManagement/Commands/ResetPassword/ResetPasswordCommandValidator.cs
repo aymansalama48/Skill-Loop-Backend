@@ -11,8 +11,9 @@ public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordComm
             .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
             .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.");
 
-        RuleFor(x => x.Token)
-            .NotEmpty().WithMessage("رمز إعادة التعيين مطلوب.");
+        RuleFor(x => x.OtpCode) // 👈 التحقق من كود الـ OTP
+            .NotEmpty().WithMessage("كود التحقق مطلوب.")
+            .Length(4).WithMessage("كود التحقق يجب أن يكون 4 أرقام.");
 
         RuleFor(x => x.NewPassword)
             .ApplyStandardPasswordRules();

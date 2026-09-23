@@ -1,6 +1,6 @@
 ﻿namespace Skill_Loop.Api.Contracts.Accounts;
 
-    public sealed record StaffGoogleLoginRequest(
+    public sealed record GoogleLoginRequest(
         string IdToken);
 
 

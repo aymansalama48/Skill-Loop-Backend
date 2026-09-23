@@ -1,10 +1,14 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Booking;
+using Skill_Loop.Domain.Entities.Courses;
+using Skill_Loop.Domain.Entities.Enrollments;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Wallets;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -23,8 +27,16 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
 
 
 
+
+    public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
+    public IQueryable<Course> Courses => context.Courses;
+    public IQueryable<Category> Categories => context.Categories;
+    public IQueryable<Enrollment> Enrollments => context.Enrollments;
+    public IQueryable<UserWallet> UserWallets => context.UserWallets;
+    public IQueryable<CourseBookmark> CourseBookmarks => context.CourseBookmarks;
+    public IQueryable<CourseReview> CourseReviews => context.CourseReviews;
 
     public IQueryable<Session> Sessions => context.Sessions;
     public IQueryable<Booking> Bookings => context.Bookings;

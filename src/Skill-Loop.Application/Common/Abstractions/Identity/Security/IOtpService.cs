@@ -10,21 +10,21 @@ public interface IOtpService
 {
     /// توليد OTP جديد وتخزينه (بدون إرسال — الإرسال مسؤولية خدمة تانية منفصلة)
     Task<Result<OtpGenerationResult>> GenerateOtpAsync(
-        string phoneNumber,
+        string Identifier,
         OtpPurpose purpose,
         CancellationToken cancellationToken);
 
     /// التحقق من صحة الكود مع خصم المحاولات المتبقية
     /// لاحظ: Result عادي مش Result<bool> — الفشل (كود غلط/منتهي/محاولات خلصت) بييجي في Error مش في Value
     Task<Result> ValidateOtpAsync(
-        string phoneNumber,
+        string Identifier,
         string code,
         OtpPurpose purpose,
         CancellationToken cancellationToken);
 
     /// إعادة إرسال باستخدام نفس الكود لو لسه صالح، أو توليد كود جديد لو خلص وقته
     Task<Result<OtpGenerationResult>> ResendOtpAsync(
-        string phoneNumber,
+        string Identifier,
         OtpPurpose purpose,
         CancellationToken cancellationToken);
 }

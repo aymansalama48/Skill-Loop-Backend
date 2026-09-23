@@ -26,4 +26,15 @@ public sealed class ApplicationUrlService : IApplicationUrlService
             "&token=",
             Uri.EscapeDataString(token));
     }
+
+    // 👈 تنفيذ الدالة الجديدة
+    public string GenerateStaffInvitationUrl(string token)
+    {
+        // يمكنك تغيير مسار "/accept-invitation" ليتطابق مع المسار الحقيقي في الواجهة الأمامية (React/Angular)
+        return string.Concat(
+            _options.Frontend.TrimEnd('/'),
+            "/accept-invitation",
+            "?token=",
+            Uri.EscapeDataString(token));
+    }
 }

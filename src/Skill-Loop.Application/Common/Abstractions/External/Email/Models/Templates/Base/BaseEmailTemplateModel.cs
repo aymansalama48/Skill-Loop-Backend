@@ -3,9 +3,9 @@ namespace Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templ
 public abstract class BaseEmailTemplateModel
 {
     // خصائص عامة لكل القوالب
-    public string AppName { get; set; } = string.Empty; // تم تغيير من ClinicName
+    public string AppName { get; set; } = string.Empty; 
     public string SupportEmail { get; set; } = string.Empty;
-    public string ContactPhoneNumber { get; set; } = string.Empty; // تم تغيير من ClinicPhoneNumber
+    public string ContactPhoneNumber { get; set; } = string.Empty; 
     public string Address { get; set; } = string.Empty;
     public string WebsiteUrl { get; set; } = string.Empty;
     public string FacebookUrl { get; set; } = string.Empty;
@@ -14,5 +14,5 @@ public abstract class BaseEmailTemplateModel
 
     // خصائص أساسية للمستخدم
     public string UserName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+    public string UserEmail { get; set; } = string.Empty;
 }

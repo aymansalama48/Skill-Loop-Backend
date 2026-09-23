@@ -13,9 +13,9 @@ namespace Skill_Loop.Infrastructure.Persistence.Configurations
         {
             builder.ToTable("OtpVerifications");
 
-            builder.Property(o => o.Phone)
-                .HasMaxLength(20)
-                .IsRequired();
+            builder.Property(x => x.Identifier)
+                .IsRequired()
+                .HasMaxLength(256);   // 👈 كان أقصى حاجة ممكن 20، دلوقتي 256
 
             // Base64 لـ HMACSHA256 (32 بايت) بيطلع 44 حرف تقريبًا — سايبها مساحة زيادة بسيطة
             builder.Property(o => o.CodeHash)
@@ -29,8 +29,8 @@ namespace Skill_Loop.Infrastructure.Persistence.Configurations
 
 
             // الفهرس الأهم عمليًا — كل الـ Queries في OtpService بتفلتر بالتلاتة دول مع بعض
-            builder.HasIndex(o => new { o.Phone, o.Purpose, o.IsConsumed })
-                .HasDatabaseName("IX_OtpVerifications_Phone_Purpose_IsConsumed");
+            builder.HasIndex(o => new { o.Identifier, o.Purpose, o.IsConsumed })
+                .HasDatabaseName("IX_OtpVerifications_Identifier_Purpose_IsConsumed");
 
             builder.HasIndex(o => o.Expiry)
                 .HasDatabaseName("IX_OtpVerifications_Expiry");

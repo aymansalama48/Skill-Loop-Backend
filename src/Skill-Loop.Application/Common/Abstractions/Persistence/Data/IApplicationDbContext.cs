@@ -4,6 +4,7 @@ using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.SiteSettings;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -13,10 +14,18 @@ public interface IApplicationDbContext
 {
     // 1. عمليات القراءة (استخدمنا IQueryable المستقلة بدلاً من DbSet)
 
-    //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    public IQueryable<SiteSettings> SiteSettings { get; }
 
     public IQueryable<OtpVerification> OtpVerifications { get; }
     public IQueryable<StaffInvitation> StaffInvitations { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Course> Courses { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.Category> Categories { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews { get; }
 
     public IQueryable<Session> Sessions { get; }
     public IQueryable<Booking> Bookings { get; }
