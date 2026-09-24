@@ -60,11 +60,3 @@ public sealed record AttachmentDto(
     string StorageUrl,
     long FileSizeBytes);
 
-public sealed record CategoryDto(
-    Guid Id,
-    string Name,
-    string Slug,
-    string? IconUrl,
-    string? Description,
-    int DisplayOrder,
-    int CourseCount);
