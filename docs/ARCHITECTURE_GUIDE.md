@@ -1354,14 +1354,13 @@ public static class Courses
 
 ### ❌ Missing (غير موجود — مطلوب بناؤه)
 
-| Module                              | الأولوية  | ما يجب بناؤه                                                                                                                                      |
-| ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Auth — Mobile Users (OTP-based)** | 🔴 عالية  | Mobile registration/login عبر OTP + Phone. الأساس موجود (OtpVerification entity + OtpService) لكن لا يوجد mobile auth flow كامل.                  |
-| **Instructor Profile**              | 🔴 عالية  | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD + verification + ربط مع Course.InstructorId.                                                       |
-| **Booking**                         | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
-| **Payments**                        | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
-| **Notifications (Push)**            | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
-| **Reviews (standalone)**            | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
+| Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Instructor Profile**   | 🔴 عالية  | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD + verification + ربط مع Course.InstructorId.                                                       |
+| **Booking**              | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
+| **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
+| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
+| **Reviews (standalone)** | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
 
 ### 📋 Summary Table
 
@@ -1369,7 +1368,7 @@ public static class Courses
 Module                  | Domain | Application | Infrastructure | API | Tests
 ------------------------|--------|-------------|----------------|-----|------
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Auth (Mobile)           |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
+Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Instructor Profile      |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
