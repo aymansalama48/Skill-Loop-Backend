@@ -123,6 +123,7 @@ public class UploadSessionMaterialCommandHandlerTests
         var result = await _handler.Handle(new UploadSessionMaterialCommand(sessionId, new MemoryStream(), "test.txt", "text/plain", 100, MaterialType.Document), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Data.FileName.Should().Be("test.txt");
+        result.Data.Should().NotBeNull();
+        result.Data!.FileName.Should().Be("test.txt");
     }
 }
