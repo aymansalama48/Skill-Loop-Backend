@@ -42,6 +42,10 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<Booking> Bookings => context.Bookings;
     public IQueryable<SessionMaterial> SessionMaterials => context.SessionMaterials;
 
+    // 💬 الشات
+    public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => context.Conversations;
+    public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => context.ChatMessages;
+
     // ==============================
     // عمليات الكتابة (عنصر واحد)
     // ==============================

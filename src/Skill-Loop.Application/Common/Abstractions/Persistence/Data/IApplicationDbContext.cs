@@ -31,6 +31,10 @@ public interface IApplicationDbContext
     public IQueryable<Booking> Bookings { get; }
     public IQueryable<SessionMaterial> SessionMaterials { get; }
 
+    // 💬 الشات
+    public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages { get; }
+
 
     // 2. عمليات الكتابة والإضافة والحذف (Generic Methods)
     void Add<TEntity>(TEntity entity) where TEntity : class;

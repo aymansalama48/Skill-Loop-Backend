@@ -36,6 +36,9 @@ public static class ServiceCollectionExtensions
                 };
             });
 
+        // 2.5 الشات اللحظي (SignalR)
+        services.AddChatRealtime();
+
         // 3. إضافة دعم الـ ProblemDetails والـ Global Exception Handler
         services.AddProblemDetails();
         services.AddExceptionHandler<GlobalExceptionHandler>();

@@ -63,6 +63,9 @@ public static class PipelineExtensions
         // 8. ربط الـ Controllers
         app.MapControllers();
 
+        // 9. الشات اللحظي (SignalR Hub) على /hubs/chat
+        app.MapChatHub();
+
         return app;
     }
 }
