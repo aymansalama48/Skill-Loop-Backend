@@ -30,16 +30,16 @@ public class MockCourseContentStorage : ICourseContentStorage
     }
 
     public static MockCourseContentStorage Success(
-        CourseContentUploadResult uploadData = null,
-        CourseContentDownloadResult downloadData = null,
-        DriveQuotaUsage quota = default,
+        CourseContentUploadResult? uploadData = null,
+        CourseContentDownloadResult? downloadData = null,
+        DriveQuotaUsage? quota = null,
         string folderId = "folder-1")
     {
         return new MockCourseContentStorage(
             uploadResult: Result<CourseContentUploadResult>.Success(uploadData ?? new CourseContentUploadResult("file-1", folderId, 1024)),
             downloadResult: Result<CourseContentDownloadResult>.Success(downloadData ?? new CourseContentDownloadResult(new MemoryStream(), "test.txt", "text/plain", 1024)),
             deleteResult: Result.Success(),
-            quotaResult: Result<DriveQuotaUsage>.Success(quota),
+            quotaResult: Result<DriveQuotaUsage>.Success(quota ?? new DriveQuotaUsage(0, 1000000000)),
             folderResult: Result<string>.Success(folderId));
     }
 

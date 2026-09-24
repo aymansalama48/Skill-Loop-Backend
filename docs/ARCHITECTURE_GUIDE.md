@@ -1037,8 +1037,7 @@ Pipeline Order:
 UnitTests/
 ├── Common/
 │   ├── InMemoryDbContextHelper.cs       ← Helper لـ InMemory DbContext
-│   ├── MockCourseContentStorage.cs      ← Mock للـ Google Drive
-│   └── MockDbContextHelper.cs
+│   └── MockCourseContentStorage.cs      ← Mock للـ Google Drive
 ├── External/
 │   ├── Cache/
 │   │   └── CacheServiceTests.cs
@@ -1054,8 +1053,13 @@ UnitTests/
     │   │   │   ├── ResetPassword/ResetPasswordCommandHandlerTests.cs
     │   │   │   └── UpdateMyProfile/UpdateMyAccountProfileCommandHandlerTests.cs
     │   │   └── Queries/
-    │   │       ├── GetAllUsers/GetAllUsersQueryHandlerTests.cs
-    │   │       └── GetMyProfile/GetMyAccountProfileQueryHandlerTests.cs
+    │   │       ├── GetAllUsers/
+    │   │       │   ├── GetAllUsersQueryHandlerTests.cs
+    │   │       │   └── GetAllUsersQueryValidatorTests.cs
+    │   │       ├── GetMyProfile/GetMyAccountProfileQueryHandlerTests.cs
+    │   │       └── GetUserById/
+    │   │           ├── GetUserByIdQueryHandlerTests.cs
+    │   │           └── GetUserByIdQueryValidatorTests.cs
     │   ├── Authentication/
     │   │   └── Commands/
     │   │       ├── Logout/LogoutCommandHandlerTests.cs
@@ -1074,22 +1078,39 @@ UnitTests/
     │   └── CourseAggregateTests.cs
     ├── Enrollments/
     │   └── EnrollmentAndWalletTests.cs
-    ├── Sessions/
-    │   ├── SessionTests.cs
-    │   ├── SessionMaterialTests.cs
-    │   └── Materials/
-    │       ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
-    │       └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
-    └── Skills/
-        ├── Commands/CreateSkill/CreateSkillCommandHandlerTests.cs
-        └── Queries/GetSkills/GetSkillsQueryHandlerTests.cs
+    └── Sessions/
+        ├── SessionTests.cs
+        ├── SessionMaterialTests.cs
+        ├── Commands/
+        │   ├── ChangeSessionStatus/
+        │   │   ├── ChangeSessionStatusCommandHandlerTests.cs
+        │   │   └── ChangeSessionStatusCommandValidatorTests.cs
+        │   ├── CreateSession/
+        │   │   ├── CreateSessionCommandHandlerTests.cs
+        │   │   └── CreateSessionCommandValidatorTests.cs
+        │   ├── DeleteSession/
+        │   │   ├── DeleteSessionCommandHandlerTests.cs
+        │   │   └── DeleteSessionCommandValidatorTests.cs
+        │   └── UpdateSession/
+        │       ├── UpdateSessionCommandHandlerTests.cs
+        │       └── UpdateSessionCommandValidatorTests.cs
+        ├── Queries/
+        │   ├── GetSessionById/
+        │   │   ├── GetSessionByIdQueryHandlerTests.cs
+        │   │   └── GetSessionByIdQueryValidatorTests.cs
+        │   └── GetSessionsPaged/
+        │       ├── GetSessionsPagedQueryHandlerTests.cs
+        │       └── GetSessionsPagedQueryValidatorTests.cs
+        └── Materials/
+            ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
+            └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
 ```
 
 **Convention**:
 
 - اسم الكلاس: `{HandlerName}Tests`
 - مسار مطابق للـ Handler في Application
-- يستخدم `InMemoryDbContextHelper` أو `MockDbContextHelper` لإنشاء DbContext
+- يستخدم `InMemoryDbContextHelper` لإنشاء DbContext
 - يستخدم `MockCourseContentStorage` لمحاكاة Google Drive
 
 ---
@@ -1354,14 +1375,13 @@ public static class Courses
 
 ### ❌ Missing (غير موجود — مطلوب بناؤه)
 
-| Module                              | الأولوية  | ما يجب بناؤه                                                                                                                                      |
-| ----------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Auth — Mobile Users (OTP-based)** | 🔴 عالية  | Mobile registration/login عبر OTP + Phone. الأساس موجود (OtpVerification entity + OtpService) لكن لا يوجد mobile auth flow كامل.                  |
-| **Instructor Profile**              | 🔴 عالية  | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD + verification + ربط مع Course.InstructorId.                                                       |
-| **Booking**                         | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
-| **Payments**                        | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
-| **Notifications (Push)**            | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
-| **Reviews (standalone)**            | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
+| Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Instructor Profile**   | 🔴 عالية  | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD + verification + ربط مع Course.InstructorId.                                                       |
+| **Booking**              | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
+| **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
+| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
+| **Reviews (standalone)** | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
 
 ### 📋 Summary Table
 
@@ -1369,7 +1389,7 @@ public static class Courses
 Module                  | Domain | Application | Infrastructure | API | Tests
 ------------------------|--------|-------------|----------------|-----|------
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Auth (Mobile)           |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
+Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Instructor Profile      |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
