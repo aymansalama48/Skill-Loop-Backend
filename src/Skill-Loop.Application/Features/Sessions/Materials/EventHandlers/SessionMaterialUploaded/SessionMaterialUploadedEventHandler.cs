@@ -11,9 +11,9 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Abstractions.External.Email;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial.Events;
 using Skill_Loop.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Domain.Entities.Session.Events;
 
 public sealed class SessionMaterialUploadedEventHandler(
     IJobScheduler jobScheduler,
