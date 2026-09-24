@@ -3,7 +3,7 @@ using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;

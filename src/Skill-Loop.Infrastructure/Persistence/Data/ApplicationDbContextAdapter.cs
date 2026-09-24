@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Entities.Enrollments;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Numerics;

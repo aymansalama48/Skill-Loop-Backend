@@ -4,7 +4,7 @@ using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
@@ -40,7 +40,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Booking> Bookings => Set<Booking>();
-    public DbSet<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial> SessionMaterials => Set<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial>();
+    public DbSet<SessionMaterial> SessionMaterials => Set<SessionMaterial>();
 
     // 💬 الشات
     public DbSet<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => Set<Skill_Loop.Domain.Entities.Chat.Conversation>();

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Enums;
 using System;
 

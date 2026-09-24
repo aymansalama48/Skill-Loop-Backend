@@ -7,7 +7,6 @@ using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
 using Skill_Loop.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 

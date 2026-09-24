@@ -5,7 +5,6 @@ using Skill_Loop.Application.Common.Errors.Sessions;
 using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
 using Microsoft.EntityFrameworkCore;
 
 namespace Skill_Loop.Application.Features.Sessions.Materials.Commands.ReorderSessionMaterials;

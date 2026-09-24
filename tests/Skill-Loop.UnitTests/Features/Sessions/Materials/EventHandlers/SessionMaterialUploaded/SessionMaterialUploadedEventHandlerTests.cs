@@ -1,10 +1,5 @@
 namespace Skill_Loop.UnitTests.Features.Sessions.Materials.EventHandlers.SessionMaterialUploaded;
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Core;
@@ -15,13 +10,18 @@ using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Sessions.Materials.EventHandlers.SessionMaterialUploaded;
+using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
-using Skill_Loop.Domain.Entities.SessionMaterial.Events;
+using Skill_Loop.Domain.Entities.Session.Events;
+using Skill_Loop.Domain.Entities.Sessions; // مسار الجلسات الجديد (بصيغة الجمع)
 using Skill_Loop.Domain.Enums;
-using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.UnitTests.Common;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 public class SessionMaterialUploadedEventHandlerTests
@@ -30,7 +30,7 @@ public class SessionMaterialUploadedEventHandlerTests
     private readonly IApplicationDbContext _dbContext;
     private readonly Mock<IDateTime> _dateTime;
     private readonly Mock<IUserManagementService> _userService;
-    private readonly global::Skill_Loop.Application.Features.Sessions.Materials.EventHandlers.SessionMaterialUploaded.SessionMaterialUploadedEventHandler _handler;
+    private readonly SessionMaterialUploadedEventHandler _handler;
 
     public SessionMaterialUploadedEventHandlerTests()
     {
@@ -38,7 +38,7 @@ public class SessionMaterialUploadedEventHandlerTests
         _dbContext = InMemoryDbContextHelper.Create();
         _dateTime = new Mock<IDateTime>();
         _userService = new Mock<IUserManagementService>();
-        _handler = new global::Skill_Loop.Application.Features.Sessions.Materials.EventHandlers.SessionMaterialUploaded.SessionMaterialUploadedEventHandler(
+        _handler = new SessionMaterialUploadedEventHandler(
             _jobScheduler.Object,
             _dbContext,
             _dateTime.Object,
@@ -66,7 +66,11 @@ public class SessionMaterialUploadedEventHandlerTests
     {
         var sessionId = Guid.NewGuid();
         var instructorId = Guid.NewGuid();
-        var session = new Session { Id = sessionId, InstructorId = instructorId, Title = "Test Session", Status = SessionStatus.Draft };
+
+        // التعديل هنا: استخدام دالة Create 
+        var session = Session.Create(instructorId, instructorId, "Test Session");
+        session.Id = sessionId; // تعيين الـ Id لربطه بالـ Material
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -88,22 +92,27 @@ public class SessionMaterialUploadedEventHandlerTests
         var sessionId = Guid.NewGuid();
         var instructorId = Guid.NewGuid();
         var learnerId = Guid.NewGuid();
-        var session = new Session { Id = sessionId, InstructorId = instructorId, Title = "Test Session", Status = SessionStatus.Draft };
+
+        // التعديل هنا: استخدام دالة Create
+        var session = Session.Create(instructorId, instructorId, "Test Session");
+        session.Id = sessionId;
+
         var booking = new Booking { Id = Guid.NewGuid(), SessionId = sessionId, LearnerUserId = learnerId, Status = BookingStatus.Confirmed };
 
         _dbContext.Add(session);
         _dbContext.Add(booking);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
-        var learner = new Skill_Loop.Application.Common.Abstractions.Identity.UserManagement.UserDto
+        var learner = new UserDto
         {
             Id = learnerId,
             Email = "learner@test.com",
         };
+
         _userService.Setup(s => s.GetUsersByIdsAsync(It.IsAny<List<Guid>>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new List<Skill_Loop.Application.Common.Abstractions.Identity.UserManagement.UserDto> { learner });
+            .ReturnsAsync(new List<UserDto> { learner });
         _userService.Setup(s => s.GetByIdAsync(instructorId, It.IsAny<CancellationToken>()))
-            .ReturnsAsync(Result<Skill_Loop.Application.Common.Abstractions.Identity.UserManagement.UserDto>.Success(learner));
+            .ReturnsAsync(Result<UserDto>.Success(learner));
 
         _dateTime.Setup(d => d.GetDateTimeString()).Returns("2026-01-01T00:00:00Z");
 

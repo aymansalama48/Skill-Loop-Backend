@@ -11,8 +11,6 @@ using Skill_Loop.Application.Common.Errors.Sessions;
 using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
-using Skill_Loop.Domain.Entities.SessionMaterial.Events;
 using Skill_Loop.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -30,7 +28,8 @@ public sealed class UploadSessionMaterialCommandHandler : ICommandHandler<Upload
     private readonly IJobScheduler _jobScheduler;
     private readonly ILogger<UploadSessionMaterialCommandHandler> _logger;
 
-    private const string QuotaCacheKey = "drive-quota-usage";
+    // تم تغيير مفتاح الكاش لإجبار النظام على جلب مساحة التخزين الجديدة (التيرا بايت)
+    private const string QuotaCacheKey = "drive-quota-usage-v3";
     private const long SafetyMarginBytes = 100 * 1024 * 1024; // 100 MB safety margin
     private const int MaxMaterialsPerSession = 50;
 
@@ -117,7 +116,7 @@ public sealed class UploadSessionMaterialCommandHandler : ICommandHandler<Upload
         {
             _logger.LogError("Failed to ensure session folder for session {SessionId}: {Errors}",
                 request.SessionId, folderResult.Errors);
-            return Result<UploadSessionMaterialResponse>.Failure(SessionMaterialErrors.UploadFailed);
+            return Result<UploadSessionMaterialResponse>.Failure(folderResult.Errors);
         }
 
         var folderId = folderResult.Data;
@@ -133,7 +132,7 @@ public sealed class UploadSessionMaterialCommandHandler : ICommandHandler<Upload
         {
             _logger.LogError("Failed to upload file for session {SessionId}: {Errors}",
                 request.SessionId, uploadResult.Errors);
-            return Result<UploadSessionMaterialResponse>.Failure(SessionMaterialErrors.UploadFailed);
+            return Result<UploadSessionMaterialResponse>.Failure(uploadResult.Errors);
         }
 
         var uploadData = uploadResult.Data;

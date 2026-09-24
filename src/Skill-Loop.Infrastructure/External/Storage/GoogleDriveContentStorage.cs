@@ -1,6 +1,5 @@
 using Google.Apis.Auth.OAuth2;
 using Google.Apis.Drive.v3;
-using Google.Apis.Drive.v3.Data;
 using Google.Apis.Services;
 using Google.Apis.Upload;
 using Microsoft.Extensions.Options;
@@ -15,27 +14,35 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
 {
     private readonly GoogleDriveOptions _options = options.Value;
 
+    private async Task<DriveService> GetDriveServiceAsync(CancellationToken cancellationToken)
+    {
+        var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
+        if (credential.IsCreateScopedRequired)
+        {
+            credential = credential.CreateScoped(DriveService.Scope.Drive);
+        }
+
+        return new DriveService(new BaseClientService.Initializer
+        {
+            HttpClientInitializer = credential,
+            ApplicationName = "Skill-Loop",
+        });
+    }
+
     public async Task<Result<CourseContentUploadResult>> UploadAsync(
         Stream fileStream,
         string fileName,
-        string folderName,
+        string folderId,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
-            if (credential.IsCreateScopedRequired)
+            var service = await GetDriveServiceAsync(cancellationToken);
+
+            if (fileStream.CanSeek)
             {
-                credential = credential.CreateScoped(DriveService.Scope.Drive);
+                fileStream.Position = 0;
             }
-
-            var service = new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skill-Loop",
-            });
-
-            var folderId = await EnsureSessionFolderInternalAsync(service, folderName, cancellationToken);
 
             var fileMetadata = new Google.Apis.Drive.v3.Data.File
             {
@@ -43,14 +50,21 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
                 Parents = [folderId],
             };
 
-            using var stream = fileStream;
-            var request = service.Files.Create(fileMetadata, stream, "application/octet-stream");
+            var request = service.Files.Create(fileMetadata, fileStream, "application/octet-stream");
             request.Fields = "id,parents";
+
+            // السطر الأهم لدعم حسابات الـ Workspace والمساحات المشتركة
+            request.SupportsAllDrives = true;
+
             var upload = await request.UploadAsync(cancellationToken);
 
             if (upload.Status != UploadStatus.Completed)
             {
-                return Result<CourseContentUploadResult>.Failure(new Error("UPLOAD_FAILED", "Google Drive upload failed.", ErrorType.Failure));
+                var errorMessage = upload.Exception != null
+                    ? upload.Exception.Message
+                    : "Google Drive upload failed for an unknown reason.";
+
+                return Result<CourseContentUploadResult>.Failure(new Error("UPLOAD_FAILED", errorMessage, ErrorType.Failure));
             }
 
             return Result<CourseContentUploadResult>.Success(new CourseContentUploadResult(
@@ -70,24 +84,19 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
     {
         try
         {
-            var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
-            if (credential.IsCreateScopedRequired)
-            {
-                credential = credential.CreateScoped(DriveService.Scope.Drive);
-            }
-
-            var service = new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skill-Loop",
-            });
+            var service = await GetDriveServiceAsync(cancellationToken);
 
             var request = service.Files.Get(fileId);
+            request.SupportsAllDrives = true; // دعم المساحات المشتركة
+
             var stream = new MemoryStream();
             await request.DownloadAsync(stream, cancellationToken);
             stream.Position = 0;
 
-            var file = await service.Files.Get(fileId).ExecuteAsync(cancellationToken);
+            var fileRequest = service.Files.Get(fileId);
+            fileRequest.Fields = "name,mimeType";
+            fileRequest.SupportsAllDrives = true; // دعم المساحات المشتركة
+            var file = await fileRequest.ExecuteAsync(cancellationToken);
 
             return Result<CourseContentDownloadResult>.Success(new CourseContentDownloadResult(
                 stream,
@@ -107,19 +116,10 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
     {
         try
         {
-            var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
-            if (credential.IsCreateScopedRequired)
-            {
-                credential = credential.CreateScoped(DriveService.Scope.Drive);
-            }
-
-            var service = new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skill-Loop",
-            });
-
-            await service.Files.Delete(fileId).ExecuteAsync(cancellationToken);
+            var service = await GetDriveServiceAsync(cancellationToken);
+            var request = service.Files.Delete(fileId);
+            request.SupportsAllDrives = true; // دعم المساحات المشتركة
+            await request.ExecuteAsync(cancellationToken);
             return Result.Success();
         }
         catch (Exception ex)
@@ -129,27 +129,26 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
     }
 
     public async Task<Result<DriveQuotaUsage>> GetQuotaUsageAsync(
-        CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default)
     {
         try
         {
-            var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
-            if (credential.IsCreateScopedRequired)
+            var service = await GetDriveServiceAsync(cancellationToken);
+
+            var request = service.About.Get();
+            request.Fields = "storageQuota";
+            var about = await request.ExecuteAsync(cancellationToken);
+
+            long usage = about.StorageQuota?.Usage ?? 0;
+            long limit = about.StorageQuota?.Limit ?? 0;
+
+            // في الـ Shared Drives غالباً الـ limit بيرجع صفر، فهنفترض مساحة ضخمة (1 تيرا بايت) لتخطي الهاندلر
+            if (limit == 0)
             {
-                credential = credential.CreateScoped(DriveService.Scope.Drive);
+                limit = 1000L * 1024 * 1024 * 1024; // 1 TB
             }
 
-            var service = new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skill-Loop",
-            });
-
-            var about = await service.About.Get().ExecuteAsync(cancellationToken);
-
-            return Result<DriveQuotaUsage>.Success(new DriveQuotaUsage(
-                about.StorageQuota?.Usage ?? 0,
-                about.StorageQuota?.Limit ?? 0));
+            return Result<DriveQuotaUsage>.Success(new DriveQuotaUsage(usage, limit));
         }
         catch (Exception ex)
         {
@@ -163,17 +162,7 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
     {
         try
         {
-            var credential = await GoogleCredential.FromFileAsync(_options.ServiceAccountFilePath, cancellationToken);
-            if (credential.IsCreateScopedRequired)
-            {
-                credential = credential.CreateScoped(DriveService.Scope.Drive);
-            }
-
-            var service = new DriveService(new BaseClientService.Initializer
-            {
-                HttpClientInitializer = credential,
-                ApplicationName = "Skill-Loop",
-            });
+            var service = await GetDriveServiceAsync(cancellationToken);
 
             return Result<string>.Success(await EnsureSessionFolderInternalAsync(service, sessionId.ToString(), cancellationToken));
         }
@@ -190,6 +179,10 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
     {
         var query = $"mimeType='application/vnd.google-apps.folder' and name='{folderName}' and trashed=false";
         var listRequest = new FilesResource.ListRequest(service) { Q = query };
+        listRequest.Fields = "files(id)";
+        listRequest.SupportsAllDrives = true; // دعم المساحات المشتركة
+        listRequest.IncludeItemsFromAllDrives = true; // السماح بالبحث داخلها
+
         var files = await listRequest.ExecuteAsync(cancellationToken);
 
         if (files.Files?.Count > 0)
@@ -204,7 +197,11 @@ internal sealed class GoogleDriveContentStorage(IOptions<GoogleDriveOptions> opt
             Parents = [string.IsNullOrEmpty(_options.RootFolderId) ? "root" : _options.RootFolderId],
         };
 
-        var folder = await service.Files.Create(folderMetadata).ExecuteAsync(cancellationToken);
+        var createRequest = service.Files.Create(folderMetadata);
+        createRequest.Fields = "id";
+        createRequest.SupportsAllDrives = true; // دعم المساحات المشتركة
+        var folder = await createRequest.ExecuteAsync(cancellationToken);
+
         return folder.Id!;
     }
 }
