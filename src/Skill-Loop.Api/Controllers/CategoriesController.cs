@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Skill_Loop.Api.Contracts.Categories;
 using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Features.Categories.Commands.CreateCategory;
 using Skill_Loop.Application.Features.Categories.Commands.DeleteCategory;
@@ -13,10 +14,8 @@ namespace Skill_Loop.Api.Controllers;
 public class CategoriesController : BaseApiController
 {
     /// <summary>
-    /// استرجاع كل التصنيفات الخاصة بالكورسات والمحفوظة بالكاش
+    /// استرجاع كل التصنيفات (محفوظة بالكاش)
     /// </summary>
-
-
     [HttpGet]
     [AllowAnonymous]
     public async Task<IResult> GetCategories(CancellationToken cancellationToken)
@@ -26,27 +25,68 @@ public class CategoriesController : BaseApiController
         return HandleResult(result);
     }
 
+    /// <summary>
+    /// إنشاء تصنيف جديد مع إمكانية رفع صورة (multipart/form-data)
+    /// </summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
-    public async Task<IResult> CreateCategory([FromBody] CreateCategoryCommand command, CancellationToken cancellationToken)
+    [Consumes("multipart/form-data")]                       // ✅ 1
+    public async Task<IResult> CreateCategory(
+        [FromForm] CreateCategoryRequest request,           // ✅ 2
+        CancellationToken cancellationToken)
     {
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
-    [HttpPut("{id:guid}")]
-    [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
-    public async Task<IResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryCommand command, CancellationToken cancellationToken)
-    {
-        if (id != command.Id)
+        // ✅ 3: Map Request → Command، مع فتح Stream للصورة
+        Stream? iconStream = null;
+        if (request.IconFile is not null && request.IconFile.Length > 0)
         {
-            return Results.BadRequest(new { message = "معرف التصنيف في المسار لا يتطابق مع المعرف في البيانات." });
+            iconStream = request.IconFile.OpenReadStream();
         }
 
+        var command = new CreateCategoryCommand(
+            request.Name,
+            request.Slug,
+            iconStream,
+            request.IconFile?.FileName,
+            request.Description,
+            request.DisplayOrder);
+
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 
+    /// <summary>
+    /// تعديل تصنيف مع إمكانية تغيير الصورة (multipart/form-data)
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
+    [Consumes("multipart/form-data")]                       // ✅
+    public async Task<IResult> UpdateCategory(
+        Guid id,
+        [FromForm] UpdateCategoryRequest request,           // ✅
+        CancellationToken cancellationToken)
+    {
+        Stream? iconStream = null;
+        if (request.IconFile is not null && request.IconFile.Length > 0)
+        {
+            iconStream = request.IconFile.OpenReadStream();
+        }
+
+        var command = new UpdateCategoryCommand(
+            id,
+            request.Name,
+            request.Slug,
+            iconStream,
+            request.IconFile?.FileName,
+            request.Description,
+            request.DisplayOrder);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف تصنيف
+    /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
     public async Task<IResult> DeleteCategory(Guid id, CancellationToken cancellationToken)

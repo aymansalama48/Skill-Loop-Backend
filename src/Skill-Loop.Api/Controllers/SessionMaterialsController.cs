@@ -18,18 +18,21 @@ public sealed class SessionMaterialsController(
     ICourseContentStorage courseContentStorage) : BaseApiController
 {
     [HttpPost("{sessionId:guid}/materials")]
+    [Consumes("multipart/form-data")] // هذا السطر هو السحر الذي يفهمه Scalar
     public async Task<IResult> UploadSessionMaterial(
         Guid sessionId,
         [FromForm] UploadSessionMaterialRequest request,
         CancellationToken cancellationToken)
     {
         await using var stream = request.File.OpenReadStream();
+
         var command = new UploadSessionMaterialCommand(
             sessionId,
             stream,
             request.File.FileName,
             request.File.ContentType,
-            request.File.Length);
+            request.File.Length,
+            request.MaterialType); // تمرير النوع لو تمت إضافته
 
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
