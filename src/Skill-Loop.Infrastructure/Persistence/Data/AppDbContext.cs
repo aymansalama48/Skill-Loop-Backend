@@ -42,6 +42,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial> SessionMaterials => Set<Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial>();
 
+    // 💬 الشات
+    public DbSet<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => Set<Skill_Loop.Domain.Entities.Chat.Conversation>();
+    public DbSet<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => Set<Skill_Loop.Domain.Entities.Chat.ChatMessage>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

@@ -49,6 +49,8 @@ public static class InMemoryDbContextHelper
         public IQueryable<Session> Sessions => _dbContext.Sessions;
         public IQueryable<Booking> Bookings => _dbContext.Bookings;
         public IQueryable<SessionMaterial> SessionMaterials => _dbContext.SessionMaterials;
+        public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Conversations;
+        public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.ChatMessages;
 
         public void Add<TEntity>(TEntity entity) where TEntity : class => _dbContext.Add(entity);
         public void Update<TEntity>(TEntity entity) where TEntity : class => _dbContext.Update(entity);

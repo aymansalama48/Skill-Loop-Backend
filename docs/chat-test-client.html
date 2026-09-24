@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<title>Skill Loop – Chat Test Client (للتجربة فقط)</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
+<style>
+  body{font-family:system-ui,Segoe UI,Tahoma,sans-serif;max-width:720px;margin:24px auto;padding:0 12px}
+  input,button{padding:8px;margin:3px 0;font-size:14px} input{width:100%;box-sizing:border-box}
+  button{cursor:pointer} .row{display:flex;gap:8px} .row>*{flex:1}
+  #log{background:#111;color:#9f9;padding:10px;height:280px;overflow:auto;direction:ltr;text-align:left;font:12px/1.5 monospace;border-radius:6px}
+  small{color:#666}
+</style>
+</head>
+<body>
+<h3>🧪 Chat Test Client</h3>
+<small>أداة تجربة للـ Development فقط. شغّلها من Live Server (http://127.0.0.1:5500) عشان الـ CORS.</small>
+
+<input id="base" value="https://localhost:7271" placeholder="API base URL">
+<input id="token" placeholder="JWT access token (من /api/v1/auth/user/login)">
+<button onclick="connect()">1) Connect</button>
+
+<hr>
+<input id="conv" placeholder="Conversation Id (من POST /api/v1/chat/conversations)">
+<input id="msg" placeholder="اكتب رسالة...">
+<div class="row">
+  <button onclick="send()">2) Send (via Hub)</button>
+  <button onclick="markRead()">3) Mark as read</button>
+</div>
+<div id="log"></div>
+
+<script>
+let conn;
+const $ = id => document.getElementById(id);
+const log = (...a) => { $('log').textContent += a.map(x => typeof x === 'string' ? x : JSON.stringify(x)).join(' ') + '\n'; $('log').scrollTop = 1e9; };
+
+async function connect() {
+  conn = new signalR.HubConnectionBuilder()
+    .withUrl($('base').value + '/hubs/chat', { accessTokenFactory: () => $('token').value })
+    .withAutomaticReconnect()
+    .build();
+
+  // 👇 الأحداث اللي السيرفر بيبعتها (لازم الأسماء تطابق ChatEvents.cs)
+  conn.on('ReceiveMessage', m => log('📩 ReceiveMessage:', m));
+  conn.on('MessagesRead',   m => log('✓✓ MessagesRead:', m));
+  conn.onclose(() => log('🔌 disconnected'));
+
+  try { await conn.start(); log('✅ connected'); } catch (e) { log('❌', e.toString()); }
+}
+async function send() {
+  try { log('📤 sent:', await conn.invoke('SendMessage', $('conv').value, $('msg').value)); $('msg').value = ''; }
+  catch (e) { log('❌', e.message); }
+}
+async function markRead() {
+  try { await conn.invoke('MarkAsRead', $('conv').value); log('👀 marked as read'); }
+  catch (e) { log('❌', e.message); }
+}
+</script>
+</body>
+</html>
