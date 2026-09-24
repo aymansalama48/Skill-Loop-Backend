@@ -4,9 +4,10 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 namespace Skill_Loop.Application.Features.Categories.Commands.CreateCategory;
 
 public sealed record CreateCategoryCommand(
-    string Name,
+string Name,
     string Slug,
-    string? IconUrl,
+    Stream? IconStream,
+    string? IconFileName,
     string? Description,
     int DisplayOrder) : ICommand<Guid>, ICacheInvalidatorCommand
 {

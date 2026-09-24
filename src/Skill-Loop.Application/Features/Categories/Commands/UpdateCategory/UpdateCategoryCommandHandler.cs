@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -6,7 +7,9 @@ using Skill_Loop.Domain.Entities.Courses;
 
 namespace Skill_Loop.Application.Features.Categories.Commands.UpdateCategory;
 
-public sealed class UpdateCategoryCommandHandler(IApplicationDbContext _dbContext) : ICommandHandler<UpdateCategoryCommand>
+public sealed class UpdateCategoryCommandHandler(
+    IApplicationDbContext _dbContext,
+    IFileStorage _fileStorage) : ICommandHandler<UpdateCategoryCommand>
 {
     public async Task<Result> Handle(UpdateCategoryCommand request, CancellationToken cancellationToken)
     {
@@ -26,16 +29,30 @@ public sealed class UpdateCategoryCommandHandler(IApplicationDbContext _dbContex
             return Result.Failure(new Error("Category.DuplicateSlug", "هذا الرابط (Slug) مستخدم بالفعل لتصنيف آخر.", ErrorType.Conflict));
         }
 
-        var updateResult = category.Update(request.Name, request.Slug, request.IconUrl, request.Description, request.DisplayOrder);
+        string? iconUrl = category.IconUrl;
+        if (request.IconStream != null && !string.IsNullOrWhiteSpace(request.IconFileName))
+        {
+            // حذف الصورة القديمة إذا كانت موجودة
+            if (!string.IsNullOrWhiteSpace(category.IconUrl))
+            {
+                await _fileStorage.DeleteAsync(category.IconUrl);
+            }
 
+            var uploadResult = await _fileStorage.UploadAsync(request.IconStream, request.IconFileName, "categories");
+            if (!uploadResult.IsSuccess)
+            {
+                return Result.Failure(uploadResult.Errors);
+            }
+            iconUrl = uploadResult.Data;
+        }
+
+        var updateResult = category.Update(request.Name, request.Slug, iconUrl, request.Description, request.DisplayOrder);
         if (!updateResult.IsSuccess)
         {
             return Result.Failure(updateResult.Errors);
         }
 
-        // استخدام دالة Update المعرفة في الـ Interface
         _dbContext.Update(category);
-
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -6,11 +7,12 @@ using Skill_Loop.Domain.Entities.Courses;
 
 namespace Skill_Loop.Application.Features.Categories.Commands.CreateCategory;
 
-public sealed class CreateCategoryCommandHandler(IApplicationDbContext _dbContext) : ICommandHandler<CreateCategoryCommand, Guid>
+public sealed class CreateCategoryCommandHandler(
+    IApplicationDbContext _dbContext,
+    IFileStorage _fileStorage) : ICommandHandler<CreateCategoryCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateCategoryCommand request, CancellationToken cancellationToken)
     {
-        // استخدام _dbContext.Categories بدلاً من Set<Category>()
         var isSlugUnique = !await _dbContext.Categories
             .AnyAsync(c => c.Slug == request.Slug.ToLower(), cancellationToken);
 
@@ -19,16 +21,24 @@ public sealed class CreateCategoryCommandHandler(IApplicationDbContext _dbContex
             return Result<Guid>.Failure(new Error("Category.DuplicateSlug", "هذا الرابط (Slug) مستخدم بالفعل لتصنيف آخر.", ErrorType.Conflict));
         }
 
-        var categoryResult = Category.Create(request.Name, request.Slug, request.IconUrl, request.Description, request.DisplayOrder);
+        string? iconUrl = null;
+        if (request.IconStream != null && !string.IsNullOrWhiteSpace(request.IconFileName))
+        {
+            var uploadResult = await _fileStorage.UploadAsync(request.IconStream, request.IconFileName, "categories");
+            if (!uploadResult.IsSuccess)
+            {
+                return Result<Guid>.Failure(uploadResult.Errors);
+            }
+            iconUrl = uploadResult.Data;
+        }
 
+        var categoryResult = Category.Create(request.Name, request.Slug, iconUrl, request.Description, request.DisplayOrder);
         if (!categoryResult.IsSuccess)
         {
             return Result<Guid>.Failure(categoryResult.Errors);
         }
 
-        // استخدام دالة Add العادية المعرفة في الـ Interface
         _dbContext.Add(categoryResult.Data);
-
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result<Guid>.Success(categoryResult.Data.Id);
