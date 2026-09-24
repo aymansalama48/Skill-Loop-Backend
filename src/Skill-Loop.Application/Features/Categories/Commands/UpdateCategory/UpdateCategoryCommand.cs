@@ -7,7 +7,8 @@ public sealed record UpdateCategoryCommand(
     Guid Id,
     string Name,
     string Slug,
-    string? IconUrl,
+Stream? IconStream,
+    string? IconFileName,
     string? Description,
     int DisplayOrder) : ICommand, ICacheInvalidatorCommand
 {
