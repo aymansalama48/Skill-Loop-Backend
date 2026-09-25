@@ -3,7 +3,7 @@ using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Identity;
-using Skill_Loop.Application.Features.Wallets.DTOs;
+using Skill_Loop.Application.Features.Wallets.Shared;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Wallets;
 
@@ -11,13 +11,13 @@ namespace Skill_Loop.Application.Features.Wallets.Queries.GetMyWallet;
 
 public sealed class GetMyWalletQueryHandler(
     IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : IQueryHandler<GetMyWalletQuery, WalletDto>
+    ICurrentUser _currentUser) : IQueryHandler<GetMyWalletQuery, WalletResponse>
 {
-    public async Task<Result<WalletDto>> Handle(GetMyWalletQuery request, CancellationToken cancellationToken)
+    public async Task<Result<WalletResponse>> Handle(GetMyWalletQuery request, CancellationToken cancellationToken)
     {
         if (!_currentUser.UserId.HasValue)
         {
-            return Result<WalletDto>.Failure(UserErrors.NotFound);
+            return Result<WalletResponse>.Failure(UserErrors.NotFound);
         }
 
         var userId = _currentUser.UserId.Value;
@@ -34,6 +34,6 @@ public sealed class GetMyWalletQueryHandler(
             await _dbContext.SaveChangesAsync(cancellationToken);
         }
 
-        return Result<WalletDto>.Success(new WalletDto(wallet.Id, wallet.Balance));
+        return Result<WalletResponse>.Success(new WalletResponse(wallet.Id, wallet.Balance));
     }
 }

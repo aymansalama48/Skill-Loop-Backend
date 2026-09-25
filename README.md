@@ -25,6 +25,11 @@
 |---|---|
 | 🔐 **Authentication** | Staff Login (Email/Password) · Google OAuth · JWT Access & Refresh Tokens · Secure Logout |
 | 👤 **Account Management** | Profile CRUD · Avatar Upload · Password Change · Forgot/Reset Password · Activate/Deactivate Users |
+| 🎤 **Instructor Profiles** | Create/Update Profile · Approval Workflow · Reviews & Ratings · Instructor Stats (Sessions Completed, Credits Earned) |
+| 💰 **Wallets** | View Balance · Transaction History (Paginated) · Auto-Credit on Course Enrollment · Optimistic Concurrency |
+| 📚 **Courses & Enrollments** | Course CRUD · Sections & Lessons · Course Reviews · Bookmarks · Enrollment · Lesson Progress Tracking |
+| 🎓 **Sessions & Materials** | Session CRUD · Status Management · File Upload/Download (Google Drive) · Material Reordering |
+| 💬 **Real-time Chat** | 1-on-1 Conversations · SignalR WebSocket · Read Receipts · Message Notifications |
 | 📩 **Staff Invitations** | Admin sends invite via email → Staff accepts with password or Google account |
 | 🔑 **Permission System** | Granular module-based permissions · Role–Permission assignment · Dynamic RBAC |
 | 📱 **OTP Verification** | HMAC-hashed codes · Configurable expiry & cooldown · Max attempts lockout |
@@ -52,10 +57,10 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 
 ### Layer Responsibilities
 
-- **Domain** — Pure business entities (`StaffInvitation`, `OtpVerification`), base entity types (`AuditableEntity`, `SoftDeleteEntity`), domain events, enums, and the `Result<T>` pattern for error handling.
+- **Domain** — Pure business entities (`Course`, `InstructorProfile`, `Session`, `UserWallet`, `StaffInvitation`, `OtpVerification`), base entity types (`AuditableEntity`, `SoftDeleteEntity`), domain events, enums, and the `Result<T>` pattern for error handling.
 - **Application** — Commands & Queries (CQRS) via MediatR, FluentValidation, AutoMapper, and a rich pipeline of cross-cutting behaviors (Logging → Performance → Authorization → Validation → Caching → Cache Invalidation → Transaction).
-- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage, Hangfire background jobs, Outbox pattern, and in-memory caching.
-- **Api** — ASP.NET Core controllers, request/response contracts, global exception handling, correlation ID middleware, Serilog integration, and Scalar (OpenAPI) documentation.
+- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage (local + Google Drive), Hangfire background jobs, Outbox pattern, and in-memory caching.
+- **Api** — ASP.NET Core controllers, request/response contracts, global exception handling, correlation ID middleware, Serilog integration, SignalR (real-time chat), and Scalar (OpenAPI) documentation.
 
 ---
 
@@ -104,6 +109,13 @@ Skill-Loop/
 │   │   │   ├── AccountsController     #     Auth, profile, user management
 │   │   │   ├── StaffInvitationsController  # Invitation flow
 │   │   │   ├── PermissionManagementController  # RBAC management
+│   │   │   ├── CoursesController       #     Courses CRUD
+│   │   │   ├── EnrollmentsController   #     Course enrollment & progress
+│   │   │   ├── SessionsController      #     Sessions CRUD
+│   │   │   ├── SessionMaterialsController  # Session file management
+│   │   │   ├── InstructorProfilesController  # Instructor profiles & reviews
+│   │   │   ├── WalletsController       #     Wallet balance & transactions
+│   │   │   ├── ChatController          #     Real-time chat
 │   │   │   └── SkillsController       #     Skills CRUD
 │   │   ├── Contracts/                  #   Request/Response DTOs
 │   │   ├── Middlewares/                #   CorrelationId, GlobalExceptionHandler
@@ -113,6 +125,13 @@ Skill-Loop/
 │   ├── Skill-Loop.Application/        # 📋 Application Layer
 │   │   ├── Features/
 │   │   │   ├── Accounts/              #   Auth, Account Mgmt, Permissions, Invitations
+│   │   │   ├── Categories/            #   Categories Commands & Queries
+│   │   │   ├── Courses/               #   Course Commands, Queries & Events
+│   │   │   ├── Enrollments/           #   Enrollment & Lesson Progress
+│   │   │   ├── Instructors/           #   Instructor Profile CRUD, Reviews, EventHandlers
+│   │   │   ├── Wallets/               #   Wallet Queries, DTOs & EventHandlers
+│   │   │   ├── Sessions/              #   Sessions & Materials Commands & Queries
+│   │   │   ├── Chat/                  #   Chat Commands & Queries
 │   │   │   ├── Otps/                  #   OTP verification logic
 │   │   │   └── Skills/                #   Skills Commands & Queries
 │   │   ├── Common/
@@ -125,14 +144,22 @@ Skill-Loop/
 │   │
 │   ├── Skill-Loop.Domain/            # 🏛️ Domain Layer
 │   │   ├── Entities/
+│   │   │   ├── Booking/               #   Booking entity
+│   │   │   ├── Chat/                  #   Conversation, ChatMessage
+│   │   │   ├── Courses/               #   Course aggregate, Value Objects, Events
+│   │   │   ├── Enrollments/           #   Enrollment, LessonProgress, Events
+│   │   │   ├── Instructors/           #   InstructorProfile, InstructorReview
 │   │   │   ├── Invitation/            #   StaffInvitation + domain events
-│   │   │   └── OtpVerification/       #   OTP entity
+│   │   │   ├── OtpVerification/       #   OTP entity
+│   │   │   ├── Session/               #   Session, SessionMaterial, Events
+│   │   │   ├── SiteSettings/          #   SiteSettings entity
+│   │   │   └── Wallets/               #   UserWallet, WalletTransaction, Events
 │   │   ├── Common/
 │   │   │   ├── Entities/              #   BaseEntity, AuditableEntity, SoftDeleteEntity
 │   │   │   ├── Events/               #   Domain event base types
 │   │   │   └── Results/              #   Result<T>, Error, ErrorType
-│   │   ├── Enums/                     #   OtpPurpose, etc.
-│   │   └── Constants/                 #   Domain constants
+│   │   ├── Enums/                     #   OtpPurpose, SessionStatus, BookingStatus, etc.
+│   │   └── Constants/                 #   Roles, Permissions
 │   │
 │   └── Skill-Loop.Infrastructure/     # 🔧 Infrastructure Layer
 │       ├── Persistence/
@@ -290,6 +317,27 @@ The API will be available at:
 | `POST` | `/api/permission-management/roles/{roleId}/permissions/update` | ✅ | Batch update role permissions |
 
 > **Legend:** ❌ Public · ✅ Authenticated · 🔒 Admin Only
+
+### 🎤 Instructor Profiles (`/api/instructor-profiles`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/instructor-profiles` | ❌ | List approved instructors (paginated, filterable) |
+| `GET` | `/api/instructor-profiles/{userId}` | ❌ | Get instructor profile by user ID |
+| `GET` | `/api/instructor-profiles/me` | ✅ | Get current user's instructor profile |
+| `POST` | `/api/instructor-profiles/me` | ✅ | Create instructor profile for current user |
+| `PUT` | `/api/instructor-profiles/me` | ✅ | Update instructor profile |
+| `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
+| `POST` | `/api/instructor-profiles/{profileId}/reviews` | ✅ | Add a review for an instructor |
+| `PUT` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Update a review |
+| `DELETE` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Remove a review |
+
+### 💰 Wallets (`/api/wallets`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/wallets/me` | ✅ | Get current user's wallet balance |
+| `GET` | `/api/wallets/me/transactions` | ✅ | Get transaction history (paginated) |
 
 ---
 

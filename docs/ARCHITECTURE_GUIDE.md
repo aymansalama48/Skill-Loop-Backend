@@ -3,7 +3,7 @@
 > **Purpose**: دليل شامل لأي مطوّر جديد يشرح كيف يبني Feature كاملة في هذا الـ Codebase.
 > كل قاعدة مكتوبة هنا مأخوذة من الكود الفعلي، والمسارات مرفقة.
 >
-> **آخر تحديث**: 2026-09-24
+> **آخر تحديث**: 2026-09-25
 
 ---
 
@@ -182,6 +182,9 @@ Domain/Entities/
 │   ├── LessonProgress.cs             ← BaseEntity (تقدم الطالب في درس)
 │   └── Events/
 │       └── EnrollmentDomainEvents.cs
+├── Instructors/
+│   ├── InstructorProfile.cs          ← AuditableEntity (بروفايل المدرب — Aggregate Root)
+│   └── InstructorReview.cs           ← SoftDeleteEntity (تقييم المدرب من الطلاب)
 ├── Invitation/
 │   └── StaffInvitation.cs            ← AuditableEntity (دعوة موظف)
 ├── OtpVerification/
@@ -190,7 +193,8 @@ Domain/Entities/
 │   ├── Session.cs                    ← AuditableEntity (جلسة تعليمية 1-لـ-1)
 │   ├── SessionMaterial.cs            ← AuditableEntity (ملف مرفق بالجلسة)
 │   └── Events/
-│       └── SessionMaterialUploadedEvent.cs
+│       ├── SessionMaterialUploadedEvent.cs
+│       └── SessionCompletedDomainEvent.cs
 ├── SiteSettings/
 │   └── SiteSettings.cs              ← BaseEntity (إعدادات الموقع)
 └── Wallets/
@@ -198,6 +202,59 @@ Domain/Entities/
     ├── WalletTransaction.cs          ← BaseEntity (حركة مالية)
     └── Events/
         └── WalletDomainEvents.cs
+```
+
+#### InstructorProfile — بروفايل المدرب (Aggregate Root)
+
+**Files**: `src/Skill-Loop.Domain/Entities/Instructors/`
+
+`InstructorProfile` هو Aggregate Root يمثل الملف الشخصي للمدرب ويتضمن:
+- علاقة 1-to-1 مع `ApplicationUser` عبر `UserId`
+- بيانات العرض: `Headline`, `Bio`
+- حالة الاعتماد: `IsApproved` (يبدأ `false` — يحتاج موافقة الإدارة)
+- إحصائيات: `Rating`, `SessionsCompleted`, `CreditsEarned`
+- مجموعة المراجعات: `Reviews` (1-لـ-متعدد مع `InstructorReview`)
+
+```csharp
+public sealed class InstructorProfile : AuditableEntity
+{
+    public Guid UserId { get; private set; }
+    public string Headline { get; private set; } = string.Empty;
+    public string Bio { get; private set; } = string.Empty;
+    public bool IsApproved { get; private set; }
+    public double Rating { get; private set; }
+    public int SessionsCompleted { get; private set; }
+    public int CreditsEarned { get; private set; }
+    public IReadOnlyCollection<InstructorReview> Reviews => _reviews.AsReadOnly();
+
+    private InstructorProfile() { }
+
+    public static Result<InstructorProfile> Create(Guid userId, string headline, string bio) { ... }
+    public Result UpdateDetails(string headline, string bio) { ... }
+    public void Approve() => IsApproved = true;
+    public void Suspend() => IsApproved = false;
+    public void IncrementSessionsCompleted() => SessionsCompleted++;
+    public void AddCreditsEarned(int amount) => CreditsEarned += amount;
+    public Result AddReview(Guid learnerUserId, int rating, string? comment) { ... }
+    public Result UpdateReview(Guid reviewId, Guid learnerUserId, int rating, string? comment) { ... }
+    public Result RemoveReview(Guid reviewId, Guid learnerUserId) { ... }
+    private void RecalculateRating() { ... } // حساب متوسط التقييم تلقائياً
+}
+```
+
+#### InstructorReview — تقييم المدرب
+
+```csharp
+public sealed class InstructorReview : SoftDeleteEntity
+{
+    public Guid InstructorProfileId { get; private set; }
+    public Guid LearnerUserId { get; private set; }
+    public int Rating { get; private set; } // 1 إلى 5
+    public string Comment { get; private set; } = string.Empty;
+
+    public static Result<InstructorReview> Create(Guid instructorProfileId, Guid learnerUserId, int rating, string? comment) { ... }
+    public void Update(int rating, string? comment) { ... }
+}
 ```
 
 ---
@@ -266,17 +323,18 @@ public sealed record CoursePrice
 
 #### الأحداث الموجودة حالياً
 
-| Module         | Event                                                                                       | ملف المصدر                                                  |
-| -------------- | ------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| **Course**     | `CourseCreatedDomainEvent(Guid CourseId, string Title)`                                     | `Entities/Courses/Events/CourseDomainEvents.cs`             |
-| **Course**     | `CourseUpdatedDomainEvent(Guid CourseId, string Title)`                                     | `Entities/Courses/Events/CourseDomainEvents.cs`             |
-| **Course**     | `CoursePublishedDomainEvent(Guid CourseId, string Title)`                                   | `Entities/Courses/Events/CourseDomainEvents.cs`             |
-| **Enrollment** | `CourseEnrolledDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, int CreditsPaid)` | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`     |
-| **Enrollment** | `LessonCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, Guid LessonId)`  | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`     |
-| **Enrollment** | `CourseCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId)`                 | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`     |
-| **Wallet**     | `WalletBalanceDeductedDomainEvent(Guid UserId, int AmountDeducted, int RemainingBalance)`   | `Entities/Wallets/Events/WalletDomainEvents.cs`             |
-| **Session**    | `SessionMaterialUploadedEvent(SessionMaterial Material)`                                    | `Entities/Session/Events/SessionMaterialUploadedEvent.cs`   |
-| **Invitation** | `StaffInvitationCreatedEvent(StaffInvitation Invitation)`                                   | `Entities/Invitation/Events/StaffInvitationCreatedEvent.cs` |
+| Module         | Event                                                                                               | ملف المصدر                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Course**     | `CourseCreatedDomainEvent(Guid CourseId, string Title)`                                             | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Course**     | `CourseUpdatedDomainEvent(Guid CourseId, string Title)`                                             | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Course**     | `CoursePublishedDomainEvent(Guid CourseId, string Title)`                                           | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Enrollment** | `CourseEnrolledDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, int CreditsPaid)`         | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Enrollment** | `LessonCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, Guid LessonId)`          | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Enrollment** | `CourseCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId)`                         | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Wallet**     | `WalletBalanceDeductedDomainEvent(Guid UserId, int AmountDeducted, int RemainingBalance)`           | `Entities/Wallets/Events/WalletDomainEvents.cs`              |
+| **Session**    | `SessionMaterialUploadedEvent(SessionMaterial Material)`                                            | `Entities/Session/Events/SessionMaterialUploadedEvent.cs`    |
+| **Session**    | `SessionCompletedDomainEvent(Guid SessionId, Guid InstructorId, Guid LearnerUserId, int PriceInCredits)` | `Entities/Session/Events/SessionCompletedDomainEvent.cs` |
+| **Invitation** | `StaffInvitationCreatedEvent(StaffInvitation Invitation)`                                           | `Entities/Invitation/Events/StaffInvitationCreatedEvent.cs`  |
 
 **مثال كامل — Course يرفع حدث**:
 
@@ -496,10 +554,29 @@ Errors/
 │   ├── PasswordErrors.cs
 │   ├── TokenErrors.cs
 │   └── UserErrors.cs
+├── Instructors/
+│   └── InstructorProfileErrors.cs
 ├── Invitations/
 │   └── InvitationErrors.cs
 └── Sessions/
     └── SessionMaterialErrors.cs
+```
+
+**InstructorProfileErrors**:
+
+```csharp
+public static class InstructorProfileErrors
+{
+    public static readonly Error NotFound = new(
+        "INSTRUCTOR_PROFILE_NOT_FOUND",
+        "لم يتم العثور على الملف الشخصي للمدرب.",
+        ErrorType.NotFound);
+
+    public static readonly Error AlreadyExists = new(
+        "INSTRUCTOR_PROFILE_ALREADY_EXISTS",
+        "يوجد ملف شخصي لهذا المدرب بالفعل.",
+        ErrorType.Conflict);
+}
 ```
 
 **Convention**:
@@ -622,17 +699,19 @@ Features/
 
 #### Features الموجودة حالياً
 
-| Feature                | Commands                                                                                                                                                                                                                                                                                                                  | Queries                                                                                                          | EventHandlers           | DTOs |
-| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------- | ---- |
-| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture, AssignPermission, RemovePermission, UpdateRolePermissions | GetAllUsers, GetMyProfile, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated  | ✅   |
-| **Categories**         | CreateCategory, UpdateCategory, DeleteCategory                                                                                                                                                                                                                                                                            | GetCategories                                                                                                    | —                       | —    |
-| **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)  | ✅   |
-| **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                       | ✅   |
-| **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                       | —    |
-| **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded | —    |
-| **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                       | ✅   |
-| **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                       | —    |
-| **Skills**             | (Commands exist)                                                                                                                                                                                                                                                                                                          | (Queries exist)                                                                                                  | —                       | —    |
+| Feature                | Commands                                                                                                                                                                                                                                                                                                                  | Queries                                                                                                          | EventHandlers                                   | DTOs |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---- |
+| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture, AssignPermission, RemovePermission, UpdateRolePermissions | GetAllUsers, GetMyProfile, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated                          | ✅   |
+| **Categories**         | CreateCategory, UpdateCategory, DeleteCategory                                                                                                                                                                                                                                                                            | GetCategories                                                                                                    | —                                               | —    |
+| **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)                          | ✅   |
+| **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                                               | ✅   |
+| **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                                                                                                  | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
+| **Wallets**            | —                                                                                                                                                                                                                                                                                                                         | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
+| **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                                               | —    |
+| **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
+| **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                                               | ✅   |
+| **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                                               | —    |
+| **Skills**             | (Commands exist)                                                                                                                                                                                                                                                                                                          | (Queries exist)                                                                                                  | —                                               | —    |
 
 ---
 
@@ -687,6 +766,10 @@ public interface ICourseContentStorage
 ```csharp
 public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
+    // Instructor Profiles
+    public DbSet<InstructorProfile> InstructorProfiles => Set<InstructorProfile>();
+    public DbSet<InstructorReview> InstructorReviews => Set<InstructorReview>();
+
     // Core
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
@@ -703,6 +786,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // Enrollments & Wallets
     public DbSet<Enrollment> Enrollments => Set<Enrollment>();
     public DbSet<UserWallet> UserWallets => Set<UserWallet>();
+    public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
 
     // Sessions & Bookings
     public DbSet<Session> Sessions => Set<Session>();
@@ -735,6 +819,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 | `ChatConfigurations.cs`                 | Conversation, ChatMessage                                 |
 | `CourseConfiguration.cs`                | Course (Aggregate + Value Objects)                        |
 | `EnrollmentAndWalletConfigurations.cs`  | Enrollment, LessonProgress, UserWallet, WalletTransaction |
+| `InstructorProfileConfiguration.cs`     | InstructorProfile (1-to-1 مع ApplicationUser)             |
+| `InstructorReviewConfiguration.cs`      | InstructorReview (1-لـ-متعدد مع InstructorProfile)        |
 | `OtpVerificationConfiguration.cs`       | OtpVerification                                           |
 | `OutboxMessageConfiguration.cs`         | OutboxMessage                                             |
 | `RefreshTokenConfiguration.cs`          | RefreshToken                                              |
@@ -906,6 +992,13 @@ Contracts/
 │   └── ...
 ├── Enrollments/
 │   └── ...
+├── Instructors/
+│   ├── AddInstructorReviewRequest.cs
+│   ├── ChangeInstructorApprovalStatusRequest.cs
+│   ├── CreateInstructorProfileRequest.cs
+│   ├── GetInstructorsRequest.cs
+│   ├── UpdateInstructorProfileRequest.cs
+│   └── UpdateInstructorReviewRequest.cs
 ├── Profile/
 │   └── ...
 ├── Sessions/
@@ -940,6 +1033,8 @@ Contracts/
 | `CategoriesController`           | `api/categories`            | CRUD التصنيفات                                      |
 | `CoursesController`              | `api/courses`               | CRUD الكورسات                                       |
 | `EnrollmentsController`          | `api/enrollments`           | التسجيل في الكورسات + تقدم الدروس                   |
+| `InstructorProfilesController`   | `api/instructor-profiles`   | بروفايل المدرب + التقييمات + اعتماد الإدارة          |
+| `WalletsController`              | `api/wallets`               | رصيد المحفظة + سجل الحركات المالية                   |
 | `SessionsController`             | `api/sessions`              | CRUD الجلسات التعليمية                              |
 | `SessionMaterialsController`     | `api/session-materials`     | رفع/حذف/ترتيب ملفات الجلسات                         |
 | `ChatController`                 | `api/chat`                  | المحادثات والرسائل                                  |
@@ -1322,7 +1417,6 @@ public static class Courses
 
 | #   | المشكلة                                      | الملف/المسار                 | التفاصيل                                                                                      |
 | --- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| 1   | **Migrations folder غير موجود**              | `Infrastructure/Migrations/` | لا يوجد مجلد migrations — يعني القاعدة تُنشأ بطريقة أخرى (EnsureCreated?) أو تم حذف الملفات.  |
 | 2   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
 | 3   | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore`                 | لا يوجد أي استثناء لـ `appsettings.json` في `.gitignore`.                                     |
 
@@ -1364,10 +1458,11 @@ public static class Courses
 | **Categories**                 | ✅ مكتمل | `CreateCategory`, `UpdateCategory`, `DeleteCategory`, `GetCategories` + Entity + Controller                                                                                           |
 | **Courses**                    | ✅ مكتمل | Entity (Aggregate Root) + Value Objects + `CreateCourse`, `AddLesson`, `AddCourseReview`, `PublishCourse`, `ToggleCourseBookmark`, `GetCourseById`, `GetCoursesPaged` + Domain Events |
 | **Enrollments**                | ✅ مكتمل | Entity + `EnrollInCourse`, `UpdateLessonProgress`, `GetUserEnrolledCourses` + Domain Events + Wallet Integration                                                                      |
-| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged`                                                               |
+| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged` + `SessionCompletedDomainEvent`                              |
 | **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
 | **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
-| **Wallet**                     | ✅ مكتمل | Entity (`UserWallet`, `WalletTransaction`) + Optimistic Concurrency + Domain Events. **ملاحظة**: الـ Wallet يُستخدم داخلياً عبر Enrollment flow (خصم كريديت عند التسجيل).             |
+| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
+| **Wallet**                     | ✅ مكتمل | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
 | **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
@@ -1377,7 +1472,6 @@ public static class Courses
 
 | Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
 | ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Instructor Profile**   | 🔴 عالية  | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD + verification + ربط مع Course.InstructorId.                                                       |
 | **Booking**              | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
 | **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
 | **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
@@ -1391,14 +1485,14 @@ Module                  | Domain | Application | Infrastructure | API | Tests
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Instructor Profile      |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
+Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Courses                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Enrollments             |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Sessions                |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Booking                 |   ⚠️   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Wallet                  |   ✅   |     ✅      |       ✅       |  —   |  ✅
+Wallet                  |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
