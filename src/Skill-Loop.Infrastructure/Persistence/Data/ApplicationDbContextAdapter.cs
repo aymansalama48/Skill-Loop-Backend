@@ -3,6 +3,7 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Courses;
 using Skill_Loop.Domain.Entities.Enrollments;
+using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
@@ -24,6 +25,8 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // 1. القراءة (IQueryable Mapping)
     // ==============================
 
+    public IQueryable<InstructorProfile> InstructorProfiles => context.InstructorProfiles;
+    public IQueryable<InstructorReview> InstructorReviews => context.InstructorReviews;
 
 
 
@@ -45,6 +48,9 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // 💬 الشات
     public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => context.Conversations;
     public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => context.ChatMessages;
+
+    public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions;
+
 
     // ==============================
     // عمليات الكتابة (عنصر واحد)

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Entities.Booking;
+using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
@@ -16,6 +17,9 @@ public interface IApplicationDbContext
 
     //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
+    public IQueryable<InstructorProfile> InstructorProfiles { get; }
+    public IQueryable<InstructorReview> InstructorReviews { get; }
+
     public IQueryable<SiteSettings> SiteSettings { get; }
 
     public IQueryable<OtpVerification> OtpVerifications { get; }
@@ -24,6 +28,7 @@ public interface IApplicationDbContext
     public IQueryable<Skill_Loop.Domain.Entities.Courses.Category> Categories { get; }
     public IQueryable<Skill_Loop.Domain.Entities.Enrollments.Enrollment> Enrollments { get; }
     public IQueryable<Skill_Loop.Domain.Entities.Wallets.UserWallet> UserWallets { get; }
+    public IQueryable<Skill_Loop.Domain.Entities.Wallets.WalletTransaction> WalletTransactions { get; }
     public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseBookmark> CourseBookmarks { get; }
     public IQueryable<Skill_Loop.Domain.Entities.Courses.CourseReview> CourseReviews { get; }
 
