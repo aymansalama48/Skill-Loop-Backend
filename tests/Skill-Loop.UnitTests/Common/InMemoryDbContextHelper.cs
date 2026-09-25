@@ -5,6 +5,7 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Courses;
 using Skill_Loop.Domain.Entities.Enrollments;
+using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
@@ -51,6 +52,12 @@ public static class InMemoryDbContextHelper
         public IQueryable<SessionMaterial> SessionMaterials => _dbContext.SessionMaterials;
         public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Conversations;
         public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.ChatMessages;
+
+        public IQueryable<InstructorProfile> InstructorProfiles => _dbContext.InstructorProfiles;
+
+        public IQueryable<InstructorReview> InstructorReviews => _dbContext.InstructorReviews;
+
+        public IQueryable<WalletTransaction> WalletTransactions => _dbContext.WalletTransactions;
 
         public void Add<TEntity>(TEntity entity) where TEntity : class => _dbContext.Add(entity);
         public void Update<TEntity>(TEntity entity) where TEntity : class => _dbContext.Update(entity);

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using Skill_Loop.Infrastructure.Persistence.Data;
 namespace Skill_Loop.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260925132539_CreateInstructorProfileTable")]
+    partial class CreateInstructorProfileTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -620,54 +623,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("InstructorProfiles", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorReview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .IsRequired()
-                        .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("InstructorProfileId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("bit");
-
-                    b.Property<Guid>("LearnerUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Rating")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstructorProfileId");
-
-                    b.ToTable("InstructorReviews", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Invitation.StaffInvitation", b =>
@@ -1539,15 +1494,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorReview", b =>
-                {
-                    b.HasOne("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", null)
-                        .WithMany("Reviews")
-                        .HasForeignKey("InstructorProfileId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.SessionMaterial", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", "Session")
@@ -1618,11 +1564,6 @@ namespace Skill_Loop.Infrastructure.Migrations
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Enrollments.Enrollment", b =>
                 {
                     b.Navigation("LessonProgresses");
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
-                {
-                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.Session", b =>
