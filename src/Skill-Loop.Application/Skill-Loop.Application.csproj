@@ -15,6 +15,10 @@
     <PackageReference Include="Microsoft.Extensions.Options" Version="10.0.12" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Wallets\DTOs\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
     <RootNamespace>Skill_Loop.Application</RootNamespace>

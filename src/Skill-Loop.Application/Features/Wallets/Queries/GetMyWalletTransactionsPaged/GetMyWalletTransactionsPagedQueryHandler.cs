@@ -4,7 +4,7 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Application.Common.Pagination;
-using Skill_Loop.Application.Features.Wallets.DTOs;
+using Skill_Loop.Application.Features.Wallets.Shared;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Wallets;
 
@@ -12,13 +12,13 @@ namespace Skill_Loop.Application.Features.Wallets.Queries.GetMyWalletTransaction
 
 public sealed class GetMyWalletTransactionsPagedQueryHandler(
     IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : IQueryHandler<GetMyWalletTransactionsPagedQuery, PagedResult<WalletTransactionDto>>
+    ICurrentUser _currentUser) : IQueryHandler<GetMyWalletTransactionsPagedQuery, PagedResult<WalletTransactionResponse>>
 {
-    public async Task<Result<PagedResult<WalletTransactionDto>>> Handle(GetMyWalletTransactionsPagedQuery request, CancellationToken cancellationToken)
+    public async Task<Result<PagedResult<WalletTransactionResponse>>> Handle(GetMyWalletTransactionsPagedQuery request, CancellationToken cancellationToken)
     {
         if (!_currentUser.UserId.HasValue)
         {
-            return Result<PagedResult<WalletTransactionDto>>.Failure(UserErrors.NotFound);
+            return Result<PagedResult<WalletTransactionResponse>>.Failure(UserErrors.NotFound);
         }
 
         var userId = _currentUser.UserId.Value;
@@ -33,7 +33,7 @@ public sealed class GetMyWalletTransactionsPagedQueryHandler(
         if (walletId == Guid.Empty)
         {
             // لو مفيش محفظة، نرجع لستة فاضية
-            return Result<PagedResult<WalletTransactionDto>>.Success(new PagedResult<WalletTransactionDto>
+            return Result<PagedResult<WalletTransactionResponse>>.Success(new PagedResult<WalletTransactionResponse>
             {
                 Items = [],
                 Pagination = new PaginationMetadata { TotalCount = 0, PageSize = request.PageSize, CurrentPage = request.PageNumber }
@@ -50,7 +50,7 @@ public sealed class GetMyWalletTransactionsPagedQueryHandler(
             .OrderByDescending(t => t.OccurredAt) // أحدث الحركات الأول
             .Skip((request.PageNumber - 1) * request.PageSize)
             .Take(request.PageSize)
-            .Select(t => new WalletTransactionDto(
+            .Select(t => new WalletTransactionResponse(
                 t.Id,
                 t.Amount,
                 t.Type.ToString(),
@@ -58,7 +58,7 @@ public sealed class GetMyWalletTransactionsPagedQueryHandler(
                 t.OccurredAt))
             .ToListAsync(cancellationToken);
 
-        var pagedResult = new PagedResult<WalletTransactionDto>
+        var pagedResult = new PagedResult<WalletTransactionResponse>
         {
             Items = transactions,
             Pagination = new PaginationMetadata
@@ -69,6 +69,6 @@ public sealed class GetMyWalletTransactionsPagedQueryHandler(
             }
         };
 
-        return Result<PagedResult<WalletTransactionDto>>.Success(pagedResult);
+        return Result<PagedResult<WalletTransactionResponse>>.Success(pagedResult);
     }
 }

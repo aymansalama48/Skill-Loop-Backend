@@ -1,6 +1,6 @@
-﻿namespace Skill_Loop.Application.Features.Wallets.DTOs;
+﻿namespace Skill_Loop.Application.Features.Wallets.Shared;
 
-public sealed record WalletTransactionDto(
+public sealed record WalletTransactionResponse(
     Guid TransactionId,
     int Amount,
     string Type, // "CreditReward" أو "CreditDeduction"
