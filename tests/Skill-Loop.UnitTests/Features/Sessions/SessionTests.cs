@@ -13,18 +13,20 @@ public class SessionTests
     [Fact]
     public void Session_Create_SetsStatusToDraft()
     {
-        // استخدام دالة Create بدلاً من new
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Title");
+        // استخدام دالة Create مع التوقيع الجديد (سعر، مدة، نوع)
+        var result = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Title", 100, 60, SessionType.Online);
 
-        session.Status.Should().Be(SessionStatus.Draft);
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Status.Should().Be(SessionStatus.Draft);
     }
 
     [Fact]
     public void Session_Create_SetsTitleCorrectly()
     {
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Session");
+        var result = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Session", 100, 60, SessionType.Online);
 
-        session.Title.Should().Be("My Session");
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Title.Should().Be("My Session");
     }
 
     [Fact]
@@ -33,19 +35,21 @@ public class SessionTests
         var instructorId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
 
-        var session = Session.Create(instructorId, ownerId, "Test Title");
+        var result = Session.Create(instructorId, ownerId, "Test Title", 100, 60, SessionType.Online);
 
-        session.InstructorId.Should().Be(instructorId);
-        session.OwnerId.Should().Be(ownerId);
+        result.IsSuccess.Should().BeTrue();
+        result.Data.InstructorId.Should().Be(instructorId);
+        result.Data.OwnerId.Should().Be(ownerId);
     }
 
     [Fact]
     public void Session_Create_InitializesEmptyMaterialsCollection()
     {
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Title");
+        var result = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Title", 100, 60, SessionType.Online);
 
-        session.Materials.Should().NotBeNull();
-        session.Materials.Should().BeEmpty();
+        result.IsSuccess.Should().BeTrue();
+        result.Data.Materials.Should().NotBeNull();
+        result.Data.Materials.Should().BeEmpty();
     }
 
     [Fact]
@@ -54,14 +58,20 @@ public class SessionTests
         // Arrange
         var instructorId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
-        var session = Session.Create(instructorId, ownerId, "Old Title");
+        var sessionResult = Session.Create(instructorId, ownerId, "Old Title", 100, 60, SessionType.Online);
 
-        // Act - استخدام الدوال المساعدة بدلاً من التعيين المباشر
-        session.UpdateDetails("New Test Session");
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+
+        // Act - استخدام التوقيع الجديد لدالة UpdateDetails ودالة ChangeStatus
+        session.UpdateDetails("New Test Session", 150, 45, SessionType.Offline);
         session.ChangeStatus(SessionStatus.Published);
 
         // Assert
         session.Title.Should().Be("New Test Session");
+        session.PriceInCredits.Should().Be(150);
+        session.DurationInMinutes.Should().Be(45);
+        session.Type.Should().Be(SessionType.Offline);
         session.Status.Should().Be(SessionStatus.Published);
     }
 
@@ -70,7 +80,10 @@ public class SessionTests
     {
         // Arrange
         var sessionId = Guid.NewGuid();
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Session");
+        var sessionResult = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Session", 100, 60, SessionType.Online);
+
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
         session.Id = sessionId;
 
         // Act - إنشاء الماتيريال بطريقة صحيحة وإضافته باستخدام دالة AddMaterial

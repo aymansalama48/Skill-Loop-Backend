@@ -1,10 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
-namespace Skill_Loop.Application.Features.Instructors.Share
-{
-    public class InstructorProfileResponse(
+namespace Skill_Loop.Application.Features.Instructors.Share;
+
+public sealed record InstructorProfileResponse(
     Guid Id,
     Guid UserId,
     string Headline,
@@ -12,6 +11,8 @@ namespace Skill_Loop.Application.Features.Instructors.Share
     bool IsApproved,
     double Rating,
     int SessionsCompleted,
-    int CreditsEarned
+    int CreditsEarned,
+    // القوائم الجديدة
+    IReadOnlyCollection<InstructorAvailabilityResponse> Availabilities,
+    IReadOnlyCollection<InstructorReviewResponse> Reviews
 );
-}

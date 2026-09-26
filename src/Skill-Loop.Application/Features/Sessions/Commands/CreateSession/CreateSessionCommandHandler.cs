@@ -16,10 +16,21 @@ public sealed class CreateSessionCommandHandler : ICommandHandler<CreateSessionC
 
     public async Task<Result<Guid>> Handle(CreateSessionCommand request, CancellationToken cancellationToken)
     {
-        // استخدام دالة Create اللي عملناها في الكيان
-        // بنعتبر المحاضر هو المالك (Owner) للجلسة حالياً
-        var session = Session.Create(request.InstructorId, request.InstructorId, request.Title);
+        // الدالة Create بقت بترجع Result<Session> بدل Session مباشرة ولازم نشيك عليها
+        var sessionResult = Session.Create(
+            request.InstructorId,
+            request.InstructorId,
+            request.Title,
+            request.PriceInCredits,
+            request.DurationInMinutes,
+            request.Type);
 
+        if (!sessionResult.IsSuccess)
+        {
+            return Result<Guid>.Failure(sessionResult.Errors);
+        }
+
+        var session = sessionResult.Data;
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(cancellationToken);
 

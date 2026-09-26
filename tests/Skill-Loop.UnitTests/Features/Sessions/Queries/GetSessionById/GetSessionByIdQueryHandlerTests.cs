@@ -42,7 +42,12 @@ public class GetSessionByIdQueryHandlerTests
         // Arrange
         var instructorId = Guid.NewGuid();
         var ownerId = Guid.NewGuid();
-        var session = Session.Create(instructorId, ownerId, "Mastering C# and .NET");
+
+        // استخدام الـ Result وطريقة الإنشاء بالبارامترات الجديدة
+        var sessionResult = Session.Create(instructorId, ownerId, "Mastering C# and .NET", 100, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 

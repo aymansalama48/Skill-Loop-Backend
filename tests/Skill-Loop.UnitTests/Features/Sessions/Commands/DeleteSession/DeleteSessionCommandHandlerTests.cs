@@ -1,10 +1,12 @@
 namespace Skill_Loop.UnitTests.Features.Sessions.Commands.DeleteSession;
 
 using FluentAssertions;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Sessions.Commands.DeleteSession;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
+using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
 using System.Threading;
@@ -39,13 +41,18 @@ public class DeleteSessionCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSessionHasMaterials_ReturnsConflictFailure()
     {
-        // Arrange
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Session with files");
+        // Arrange - استخدام الـ Result وطريقة الإنشاء الجديدة بالخصائص (السعر، المدة، النوع)
+        var sessionResult = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Session with files", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         var material = SessionMaterial.Create(
             session.Id, "file.pdf", "application/pdf", 1024, "drive-1", null, 1, Guid.NewGuid());
+
+        // استخدام الدومين لإضافة الملف للجلسة
         session.AddMaterial(material);
         _dbContext.Add(material);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
@@ -63,8 +70,11 @@ public class DeleteSessionCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSessionHasNoMaterials_RemovesSessionAndReturnsSuccess()
     {
-        // Arrange
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Session to delete");
+        // Arrange - استخدام الـ Result وطريقة الإنشاء الجديدة
+        var sessionResult = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Session to delete", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -75,7 +85,7 @@ public class DeleteSessionCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        var deletedSession = await _dbContext.FirstOrDefaultAsync(_dbContext.Sessions.Where(s => s.Id == session.Id));
+        var deletedSession = await _dbContext.Sessions.FirstOrDefaultAsync(s => s.Id == session.Id);
         deletedSession.Should().BeNull();
     }
 }

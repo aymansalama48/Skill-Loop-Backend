@@ -25,6 +25,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
 
     public DbSet<InstructorProfile> InstructorProfiles => Set<InstructorProfile>();
+    public DbSet<InstructorAvailability> InstructorAvailabilities => Set<InstructorAvailability>();
     public DbSet<InstructorReview> InstructorReviews => Set<InstructorReview>();
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();

@@ -24,8 +24,12 @@ public sealed class UpdateSessionCommandHandler : ICommandHandler<UpdateSessionC
             return Result.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
         }
 
-        // استخدام دالة UpdateDetails اللي ضفناها للكيان
-        session.UpdateDetails(request.Title);
+        // استخدام دالة UpdateDetails بالخصائص الجديدة
+        session.UpdateDetails(
+            request.Title,
+            request.PriceInCredits,
+            request.DurationInMinutes,
+            request.Type);
 
         _dbContext.Update(session);
         await _dbContext.SaveChangesAsync(cancellationToken);

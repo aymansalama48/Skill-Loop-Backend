@@ -1,3 +1,10 @@
-﻿namespace Skill_Loop.Api.Contracts.Sessions;
+﻿using Skill_Loop.Domain.Enums;
 
-public sealed record UpdateSessionRequest(string Title);
+namespace Skill_Loop.Api.Contracts.Sessions;
+
+public sealed record UpdateSessionRequest(
+    string Title,
+    int PriceInCredits,
+    int DurationInMinutes,
+    SessionType Type
+);

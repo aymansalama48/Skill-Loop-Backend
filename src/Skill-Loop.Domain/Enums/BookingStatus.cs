@@ -2,7 +2,8 @@ namespace Skill_Loop.Domain.Enums;
 
 public enum BookingStatus
 {
-    Confirmed,
-    InProgress,
-    Completed
+    Pending = 1,
+    Confirmed = 2,
+    Completed = 3,
+    Cancelled = 4
 }

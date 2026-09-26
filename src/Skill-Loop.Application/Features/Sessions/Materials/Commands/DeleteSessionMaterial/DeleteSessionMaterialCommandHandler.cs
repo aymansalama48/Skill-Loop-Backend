@@ -5,7 +5,7 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Sessions;
 using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
-using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.Sessions; // مسار الجلسة
 using Microsoft.EntityFrameworkCore;
 
 namespace Skill_Loop.Application.Features.Sessions.Materials.Commands.DeleteSessionMaterial;
@@ -36,31 +36,41 @@ public sealed class DeleteSessionMaterialCommandHandler : ICommandHandler<Delete
 
         var currentUserId = _currentUser.UserId.Value;
 
-        // 2. Get material with session
-        var material = await _dbContext.SessionMaterials
-            .Include(m => m.Session)
-            .FirstOrDefaultAsync(m => m.Id == request.MaterialId && m.SessionId == request.SessionId, cancellationToken);
+        // 2. Get session with its materials (ده الأب اللي بيدير كل حاجة)
+        var session = await _dbContext.Sessions
+            .Include(s => s.Materials)
+            .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
+
+        if (session is null)
+        {
+            return Result.Failure(SessionMaterialErrors.NotFound); // أو SessionNotFound
+        }
+
+        // 3. Verify ownership
+        if (session.InstructorId != currentUserId && session.OwnerId != currentUserId)
+        {
+            return Result.Failure(SessionMaterialErrors.NotOwner);
+        }
+
+        // 4. Find the specific material inside the session
+        var material = session.Materials.FirstOrDefault(m => m.Id == request.MaterialId);
 
         if (material is null)
         {
             return Result.Failure(SessionMaterialErrors.NotFound);
         }
 
-        // 3. Verify ownership (InstructorId or OwnerId)
-        if (material.Session.InstructorId != currentUserId && material.Session.OwnerId != currentUserId)
-        {
-            return Result.Failure(SessionMaterialErrors.NotOwner);
-        }
-
-        // 4. Delete from Drive first
+        // 5. Delete from Drive first
         var deleteResult = await _courseContentStorage.DeleteAsync(material.DriveFileId, cancellationToken);
         if (!deleteResult.IsSuccess)
         {
             return Result.Failure(SessionMaterialErrors.DeleteFailed);
         }
 
-        // 5. Delete from DB
-        _dbContext.Remove(material);
+        // 6. Delete from Session Entity (هنا بنستخدم الدالة بتاعتك!)
+        session.RemoveMaterial(material);
+
+        // حفظ التغييرات على الداتابيز (EF Core هيمسح الـ Material لوحده لأننا مسحناه من الليستة)
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
