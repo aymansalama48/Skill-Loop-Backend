@@ -1525,14 +1525,14 @@ Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  �
 Booking                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⚠️
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Permission Management   |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-File Storage            |   —    |     —       |       ✅       |  ✅  |  ⬜
+OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+File Storage            |   —    |     —       |       ✅       |  ✅  |  ✅
 Google Drive Storage    |   —    |     ✅      |       ✅       |  —   |  ✅
-Email             |   —    |     —       |       ✅       |  —   |  ⬜
+Email             |   —    |     —       |       ✅       |  —   |  ✅
 
 ✅ = Implemented   ⚠️ = Partial/Needs Work   ⬜ = Missing
 ```
