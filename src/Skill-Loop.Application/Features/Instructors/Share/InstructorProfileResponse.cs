@@ -4,7 +4,7 @@ using System.Text;
 
 namespace Skill_Loop.Application.Features.Instructors.Share
 {
-    public class InstructorProfileResponse(
+    public sealed record InstructorProfileResponse(
     Guid Id,
     Guid UserId,
     string Headline,
