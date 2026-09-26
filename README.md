@@ -25,7 +25,7 @@
 |---|---|
 | 🔐 **Authentication** | Staff Login (Email/Password) · Google OAuth · JWT Access & Refresh Tokens · Secure Logout |
 | 👤 **Account Management** | Profile CRUD · Avatar Upload · Password Change · Forgot/Reset Password · Activate/Deactivate Users |
-| 🎤 **Instructor Profiles** | Create/Update Profile · Approval Workflow · Reviews & Ratings · Instructor Stats (Sessions Completed, Credits Earned) |
+| 🎤 **Instructor Profiles** | Create/Update Profile · Approval Workflow · Availability Slots · Reviews & Ratings · Instructor Stats (Sessions Completed, Credits Earned) |
 | 💰 **Wallets** | View Balance · Transaction History (Paginated) · Auto-Credit on Course Enrollment · Optimistic Concurrency |
 | 📚 **Courses & Enrollments** | Course CRUD · Sections & Lessons · Course Reviews · Bookmarks · Enrollment · Lesson Progress Tracking |
 | 🎓 **Sessions & Materials** | Session CRUD · Status Management · File Upload/Download (Google Drive) · Material Reordering |
@@ -128,7 +128,7 @@ Skill-Loop/
 │   │   │   ├── Categories/            #   Categories Commands & Queries
 │   │   │   ├── Courses/               #   Course Commands, Queries & Events
 │   │   │   ├── Enrollments/           #   Enrollment & Lesson Progress
-│   │   │   ├── Instructors/           #   Instructor Profile CRUD, Reviews, EventHandlers
+│   │   │   ├── Instructors/           #   Instructor Profile CRUD, Reviews, EventHandlers, Availability
 │   │   │   ├── Wallets/               #   Wallet Queries, DTOs & EventHandlers
 │   │   │   ├── Sessions/              #   Sessions & Materials Commands & Queries
 │   │   │   ├── Chat/                  #   Chat Commands & Queries
@@ -338,6 +338,9 @@ The API will be available at:
 | `POST` | `/api/instructor-profiles/me` | ✅ | Create instructor profile for current user |
 | `PUT` | `/api/instructor-profiles/me` | ✅ | Update instructor profile |
 | `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
+| `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
+| `POST` | `/api/instructor-profiles/{profileId}/availabilities` | ✅ | Add availability slot |
+| `DELETE` | `/api/instructor-profiles/{profileId}/availabilities/{availabilityId}` | ✅ | Remove availability slot |
 | `POST` | `/api/instructor-profiles/{profileId}/reviews` | ✅ | Add a review for an instructor |
 | `PUT` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Update a review |
 | `DELETE` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Remove a review |

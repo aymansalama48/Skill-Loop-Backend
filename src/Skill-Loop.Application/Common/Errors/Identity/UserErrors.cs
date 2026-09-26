@@ -35,6 +35,13 @@ public static class UserErrors
         "USER_ACCOUNT_DEACTIVATED",
         "حسابك موقوف حالياً. للاستفسار يرجى التواصل مع الدعم الفني.",
         ErrorType.Forbidden);   // 👈 403
+    /// <summary>
+    /// المستخدم غير مسجل دخول أو التوكن غير صالح.
+    /// </summary>
+    public static readonly Error Unauthorized = new(
+        "USER_UNAUTHORIZED",
+        "غير مصرح لك. يرجى تسجيل الدخول أولاً.",
+        ErrorType.Unauthorized);
 
     /// <summary>
     /// الحساب مقفول بسبب محاولات دخول فاشلة كتير.

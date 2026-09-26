@@ -7,8 +7,6 @@ using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using System.Linq.Expressions;
-using System.Numerics;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 
@@ -19,6 +17,7 @@ public interface IApplicationDbContext
     //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     public IQueryable<InstructorProfile> InstructorProfiles { get; }
+    public IQueryable<InstructorAvailability> InstructorAvailabilities { get; } 
     public IQueryable<InstructorReview> InstructorReviews { get; }
 
     public IQueryable<SiteSettings> SiteSettings { get; }

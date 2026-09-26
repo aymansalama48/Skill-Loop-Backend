@@ -60,6 +60,8 @@ public static class InMemoryDbContextHelper
 
         public IQueryable<WalletTransaction> WalletTransactions => _dbContext.WalletTransactions;
 
+        public IQueryable<InstructorAvailability> InstructorAvailabilities => _dbContext.InstructorAvailabilities;
+
         public void Add<TEntity>(TEntity entity) where TEntity : class => _dbContext.Add(entity);
         public void Update<TEntity>(TEntity entity) where TEntity : class => _dbContext.Update(entity);
         public void Remove<TEntity>(TEntity entity) where TEntity : class => _dbContext.Remove(entity);

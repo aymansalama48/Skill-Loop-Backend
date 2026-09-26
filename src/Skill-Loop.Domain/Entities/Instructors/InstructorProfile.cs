@@ -1,5 +1,6 @@
 ﻿using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Entities.Booking;
 
 namespace Skill_Loop.Domain.Entities.Instructors;
 
@@ -22,6 +23,11 @@ public sealed class InstructorProfile : AuditableEntity
     // المراجعات والتقييمات
     private readonly List<InstructorReview> _reviews = new();
     public IReadOnlyCollection<InstructorReview> Reviews => _reviews.AsReadOnly();
+    // ==========================================
+    // إدارة مواعيد العمل المتاحة
+    // ==========================================
+    private readonly List<InstructorAvailability> _availabilities = new();
+    public IReadOnlyCollection<InstructorAvailability> Availabilities => _availabilities.AsReadOnly();
 
     private InstructorProfile() { } // For EF Core
 
@@ -123,6 +129,44 @@ public sealed class InstructorProfile : AuditableEntity
         // إعادة حساب التقييم بعد الحذف
         RecalculateRating();
 
+        return Result.Success();
+    }
+    /// <summary>
+    /// إضافة موعد جديد متاح للعمل
+    /// </summary>
+    public Result AddAvailability(DayOfWeek dayOfWeek, TimeSpan startTime, TimeSpan endTime)
+    {
+        // التحقق من عدم وجود تداخل في المواعيد لنفس اليوم (اختياري ولكنه مفيد)
+        var hasOverlap = _availabilities.Any(a =>
+            a.DayOfWeek == dayOfWeek &&
+            (startTime < a.EndTime && endTime > a.StartTime));
+
+        if (hasOverlap)
+        {
+            return Result.Failure(new Error("InstructorProfile.AvailabilityOverlap", "يوجد تداخل مع موعد آخر في نفس اليوم.", ErrorType.Conflict));
+        }
+
+        var availabilityResult = InstructorAvailability.Create(Id, dayOfWeek, startTime, endTime);
+        if (!availabilityResult.IsSuccess)
+            return availabilityResult;
+
+        _availabilities.Add(availabilityResult.Data);
+        return Result.Success();
+    }
+
+    /// <summary>
+    /// حذف موعد متاح
+    /// </summary>
+    public Result RemoveAvailability(Guid availabilityId)
+    {
+        var availability = _availabilities.FirstOrDefault(a => a.Id == availabilityId);
+
+        if (availability is null)
+        {
+            return Result.Failure(new Error("InstructorProfile.AvailabilityNotFound", "الموعد غير موجود.", ErrorType.NotFound));
+        }
+
+        _availabilities.Remove(availability);
         return Result.Success();
     }
 

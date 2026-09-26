@@ -1,14 +1,16 @@
 ﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.ChangeInstructorApprovalStatus;
 
+[Permission(Permissions.Users.Activate)]
 public sealed record ChangeInstructorApprovalStatusCommand(
     Guid UserId,
     bool IsApproved
 ) : ICommand<bool>, ICacheInvalidatorCommand
 {
-    // بنمسح كاش اللستة (عشان لو اعتمدناه يظهر، ولو وقفناه يختفي) وكاش البروفايل الخاص بيه
     public IReadOnlyCollection<string> CacheKeys =>
     [
         "instructors-list-approved",

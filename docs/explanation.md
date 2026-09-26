@@ -107,11 +107,11 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 | **Categories** | CreateCategory, UpdateCategory, DeleteCategory | GetCategories | — |
 | **Courses** | CreateCourse, AddLesson, PublishCourse, AddCourseReview, ToggleCourseBookmark | GetCourseById, GetCoursesPaged (search/filter/sort/cache) | CourseInvalidationHandler (cache clear) |
 | **Enrollments** | EnrollInCourse (atomic wallet deduction), UpdateLessonProgress | GetUserEnrolledCourses | — |
-| **Instructors** | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId | CourseEnrolled (credits earned), SessionCompleted (sessions++) |
+| **Instructors** | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorAvailability, RemoveInstructorAvailability, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId | CourseEnrolled (credits earned), SessionCompleted (sessions++) |
 | **Wallets** | — | GetMyWallet (lazy creation), GetMyWalletTransactionsPaged | CreditInstructorWallet (course sales), CreditInstructorWalletOnSessionCompleted (live sessions) |
 | **Sessions** | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus | GetSessionById, GetSessionsPaged (filter by instructor/status/date/bookable), GetMySessionsPaged (instructor dashboard) | — |
 | **Session Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials | GetSessionMaterials, GetSessionMaterialDownloadInfo | SessionMaterialUploaded |
-| **Bookings** | CreateBooking (atomic payment + capacity check), CancelBooking (refund), ChangeBookingStatus (instructor lifecycle) | GetBookingById, GetMyBookings, GetSessionBookings | — |
+| **Bookings** | CreateBooking (atomic payment + capacity check), CancelBooking (refund), ChangeBookingStatus (instructor lifecycle), CompleteBooking | GetBookingById, GetMyBookings, GetSessionBookings | — |
 | **Chat** | StartConversation, SendMessage, MarkConversationRead | GetMyConversations, GetConversationMessages | — |
 | **SiteSettings** | UpdateSiteSettings | GetSiteSettings | — |
 
@@ -275,6 +275,7 @@ Entity.AddDomainEvent(event)
 | `ChatMessages` | Id, ConversationId, SenderId, Content, SentAt, ReadAt |
 | `InstructorProfiles` | Id, UserId (1-1), Headline, Bio, IsApproved, Rating, SessionsCompleted, CreditsEarned |
 | `InstructorReviews` | Id, InstructorProfileId, LearnerUserId, Rating, Comment, IsDeleted |
+| `InstructorAvailabilities` | Id, InstructorProfileId, DayOfWeek, StartTime, EndTime |
 | `TbPermission` | Id, Name (e.g., "Categories.Manage") |
 | `TbRolePermission` | RoleId, PermissionId |
 | `OutboxMessages` | Id, Type, Content (JSON), OccurredOnUtc, ProcessedOnUtc, RetryCount |
@@ -326,14 +327,15 @@ Entity.AddDomainEvent(event)
 | Courses (CRUD, Search, Cache) | ✅ Implemented |
 | Enrollments (Atomic + Progress) | ✅ Implemented |
 | Instructor Profiles & Reviews | ✅ Implemented |
-| Wallets (Balance, History, Earning, Refunds) | ✅ Partial — **No Buy Credits / Promo Codes** |
+| Instructor Availability | ✅ Implemented |
+| Wallets (Balance, History, Earning, Refunds) | ✅ Partial — No Buy Credits / Promo Codes |
 | Sessions (Scheduling, Bookability) | ✅ Implemented |
 | Bookings (Full Lifecycle + Payment) | ✅ Implemented |
 | Session Materials (Google Drive) | ✅ Implemented |
 | Chat (REST + SignalR) | ✅ Implemented |
 | Reviews (Course + Instructor) | ✅ Implemented — **No Session Reviews** |
 | Background Jobs / Outbox | ✅ Implemented |
-| Redis Caching | ✅ Implemented — **Startup bug: MemoryCache fallback commented out** |
+| Redis Caching | ⚠️ Implemented with startup bug — MemoryCache fallback commented out in `AddCaching.cs` |
 
 ---
 
@@ -352,7 +354,7 @@ Entity.AddDomainEvent(event)
 - Session reviews (`SessionReview` entity + commands/queries)
 - Booking notifications (email on create, reminder job for upcoming)
 - Session "requires instructor approval" flag → `BookingStatus.Pending`
-- Unit test coverage for Wallet buy/promo, Chat
+- Unit test coverage for Wallet (buy/promo), Chat, OTP (Booking/Sessions/Instructors fully covered)
 - Fix Redis fallback registration in `AddCaching.cs`
 - Mobile auth: Apple, Facebook providers
 - Push notifications (FCM) for offline chat/booking alerts

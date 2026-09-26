@@ -1173,6 +1173,19 @@ UnitTests/
     │   └── CourseAggregateTests.cs
     ├── Enrollments/
     │   └── EnrollmentAndWalletTests.cs
+    ├── Instructors/
+    │   └── Commands/
+    │       ├── AddInstructorAvailability/
+    │       │   └── AddInstructorAvailabilityCommandHandlerTests.cs
+    │       ├── ChangeInstructorApprovalStatus/
+    │       │   ├── ChangeInstructorApprovalStatusCommandHandlerTests.cs
+    │       │   └── ChangeInstructorApprovalStatusCommandValidatorTests.cs
+    │       ├── CreateMyInstructorProfile/
+    │       │   └── CreateMyInstructorProfileCommandHandlerTests.cs
+    │       ├── RemoveInstructorAvailability/
+    │       │   └── RemoveInstructorAvailabilityCommandHandlerTests.cs
+    │       └── UpdateMyInstructorProfile/
+    │           └── UpdateMyInstructorProfileCommandHandlerTests.cs
     └── Sessions/
         ├── SessionTests.cs
         ├── SessionMaterialTests.cs
@@ -1199,7 +1212,30 @@ UnitTests/
         └── Materials/
             ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
             └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
+    ├── Bookings/
+    │   ├── Commands/
+    │   │   ├── CancelBooking/
+    │   │   │   ├── CancelBookingCommandHandlerTests.cs
+    │   │   │   └── CancelBookingCommandValidatorTests.cs
+    │   │   ├── ChangeBookingStatus/
+    │   │   │   ├── ChangeBookingStatusCommandHandlerTests.cs
+    │   │   │   └── ChangeBookingStatusCommandValidatorTests.cs
+    │   │   ├── CompleteBooking/
+    │   │   │   ├── CompleteBookingCommandHandlerTests.cs
+    │   │   │   └── CompleteBookingCommandValidatorTests.cs
+    │   │   └── CreateBooking/
+    │   │       ├── CreateBookingCommandHandlerTests.cs
+    │   │       └── CreateBookingCommandValidatorTests.cs
+    │   └── Queries/
+    │       ├── GetBookingById/
+    │       │   └── GetBookingByIdQueryHandlerTests.cs
+    │       ├── GetMyBookings/
+    │       │   └── GetMyBookingsQueryHandlerTests.cs
+    │       └── GetSessionBookings/
+    │           └── GetSessionBookingsQueryHandlerTests.cs
 ```
+
+**Note**: `BookingTests.cs` (entity-level tests) is also present at the root level of `Features/Bookings/`.
 
 **Convention**:
 
@@ -1426,18 +1462,13 @@ public static class Courses
 | --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | 4   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
 | 5   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
-| 6   | **Booking entity بسيط جداً**                                      | `Domain/Entities/Booking/Booking.cs` — كيان بسيط بدون Factory Method أو validation. يحتاج تطوير.                                                                                            |
-| 7   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
-| 8   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
-| 9   | **`using System.Numerics` في AppDbContext**                       | `Infrastructure/Persistence/Data/AppDbContext.cs` — using غير مستخدم.                                                                                                                       |
-| 10  | **`using static System.Net.Mime.MediaTypeNames` في AppDbContext** | نفس الملف — using غير مستخدم.                                                                                                                                                               |
+| 6   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 7   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
 
 ### 🟢 Minor / Convention
 
-| #   | المشكلة                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------ |
-| 11  | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
-| 12  | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
+| 8   | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
+| 9   | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
 
 ---
 
@@ -1458,11 +1489,12 @@ public static class Courses
 | **Categories**                 | ✅ مكتمل | `CreateCategory`, `UpdateCategory`, `DeleteCategory`, `GetCategories` + Entity + Controller                                                                                           |
 | **Courses**                    | ✅ مكتمل | Entity (Aggregate Root) + Value Objects + `CreateCourse`, `AddLesson`, `AddCourseReview`, `PublishCourse`, `ToggleCourseBookmark`, `GetCourseById`, `GetCoursesPaged` + Domain Events |
 | **Enrollments**                | ✅ مكتمل | Entity + `EnrollInCourse`, `UpdateLessonProgress`, `GetUserEnrolledCourses` + Domain Events + Wallet Integration                                                                      |
-| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged` + `SessionCompletedDomainEvent`                              |
+| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged`, `GetMySessionsPaged` + `SessionLocationType` enum, `SessionCompletedDomainEvent`                              |
 | **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
 | **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
-| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
-| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. Unit tests جزئية (EventHandler + Enrollment tests only). |
+| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`, `InstructorAvailability`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus`, `AddInstructorAvailability`, `RemoveInstructorAvailability` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
+| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. |
+| **Booking**                    | ✅ مكتمل | Entity (rich aggregate with domain events + lifecycle) + `CreateBooking`, `CancelBooking`, `CompleteBooking`, `ChangeBookingStatus` + `GetBookingById`, `GetMyBookings`, `GetSessionBookings` + `BookingsController` |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
 | **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
