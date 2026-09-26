@@ -12,7 +12,10 @@ public sealed class GetInstructorProfileByUserIdQueryHandler(
 {
     public async Task<Result<InstructorProfileResponse>> Handle(GetInstructorProfileByUserIdQuery request, CancellationToken cancellationToken)
     {
+        // 1. جلب البروفايل مع المواعيد والتقييمات
         var profile = await _dbContext.InstructorProfiles
+            .Include(p => p.Availabilities)
+            .Include(p => p.Reviews)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.UserId == request.UserId, cancellationToken);
 
@@ -21,6 +24,26 @@ public sealed class GetInstructorProfileByUserIdQueryHandler(
             return Result<InstructorProfileResponse>.Failure(InstructorProfileErrors.NotFound);
         }
 
+        // 2. تحويل (Mapping) المواعيد
+        var availabilitiesList = profile.Availabilities.Select(a => new InstructorAvailabilityResponse(
+            a.Id,
+            a.DayOfWeek.ToString(),
+            a.StartTime,
+            a.EndTime
+        )).ToList().AsReadOnly();
+
+        // 3. تحويل (Mapping) التقييمات
+        var reviewsList = profile.Reviews
+            .OrderByDescending(r => r.CreatedAt)
+            .Select(r => new InstructorReviewResponse(
+                r.Id,
+                r.LearnerUserId,
+                r.Rating,
+                r.Comment,
+                r.CreatedAt
+            )).ToList().AsReadOnly();
+
+        // 4. تجميع الـ DTO النهائي
         var dto = new InstructorProfileResponse(
             profile.Id,
             profile.UserId,
@@ -29,7 +52,9 @@ public sealed class GetInstructorProfileByUserIdQueryHandler(
             profile.IsApproved,
             profile.Rating,
             profile.SessionsCompleted,
-            profile.CreditsEarned
+            profile.CreditsEarned,
+            availabilitiesList,
+            reviewsList
         );
 
         return Result<InstructorProfileResponse>.Success(dto);

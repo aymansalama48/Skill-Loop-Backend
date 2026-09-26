@@ -38,15 +38,14 @@ public sealed class SessionMaterialUploadedEventHandler(
         }
 
         var activeLearnerIds = await dbContext.Bookings
-            .AsNoTracking()
-            .Where(b =>
-                b.SessionId == material.SessionId &&
-                (b.Status == BookingStatus.Confirmed ||
-                 b.Status == BookingStatus.InProgress ||
-                 b.Status == BookingStatus.Completed))
-            .Select(b => b.LearnerUserId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
+                    .AsNoTracking()
+                    .Where(b =>
+                        b.SessionId == material.SessionId &&
+                        (b.Status == BookingStatus.Confirmed ||
+                         b.Status == BookingStatus.Completed)) // تم حذف InProgress
+                    .Select(b => b.LearnerUserId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
 
         if (activeLearnerIds.Count == 0)
         {

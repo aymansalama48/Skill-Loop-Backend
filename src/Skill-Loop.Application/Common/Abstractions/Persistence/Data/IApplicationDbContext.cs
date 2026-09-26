@@ -18,6 +18,7 @@ public interface IApplicationDbContext
     //IQueryable<> ...... { get; } <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     public IQueryable<InstructorProfile> InstructorProfiles { get; }
+    public IQueryable<InstructorAvailability> InstructorAvailabilities { get; } 
     public IQueryable<InstructorReview> InstructorReviews { get; }
 
     public IQueryable<SiteSettings> SiteSettings { get; }

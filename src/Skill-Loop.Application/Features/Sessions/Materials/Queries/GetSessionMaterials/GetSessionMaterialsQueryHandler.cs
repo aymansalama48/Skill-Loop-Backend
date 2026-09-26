@@ -62,8 +62,7 @@ public sealed class GetSessionMaterialsQueryHandler : IQueryHandler<GetSessionMa
                     b.SessionId == request.SessionId &&
                     b.LearnerUserId == currentUserId &&
                     (b.Status == BookingStatus.Confirmed ||
-                     b.Status == BookingStatus.InProgress ||
-                     b.Status == BookingStatus.Completed),
+                     b.Status == BookingStatus.Completed), // تم حذف InProgress
                     cancellationToken);
         }
 

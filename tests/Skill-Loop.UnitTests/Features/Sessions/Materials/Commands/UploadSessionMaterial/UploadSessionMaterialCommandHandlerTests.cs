@@ -15,7 +15,6 @@ using Skill_Loop.Application.Common.Errors.Sessions;
 using Skill_Loop.Application.Common.Models.Storage;
 using Skill_Loop.Application.Features.Sessions.Materials.Commands.UploadSessionMaterial;
 using Skill_Loop.Domain.Common.Results;
-// مسار الجلسات الجديد (بصيغة الجمع) ولاحظ اننا شيلنا الـ Session القديم
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
@@ -83,9 +82,11 @@ public class UploadSessionMaterialCommandHandlerTests
         var currentUserId = Guid.NewGuid();
         _currentUser.Setup(c => c.UserId).Returns(currentUserId);
 
-        // التعديل هنا: استخدام دالة Create 
-        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Session");
-        session.Id = sessionId; // تعيين المعرف بعد الإنشاء
+        // استخدام الـ Result وطريقة الإنشاء الجديدة مع البارامترات المطلوبة
+        var sessionResult = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Session", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+        session.Id = sessionId;
 
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
@@ -102,8 +103,10 @@ public class UploadSessionMaterialCommandHandlerTests
         var sessionId = Guid.NewGuid();
         var currentUserId = Guid.NewGuid();
 
-        // التعديل هنا: استخدام دالة Create وإعطاء المحاضر صلاحية الملكية
-        var session = Session.Create(currentUserId, currentUserId, "Test Session");
+        // استخدام الـ Result وطريقة الإنشاء الجديدة
+        var sessionResult = Session.Create(currentUserId, currentUserId, "Test Session", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
         session.Id = sessionId;
 
         _dbContext.Add(session);

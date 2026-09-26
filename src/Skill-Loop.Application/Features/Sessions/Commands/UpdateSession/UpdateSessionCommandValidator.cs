@@ -6,12 +6,10 @@ public sealed class UpdateSessionCommandValidator : AbstractValidator<UpdateSess
 {
     public UpdateSessionCommandValidator()
     {
-        RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("معرف الجلسة مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الجلسة غير صالح.");
-
-        RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("عنوان الجلسة مطلوب.")
-            .MaximumLength(200).WithMessage("عنوان الجلسة لا يجب أن يتجاوز 200 حرف.");
+        RuleFor(x => x.Id).NotEmpty().WithMessage("معرف الجلسة مطلوب.");
+        RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
+        RuleFor(x => x.PriceInCredits).GreaterThanOrEqualTo(0).WithMessage("السعر يجب أن يكون صفراً أو أكثر.");
+        RuleFor(x => x.DurationInMinutes).GreaterThan(0).WithMessage("مدة الجلسة يجب أن تكون محددة بالدقائق.");
+        RuleFor(x => x.Type).IsInEnum().WithMessage("نوع الجلسة غير صالح.");
     }
 }

@@ -14,7 +14,7 @@ using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Session.Events;
-using Skill_Loop.Domain.Entities.Sessions; // مسار الجلسات الجديد (بصيغة الجمع)
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
@@ -67,9 +67,11 @@ public class SessionMaterialUploadedEventHandlerTests
         var sessionId = Guid.NewGuid();
         var instructorId = Guid.NewGuid();
 
-        // التعديل هنا: استخدام دالة Create 
-        var session = Session.Create(instructorId, instructorId, "Test Session");
-        session.Id = sessionId; // تعيين الـ Id لربطه بالـ Material
+        // استخدام الـ Result وطريقة الإنشاء الجديدة
+        var sessionResult = Session.Create(instructorId, instructorId, "Test Session", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
+        session.Id = sessionId;
 
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
@@ -93,11 +95,25 @@ public class SessionMaterialUploadedEventHandlerTests
         var instructorId = Guid.NewGuid();
         var learnerId = Guid.NewGuid();
 
-        // التعديل هنا: استخدام دالة Create
-        var session = Session.Create(instructorId, instructorId, "Test Session");
+        // استخدام الـ Result وطريقة الإنشاء الجديدة
+        var sessionResult = Session.Create(instructorId, instructorId, "Test Session", 50, 60, SessionType.Online);
+        sessionResult.IsSuccess.Should().BeTrue();
+        var session = sessionResult.Data;
         session.Id = sessionId;
 
-        var booking = new Booking { Id = Guid.NewGuid(), SessionId = sessionId, LearnerUserId = learnerId, Status = BookingStatus.Confirmed };
+        // استخدام دالة الـ Create للـ Booking لتجنب أي مشاكل في الخصائص
+        var bookingResult = Booking.Create(
+            sessionId,
+            learnerId,
+            instructorId,
+            DateTime.UtcNow.AddDays(1),
+            TimeSpan.FromHours(10),
+            60,
+            50,
+            SessionType.Online);
+
+        bookingResult.IsSuccess.Should().BeTrue();
+        var booking = bookingResult.Data;
 
         _dbContext.Add(session);
         _dbContext.Add(booking);

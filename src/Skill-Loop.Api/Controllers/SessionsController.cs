@@ -19,11 +19,11 @@ public class SessionsController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
 
-    // حقن ICurrentUser
     public SessionsController(ICurrentUser currentUser)
     {
         _currentUser = currentUser;
     }
+
     [HttpPost]
     public async Task<IResult> CreateSession(
             [FromBody] CreateSessionRequest request,
@@ -32,10 +32,13 @@ public class SessionsController : BaseApiController
         // 1. سحب الـ ID الخاص بالمستخدم الحالي من التوكن تلقائياً
         var instructorId = _currentUser.UserId ?? Guid.Empty;
 
-        // 2. تمريره للـ Command
+        // 2. تمريره للـ Command مع البيانات الجديدة
         var command = new CreateSessionCommand(
             request.Title,
-            instructorId);
+            instructorId,
+            request.PriceInCredits,
+            request.DurationInMinutes,
+            request.Type);
 
         var result = await Mediator.Send(command, cancellationToken);
 
@@ -48,7 +51,14 @@ public class SessionsController : BaseApiController
         [FromBody] UpdateSessionRequest request,
         CancellationToken cancellationToken)
     {
-        var command = new UpdateSessionCommand(id, request.Title);
+        // تمرير البيانات الجديدة للـ Command
+        var command = new UpdateSessionCommand(
+            id,
+            request.Title,
+            request.PriceInCredits,
+            request.DurationInMinutes,
+            request.Type);
+
         var result = await Mediator.Send(command, cancellationToken);
 
         return HandleResult(result);
@@ -62,6 +72,7 @@ public class SessionsController : BaseApiController
 
         return HandleResult(result);
     }
+
     [HttpPatch("{id:guid}/status")]
     public async Task<IResult> ChangeStatus(
         Guid id,
@@ -73,6 +84,7 @@ public class SessionsController : BaseApiController
 
         return HandleResult(result);
     }
+
     [HttpGet("{id:guid}")]
     public async Task<IResult> GetSessionById(Guid id, CancellationToken cancellationToken)
     {

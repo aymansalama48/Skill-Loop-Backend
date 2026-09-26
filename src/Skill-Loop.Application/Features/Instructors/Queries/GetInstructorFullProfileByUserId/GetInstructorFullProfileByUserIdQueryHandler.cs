@@ -14,8 +14,10 @@ public sealed class GetInstructorFullProfileByUserIdQueryHandler(
 {
     public async Task<Result<InstructorDetailsResponse>> Handle(GetInstructorFullProfileByUserIdQuery request, CancellationToken cancellationToken)
     {
-        // 1. جلب بيانات البروفايل من Application DB
+        // 1. جلب بيانات البروفايل مع المواعيد والتقييمات في كويري واحد
         var profile = await _dbContext.InstructorProfiles
+            .Include(p => p.Availabilities)
+            .Include(p => p.Reviews)
             .AsNoTracking()
             .FirstOrDefaultAsync(p => p.UserId == request.UserId, cancellationToken);
 
@@ -24,7 +26,7 @@ public sealed class GetInstructorFullProfileByUserIdQueryHandler(
             return Result<InstructorDetailsResponse>.Failure(InstructorProfileErrors.NotFound);
         }
 
-        // 2. جلب بيانات المستخدم من Identity Service
+        // 2. جلب بيانات المستخدم الأساسية من الـ Identity
         var userResult = await _userService.GetByIdAsync(request.UserId, cancellationToken);
 
         if (!userResult.IsSuccess || userResult.Data is null)
@@ -34,7 +36,26 @@ public sealed class GetInstructorFullProfileByUserIdQueryHandler(
 
         var user = userResult.Data;
 
-        // 3. دمج البيانات في DTO واحد يجمع كل التفاصيل
+        // 3. تحويل (Mapping) المواعيد
+        var availabilitiesList = profile.Availabilities.Select(a => new InstructorAvailabilityResponse(
+            a.Id,
+            a.DayOfWeek.ToString(),
+            a.StartTime,
+            a.EndTime
+        )).ToList().AsReadOnly();
+
+        // 4. تحويل (Mapping) التقييمات (بنرتبهم من الأحدث للأقدم)
+        var reviewsList = profile.Reviews
+            .OrderByDescending(r => r.CreatedAt) // بنفترض إنك بتستخدم CreatedAt من الـ AuditableEntity
+            .Select(r => new InstructorReviewResponse(
+                r.Id,
+                r.LearnerUserId,
+                r.Rating,
+                r.Comment,
+                r.CreatedAt // تحويل من DateTimeOffset لـ DateTime لو لزم الأمر، أو استخدامها مباشرة
+            )).ToList().AsReadOnly();
+
+        // 5. دمج كل شيء في الـ Response النهائي
         var dto = new InstructorDetailsResponse(
             profile.Id,
             profile.UserId,
@@ -47,7 +68,9 @@ public sealed class GetInstructorFullProfileByUserIdQueryHandler(
             profile.IsApproved,
             profile.Rating,
             profile.SessionsCompleted,
-            profile.CreditsEarned
+            profile.CreditsEarned,
+            availabilitiesList,
+            reviewsList
         );
 
         return Result<InstructorDetailsResponse>.Success(dto);

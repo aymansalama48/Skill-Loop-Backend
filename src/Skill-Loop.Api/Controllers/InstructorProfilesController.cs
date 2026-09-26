@@ -4,9 +4,11 @@ using Skill_Loop.Api.Contracts.Common;
 using Skill_Loop.Api.Contracts.Instructors;
 using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Features.Instructors.Commands.AddInstructorAvailability;
 using Skill_Loop.Application.Features.Instructors.Commands.AddInstructorReview;
 using Skill_Loop.Application.Features.Instructors.Commands.ChangeInstructorApprovalStatus;
 using Skill_Loop.Application.Features.Instructors.Commands.CreateMyInstructorProfile;
+using Skill_Loop.Application.Features.Instructors.Commands.RemoveInstructorAvailability;
 using Skill_Loop.Application.Features.Instructors.Commands.RemoveInstructorReview;
 using Skill_Loop.Application.Features.Instructors.Commands.UpdateInstructorReview;
 using Skill_Loop.Application.Features.Instructors.Commands.UpdateMyInstructorProfile;
@@ -204,6 +206,45 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
             profileId,
             reviewId,
             _currentUser.UserId.Value
+        );
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+    /// <summary>
+    /// إضافة موعد عمل جديد للمدرب
+    /// </summary>
+    [HttpPost("{profileId:guid}/availabilities")]
+    [Authorize] // تأكد إنك ضايف Using للـ Authorize
+    public async Task<IResult> AddAvailability(
+        [FromRoute] Guid profileId,
+        [FromBody] AddAvailabilityRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new AddInstructorAvailabilityCommand(
+            profileId,
+            request.DayOfWeek,
+            request.StartTime,
+            request.EndTime
+        );
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// مسح موعد عمل
+    /// </summary>
+    [HttpDelete("{profileId:guid}/availabilities/{availabilityId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveAvailability(
+        [FromRoute] Guid profileId,
+        [FromRoute] Guid availabilityId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveInstructorAvailabilityCommand(
+            profileId,
+            availabilityId
         );
 
         var result = await Mediator.Send(command, cancellationToken);

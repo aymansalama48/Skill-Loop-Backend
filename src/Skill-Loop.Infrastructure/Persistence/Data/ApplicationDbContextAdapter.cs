@@ -26,6 +26,7 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // ==============================
 
     public IQueryable<InstructorProfile> InstructorProfiles => context.InstructorProfiles;
+    public IQueryable<InstructorAvailability> InstructorAvailabilities => context.InstructorAvailabilities;
     public IQueryable<InstructorReview> InstructorReviews => context.InstructorReviews;
 
 

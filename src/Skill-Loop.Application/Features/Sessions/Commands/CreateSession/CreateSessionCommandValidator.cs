@@ -13,5 +13,8 @@ public sealed class CreateSessionCommandValidator : AbstractValidator<CreateSess
         RuleFor(x => x.InstructorId)
             .NotEmpty().WithMessage("معرف المحاضر مطلوب.")
             .NotEqual(Guid.Empty).WithMessage("معرف المحاضر غير صالح.");
+        RuleFor(x => x.PriceInCredits).GreaterThanOrEqualTo(0);
+        RuleFor(x => x.DurationInMinutes).GreaterThan(0);
+        RuleFor(x => x.Type).IsInEnum();
     }
 }
