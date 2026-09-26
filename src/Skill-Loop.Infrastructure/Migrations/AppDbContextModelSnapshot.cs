@@ -131,22 +131,64 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("BookedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("LearnerUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("PriceInCredits")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LearnerUserId");
 
                     b.HasIndex("SessionId");
+
+                    b.HasIndex("SessionId", "LearnerUserId")
+                        .IsUnique()
+                        .HasFilter("[Status] IN ('Pending', 'Confirmed', 'InProgress', 'Completed')");
+
+                    b.HasIndex("SessionId", "LearnerUserId", "Status");
 
                     b.ToTable("Bookings", (string)null);
                 });
@@ -855,11 +897,44 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("CreditsPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("DurationMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(60);
+
                     b.Property<Guid>("InstructorId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<string>("LocationDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LocationType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Online");
+
+                    b.Property<int>("MaxParticipants")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
                     b.Property<Guid>("OwnerId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -868,7 +943,8 @@ namespace Skill_Loop.Infrastructure.Migrations
 
                     b.Property<string>("Title")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -881,6 +957,10 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("InstructorId");
 
                     b.HasIndex("OwnerId");
+
+                    b.HasIndex("ScheduledAtUtc");
+
+                    b.HasIndex("Status", "ScheduledAtUtc");
 
                     b.ToTable("Sessions", (string)null);
                 });
@@ -1311,6 +1391,15 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Booking.Booking", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", null)
+                        .WithMany("Bookings")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Chat.ChatMessage", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Chat.Conversation", null)
@@ -1627,6 +1716,8 @@ namespace Skill_Loop.Infrastructure.Migrations
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.Session", b =>
                 {
+                    b.Navigation("Bookings");
+
                     b.Navigation("Materials");
                 });
 

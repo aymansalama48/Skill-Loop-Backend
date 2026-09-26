@@ -10,6 +10,7 @@ using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Domain.Entities.Wallets;
+using System.Linq.Expressions;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -28,8 +29,6 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<InstructorProfile> InstructorProfiles => context.InstructorProfiles;
     public IQueryable<InstructorAvailability> InstructorAvailabilities => context.InstructorAvailabilities;
     public IQueryable<InstructorReview> InstructorReviews => context.InstructorReviews;
-
-
 
 
     public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
@@ -105,10 +104,21 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
         return query.ToListAsync(cancellationToken);
     }
 
+    public Task<List<T>> ToListAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return query.Where(predicate).ToListAsync(cancellationToken);
+    }
+
     public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
     {
         return query.FirstOrDefaultAsync(cancellationToken);
     }
+
+    public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return query.FirstOrDefaultAsync(predicate, cancellationToken);
+    }
+
     public IQueryable<T> AsNoTracking<T>(IQueryable<T> query) where T : class
     {
         return query.AsNoTracking();

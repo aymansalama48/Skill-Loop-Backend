@@ -14,6 +14,7 @@ using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,7 +26,7 @@ public static class InMemoryDbContextHelper
             .UseInMemoryDatabase("TestDb_" + System.Guid.NewGuid())
             .Options;
 
-        var dbContext = new Skill_Loop.Infrastructure.Persistence.Data.AppDbContext(options);
+        var dbContext = new InMemoryAppDbContext(options);
         return new InMemoryDbContextWrapper(dbContext);
     }
 
@@ -71,7 +72,9 @@ public static class InMemoryDbContextHelper
         public Task<bool> AnyAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default) => query.AnyAsync(cancellationToken);
         public Task<int> CountAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default) => query.CountAsync(cancellationToken);
         public Task<List<T>> ToListAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default) => query.ToListAsync(cancellationToken);
+        public Task<List<T>> ToListAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) => query.Where(predicate).ToListAsync(cancellationToken);
         public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default) => query.FirstOrDefaultAsync(cancellationToken);
+        public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default) => query.FirstOrDefaultAsync(predicate, cancellationToken);
         public IQueryable<T> AsNoTracking<T>(IQueryable<T> query) where T : class => query.AsNoTracking();
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default) => _dbContext.SaveChangesAsync(cancellationToken);
     }

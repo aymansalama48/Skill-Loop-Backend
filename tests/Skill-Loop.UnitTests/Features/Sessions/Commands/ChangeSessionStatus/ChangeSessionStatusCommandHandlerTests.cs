@@ -1,14 +1,12 @@
 namespace Skill_Loop.UnitTests.Features.Sessions.Commands.ChangeSessionStatus;
 
 using FluentAssertions;
-using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Sessions.Commands.ChangeSessionStatus;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
-using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -41,11 +39,8 @@ public class ChangeSessionStatusCommandHandlerTests
     [Fact]
     public async Task Handle_WhenSessionExists_UpdatesStatusAndReturnsSuccess()
     {
-        // Arrange - استخدام الـ Result والبارامترات الجديدة للإنشاء
-        var sessionResult = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Test Session", 100, 60, SessionType.Online);
-        sessionResult.IsSuccess.Should().BeTrue();
-        var session = sessionResult.Data;
-
+        // Arrange
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "My Test Session");
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -56,7 +51,7 @@ public class ChangeSessionStatusCommandHandlerTests
 
         // Assert
         result.IsSuccess.Should().BeTrue();
-        var updatedSession = await _dbContext.Sessions.FirstOrDefaultAsync(s => s.Id == session.Id);
+        var updatedSession = await _dbContext.FirstOrDefaultAsync(_dbContext.Sessions.Where(s => s.Id == session.Id));
         updatedSession.Should().NotBeNull();
         updatedSession!.Status.Should().Be(SessionStatus.Published);
     }

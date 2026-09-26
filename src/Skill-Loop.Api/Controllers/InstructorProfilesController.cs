@@ -153,7 +153,6 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
     /// تغيير حالة اعتماد المدرب (للمديرين فقط)
     /// </summary>
     [HttpPatch("users/{userId:guid}/approval-status")]
-    // TODO: أضف صلاحية الآدمن هنا مثل [Permission(Permissions.Users.Activate)]
     [Authorize]
     public async Task<IResult> ChangeApprovalStatus(
         [FromRoute] Guid userId,

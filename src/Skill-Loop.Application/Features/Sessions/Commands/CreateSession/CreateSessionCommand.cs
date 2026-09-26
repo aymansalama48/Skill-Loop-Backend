@@ -7,9 +7,13 @@ namespace Skill_Loop.Application.Features.Sessions.Commands.CreateSession;
 public sealed record CreateSessionCommand(
     string Title,
     Guid InstructorId,
-    int PriceInCredits,
-    int DurationInMinutes,
-    SessionType Type) : ICommand<Guid>, ICacheInvalidatorCommand
+    string? Description = null,
+    DateTime? ScheduledAtUtc = null,
+    int DurationMinutes = SessionDefaults.DurationMinutes,
+    int CreditsPrice = 0,
+    SessionLocationType LocationType = SessionLocationType.Online,
+    string? LocationDetails = null,
+    int MaxParticipants = 1) : ICommand<Guid>, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => ["sessions:all"];
 }

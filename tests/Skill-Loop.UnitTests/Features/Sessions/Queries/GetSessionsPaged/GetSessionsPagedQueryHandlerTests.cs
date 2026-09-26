@@ -5,7 +5,6 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Sessions.Queries.GetSessionsPaged;
 using Skill_Loop.Domain.Entities.Sessions;
-using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
 using System.Threading;
@@ -47,17 +46,13 @@ public class GetSessionsPagedQueryHandlerTests
         var instructor1 = Guid.NewGuid();
         var instructor2 = Guid.NewGuid();
 
-        var session1Result = Session.Create(instructor1, instructor1, "Session 1", 50, 60, SessionType.Online);
-        var session2Result = Session.Create(instructor2, instructor2, "Session 2", 75, 45, SessionType.Offline);
-        var session3Result = Session.Create(instructor1, instructor1, "Session 3", 100, 30, SessionType.Online);
+        var session1 = Session.Create(instructor1, instructor1, "Session 1");
+        var session2 = Session.Create(instructor2, instructor2, "Session 2");
+        var session3 = Session.Create(instructor1, instructor1, "Session 3");
 
-        session1Result.IsSuccess.Should().BeTrue();
-        session2Result.IsSuccess.Should().BeTrue();
-        session3Result.IsSuccess.Should().BeTrue();
-
-        _dbContext.Add(session1Result.Data);
-        _dbContext.Add(session2Result.Data);
-        _dbContext.Add(session3Result.Data);
+        _dbContext.Add(session1);
+        _dbContext.Add(session2);
+        _dbContext.Add(session3);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         var query = new GetSessionsPagedQuery(new PaginationParameters { PageNumber = 1, PageSize = 10 });
@@ -79,17 +74,13 @@ public class GetSessionsPagedQueryHandlerTests
         var targetInstructorId = Guid.NewGuid();
         var otherInstructorId = Guid.NewGuid();
 
-        var session1Result = Session.Create(targetInstructorId, targetInstructorId, "Target Session 1", 50, 60, SessionType.Online);
-        var session2Result = Session.Create(otherInstructorId, otherInstructorId, "Other Session", 60, 60, SessionType.Online);
-        var session3Result = Session.Create(targetInstructorId, targetInstructorId, "Target Session 2", 70, 60, SessionType.Online);
+        var session1 = Session.Create(targetInstructorId, targetInstructorId, "Target Session 1");
+        var session2 = Session.Create(otherInstructorId, otherInstructorId, "Other Session");
+        var session3 = Session.Create(targetInstructorId, targetInstructorId, "Target Session 2");
 
-        session1Result.IsSuccess.Should().BeTrue();
-        session2Result.IsSuccess.Should().BeTrue();
-        session3Result.IsSuccess.Should().BeTrue();
-
-        _dbContext.Add(session1Result.Data);
-        _dbContext.Add(session2Result.Data);
-        _dbContext.Add(session3Result.Data);
+        _dbContext.Add(session1);
+        _dbContext.Add(session2);
+        _dbContext.Add(session3);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         var query = new GetSessionsPagedQuery(
@@ -114,9 +105,8 @@ public class GetSessionsPagedQueryHandlerTests
         var instructorId = Guid.NewGuid();
         for (int i = 1; i <= 5; i++)
         {
-            var sessionResult = Session.Create(instructorId, instructorId, $"Session {i}", 50, 60, SessionType.Online);
-            sessionResult.IsSuccess.Should().BeTrue();
-            _dbContext.Add(sessionResult.Data);
+            var session = Session.Create(instructorId, instructorId, $"Session {i}");
+            _dbContext.Add(session);
         }
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 

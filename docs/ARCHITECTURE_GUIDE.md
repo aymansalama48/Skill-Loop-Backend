@@ -4,8 +4,6 @@
 > كل قاعدة مكتوبة هنا مأخوذة من الكود الفعلي، والمسارات مرفقة.
 >
 > **آخر تحديث**: 2026-09-26
->
-> **ملاحظة عن OTP**: الـ OTP يتم إرساله عبر **البريد الإلكتروني** وليس عبر الهاتف (SMS تكلف فلوس). الخدمة مصممة كوحدة منفصلة ويمكن تغييرها لـ SMS لاحقاً.
 
 ---
 
@@ -161,7 +159,7 @@ public abstract class BaseEntity : Entity
 ```
 Domain/Entities/
 ├── Booking/
-│   └── Booking.cs                    ← AuditableEntity (حجز جلسة — مع Factory Method + Validation)
+│   └── Booking.cs                    ← BaseEntity (حجز جلسة)
 ├── Chat/
 │   ├── Conversation.cs               ← AuditableEntity (محادثة 1-لـ-1)
 │   └── ChatMessage.cs                ← BaseEntity (رسالة واحدة)
@@ -190,7 +188,7 @@ Domain/Entities/
 ├── Invitation/
 │   └── StaffInvitation.cs            ← AuditableEntity (دعوة موظف)
 ├── OtpVerification/
-│   └── OtpVerification.cs            ← BaseEntity (كود التحقق — يُرسل عبر الإيميل)
+│   └── OtpVerification.cs            ← BaseEntity (كود التحقق)
 ├── Session/
 │   ├── Session.cs                    ← AuditableEntity (جلسة تعليمية 1-لـ-1)
 │   ├── SessionMaterial.cs            ← AuditableEntity (ملف مرفق بالجلسة)
@@ -204,54 +202,6 @@ Domain/Entities/
     ├── WalletTransaction.cs          ← BaseEntity (حركة مالية)
     └── Events/
         └── WalletDomainEvents.cs
-```
-
-#### Booking — حجز جلسة تعليمية
-
-**File**: `src/Skill-Loop.Domain/Entities/Booking/Booking.cs`
-
-`Booking` هو كيان يمثل حجز المتعلم لجلسة تعليمية مع مدرب:
-- علاقة مع `Session` و `LearnerUserId` و `InstructorId`
-- بيانات الموعد: `ScheduleDate`, `StartTime`, `DurationInMinutes`
-- بيانات مالية: `PricePaid` (الكريديت المخصومة)
-- نوع الجلسة: `Type` (`Online`/`Offline`)
-- حالة الحجز: `Status` (Pending → Confirmed → Completed/Cancelled)
-- رابط الاجتماع: `MeetingUrl` (اختياري — للجلسات Online)
-
-```csharp
-public sealed class Booking : AuditableEntity
-{
-    public Guid SessionId { get; private set; }
-    public Guid LearnerUserId { get; private set; }
-    public Guid InstructorId { get; private set; }
-    public DateTime ScheduleDate { get; private set; }
-    public TimeSpan StartTime { get; private set; }
-    public int DurationInMinutes { get; private set; }
-    public int PricePaid { get; private set; }
-    public SessionType Type { get; private set; }
-    public BookingStatus Status { get; private set; } = BookingStatus.Confirmed;
-    public string? MeetingUrl { get; private set; }
-
-    private Booking() { }
-
-    public static Result<Booking> Create(
-        Guid sessionId, Guid learnerUserId, Guid instructorId,
-        DateTime scheduleDate, TimeSpan startTime,
-        int durationInMinutes, int pricePaid, SessionType type)
-    {
-        // ✅ يمنع الحجز لنفسك
-        if (learnerUserId == instructorId)
-            return Result<Booking>.Failure(...);
-        // ✅ يمنع الحجز في تاريخ ماضي
-        if (scheduleDate.Date < DateTime.UtcNow.Date)
-            return Result<Booking>.Failure(...);
-        return Result<Booking>.Success(new Booking { ... });
-    }
-
-    public void Complete() { ... }   // Confirmed → Completed
-    public Result Cancel() { ... }   // Confirmed → Cancelled (مع حماية)
-    public void SetMeetingUrl(string url) { ... }
-}
 ```
 
 #### InstructorProfile — بروفايل المدرب (Aggregate Root)
@@ -350,12 +300,11 @@ public sealed record CoursePrice
 | `CourseLevel`      | `Beginner`, `Intermediate`, `Advanced`, `AllLevels` | مستوى الكورس                  |
 | `CourseStatus`     | `Draft`, `Published`, `Archived`                    | حالة نشر الكورس               |
 | `EnrollmentStatus` | `Active`, `Completed`, `Cancelled`                  | حالة التسجيل في الكورس        |
-| `TransactionType`  | `CreditReward`, `CreditDeduction`                   | نوع الحركة المالية في المحفظة |
+| `TransactionType`  | `CreditDeduction`, `CreditRefund`, `CreditReward`   | نوع الحركة المالية في المحفظة |
 | `SessionStatus`    | `Draft`, `Published`                                | حالة الجلسة                   |
-| `SessionType`      | `Online`, `Offline`                                 | نوع الجلسة (أونلاين/حضوري)    |
-| `BookingStatus`    | `Pending`, `Confirmed`, `Completed`, `Cancelled`    | حالة حجز الجلسة               |
-| `MaterialType`     | `Document`, `Pdf`, `Presentation`                   | نوع الملف المرفق بالجلسة      |
-| `OtpPurpose`       | `VerifyPhone`, `EmailVerification`, `PasswordReset` | الغرض من كود التحقق (حالياً عبر الإيميل) |
+| `BookingStatus`    | `Confirmed`, `InProgress`, `Completed`              | حالة حجز الجلسة               |
+| `MaterialType`     | `PDF`, `Video`, `Image`, `Document`, `Other`        | نوع الملف المرفق بالجلسة      |
+| `OtpPurpose`       | `VerifyPhone`, `EmailVerification`, `PasswordReset` | الغرض من كود التحقق           |
 
 ---
 
@@ -752,18 +701,12 @@ Features/
 
 | Feature                | Commands                                                                                                                                                                                                                                                                                                                  | Queries                                                                                                          | EventHandlers                                   | DTOs |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---- |
-| **Accounts (UserAuth)**| RegisterUser, UserLogin, UserGoogleLogin, VerifyEmailOtp, ResendEmailOtp                                                                                                                                                                                                                                                 | —                                                                                                                | —                                               | ✅   |
-| **Accounts (StaffAuth)**| StaffLogin, StaffGoogleLogin                                                                                                                                                                                                                                                                                              | —                                                                                                                | —                                               | —    |
-| **Accounts (Auth)**    | RefreshToken, Logout                                                                                                                                                                                                                                                                                                      | —                                                                                                                | —                                               | —    |
-| **Accounts (Mgmt)**    | ChangePassword, ForgotPassword, ResetPassword, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture                                                                                                                                                                             | GetAllUsers, GetUserById, GetMyProfile                                                                           | —                                               | ✅   |
-| **Accounts (Invitations)** | SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle                                                                                                                                                                                                                                                          | ValidateInvitation                                                                                               | StaffInvitationCreated                          | —    |
-| **Accounts (Perms)**   | AssignPermission, RemovePermission, UpdateRolePermissions                                                                                                                                                                                                                                                                 | GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions                                                | —                                               | —    |
-| **Bookings**           | CreateBooking, CompleteBooking, CancelBooking                                                                                                                                                                                                                                                                             | —                                                                                                                | —                                               | —    |
+| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture, AssignPermission, RemovePermission, UpdateRolePermissions | GetAllUsers, GetMyProfile, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated                          | ✅   |
 | **Categories**         | CreateCategory, UpdateCategory, DeleteCategory                                                                                                                                                                                                                                                                            | GetCategories                                                                                                    | —                                               | —    |
 | **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)                          | ✅   |
 | **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                                               | ✅   |
 | **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                                                                                                  | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
-| **Wallets**            | —                                                                                                                                                                                                                                                                                                                         | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
+| **Wallets**            | — (no buy/promo commands yet)                                                                                                                                                                                                                                                                                             | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
 | **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                                               | —    |
 | **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
 | **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                                               | ✅   |
@@ -969,7 +912,7 @@ public class HangfireJobScheduler : IJobScheduler
 AddInfrastructure()
   ├── AddCoreServices()         ← IDateTime, ICurrentUser, ICorrelationContext, IGeoLocationService,
   │                                IIdentityNotificationService, IInvitationService, ISiteSettingsService
-  ├── AddCaching()              ← MemoryCacheService
+  ├── AddCaching()              ← RedisCacheService (with MemoryCacheService fallback if Redis unavailable)
   ├── AddPersistence()          ← AppDbContext + Interceptors
   ├── AddHangfireJobs()         ← Hangfire + JobScheduler
   ├── AddIdentityServices()     ← ASP.NET Identity + Database Seeder
@@ -1081,27 +1024,27 @@ Contracts/
 
 | Controller                       | Route                       | الوصف                                               |
 | -------------------------------- | --------------------------- | --------------------------------------------------- |
-| `AuthController`                 | `api/v1/auth`               | كل عمليات المصادقة: Staff + User + OTP + Password    |
-| `ProfileController`              | `api/profile`               | إدارة الملف الشخصي للمستخدم الحالي                  |
-| `UsersController`                | `api/users`                 | إدارة المستخدمين (Admin)                            |
-| `PermissionManagementController` | `api/permission-management` | إدارة الصلاحيات والأدوار                            |
-| `StaffInvitationsController`     | `api/staff-invitations`     | دعوات الموظفين                                      |
-| `CategoriesController`           | `api/categories`            | CRUD التصنيفات                                      |
-| `CoursesController`              | `api/courses`               | CRUD الكورسات                                       |
-| `EnrollmentsController`          | `api/enrollments`           | التسجيل في الكورسات + تقدم الدروس                   |
+| `AuthController`                 | `api/v1/auth`               | تسجيل الدخول، التوكن، OTP                           |
+| `ProfileController`              | `api/v1/me`                 | إدارة الملف الشخصي للمستخدم الحالي                  |
+| `UsersController`                | `api/v1/users`              | إدارة المستخدمين (Admin)                            |
+| `PermissionManagementController` | `api/v1/permission-management` | إدارة الصلاحيات والأدوار                            |
+| `StaffInvitationsController`     | `api/v1/staff-invitations`  | دعوات الموظفين                                      |
+| `CategoriesController`           | `api/v1/categories`         | CRUD التصنيفات                                      |
+| `CoursesController`              | `api/v1/courses`            | CRUD الكورسات                                       |
+| `EnrollmentsController`          | `api/v1/enrollments`        | التسجيل في الكورسات + تقدم الدروس                   |
 | `InstructorProfilesController`   | `api/instructor-profiles`   | بروفايل المدرب + التقييمات + اعتماد الإدارة          |
 | `WalletsController`              | `api/wallets`               | رصيد المحفظة + سجل الحركات المالية                   |
-| `SessionsController`             | `api/sessions`              | CRUD الجلسات التعليمية                              |
-| `SessionMaterialsController`     | `api/session-materials`     | رفع/حذف/ترتيب ملفات الجلسات                         |
-| `BookingsController`             | `api/v1/bookings`           | حجز الجلسات + إتمام + إلغاء                          |
-| `ChatController`                 | `api/chat`                  | المحادثات والرسائل                                  |
-| `SiteSettingsController`         | `api/site-settings`         | إعدادات الموقع                                      |
+| `SessionsController`             | `api/v1/sessions`           | CRUD الجلسات التعليمية                              |
+| `SessionMaterialsController`     | `api/v1/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
+| `BookingsController`             | `api/v1/bookings`           | حجز الجلسات لايف                                     |
+| `ChatController`                 | `api/v1/chat`               | المحادثات والرسائل                                  |
+| `SiteSettingsController`         | `api/v1/site-settings`      | إعدادات الموقع                                      |
 | `DevController`                  | `api/v1/dev`                | تطوير فقط — quick-login (محمي بـ `IsDevelopment()`) |
 
 **مثال كامل — Controller Pattern**:
 
 ```csharp
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class CoursesController : BaseApiController
 {
     [HttpPost]
@@ -1125,7 +1068,7 @@ public class CoursesController : BaseApiController
 **القواعد**:
 
 - الـ Controller **لا يحتوي على منطق أعمال** — فقط mapping ثم `Mediator.Send()` ثم `HandleResult()`
-- Route: `[Route("api/[controller]")]` على الكلاس (أو على `BaseApiController`)
+- Route: `[Route("api/v1/[controller]")]` على الكلاس (أو على `BaseApiController`) — **ملاحظة**: `InstructorProfilesController` و `WalletsController` حالياً يستخدمان `[Route("api/[controller]")]` بدون `/v1`، وهذا inconsistence سيتم معالجته
 - كل action ترجع `Task<IResult>` (Minimal API result type)
 
 ---
@@ -1230,6 +1173,19 @@ UnitTests/
     │   └── CourseAggregateTests.cs
     ├── Enrollments/
     │   └── EnrollmentAndWalletTests.cs
+    ├── Instructors/
+    │   └── Commands/
+    │       ├── AddInstructorAvailability/
+    │       │   └── AddInstructorAvailabilityCommandHandlerTests.cs
+    │       ├── ChangeInstructorApprovalStatus/
+    │       │   ├── ChangeInstructorApprovalStatusCommandHandlerTests.cs
+    │       │   └── ChangeInstructorApprovalStatusCommandValidatorTests.cs
+    │       ├── CreateMyInstructorProfile/
+    │       │   └── CreateMyInstructorProfileCommandHandlerTests.cs
+    │       ├── RemoveInstructorAvailability/
+    │       │   └── RemoveInstructorAvailabilityCommandHandlerTests.cs
+    │       └── UpdateMyInstructorProfile/
+    │           └── UpdateMyInstructorProfileCommandHandlerTests.cs
     └── Sessions/
         ├── SessionTests.cs
         ├── SessionMaterialTests.cs
@@ -1256,7 +1212,30 @@ UnitTests/
         └── Materials/
             ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
             └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
+    ├── Bookings/
+    │   ├── Commands/
+    │   │   ├── CancelBooking/
+    │   │   │   ├── CancelBookingCommandHandlerTests.cs
+    │   │   │   └── CancelBookingCommandValidatorTests.cs
+    │   │   ├── ChangeBookingStatus/
+    │   │   │   ├── ChangeBookingStatusCommandHandlerTests.cs
+    │   │   │   └── ChangeBookingStatusCommandValidatorTests.cs
+    │   │   ├── CompleteBooking/
+    │   │   │   ├── CompleteBookingCommandHandlerTests.cs
+    │   │   │   └── CompleteBookingCommandValidatorTests.cs
+    │   │   └── CreateBooking/
+    │   │       ├── CreateBookingCommandHandlerTests.cs
+    │   │       └── CreateBookingCommandValidatorTests.cs
+    │   └── Queries/
+    │       ├── GetBookingById/
+    │       │   └── GetBookingByIdQueryHandlerTests.cs
+    │       ├── GetMyBookings/
+    │       │   └── GetMyBookingsQueryHandlerTests.cs
+    │       └── GetSessionBookings/
+    │           └── GetSessionBookingsQueryHandlerTests.cs
 ```
+
+**Note**: `BookingTests.cs` (entity-level tests) is also present at the root level of `Features/Bookings/`.
 
 **Convention**:
 
@@ -1474,146 +1453,96 @@ public static class Courses
 
 | #   | المشكلة                                      | الملف/المسار                 | التفاصيل                                                                                      |
 | --- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| 1   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
-| 2   | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore`                 | لا يوجد أي استثناء لـ `appsettings.json` في `.gitignore`.                                     |
+| 2   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
+| 3   | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore`                 | لا يوجد أي استثناء لـ `appsettings.json` في `.gitignore`.                                     |
 
 ### 🟡 Medium
 
 | #   | المشكلة                                                           | الملف/المسار                                                                                                                                                                                |
 | --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 3   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
-| 4   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
-| 5   | **Session entity uses public setters**                            | `Domain/Entities/Sessions/Session.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات.                                                                  |
-| 6   | **`using System.Numerics` في AppDbContext**                       | `Infrastructure/Persistence/Data/AppDbContext.cs` — using غير مستخدم.                                                                                                                       |
-| 7   | **`using static System.Net.Mime.MediaTypeNames` في AppDbContext** | نفس الملف — using غير مستخدم.                                                                                                                                                               |
+| 4   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
+| 5   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
+| 6   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 7   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
 
 ### 🟢 Minor / Convention
 
-| #   | المشكلة                                                                                                                  |
-| --- | ------------------------------------------------------------------------------------------------------------------------ |
 | 8   | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
 | 9   | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
-
-### ✅ تم حلها
-
-| #   | المشكلة                                              | الحالة |
-| --- | ---------------------------------------------------- | ------ |
-| ~~1~~ | **Booking entity بسيط جداً بدون Factory Method**     | ✅ تم — أصبح `AuditableEntity` مع `Create()` Factory Method + validations (Self-booking prevention, past-date prevention) + `Complete()` + `Cancel()` |
 
 ---
 
 ## 9. Module Gap Analysis (Target vs Current)
 
-بناءً على تحليل SkillLoop Backend المستهدف مقارنة بالكود الموجود وشاشات الموبايل:
+بناءً على تحليل SkillLoop Backend المستهدف مقارنة بالكود الموجود:
 
 ### ✅ Exists (موجود ومُطبّق)
 
 | Module                         | الحالة   | التفاصيل                                                                                                                                                                              |
 | ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Auth — User Registration**   | ✅ مكتمل | `RegisterUserCommand` → Email OTP → `VerifyEmailOtpCommand` → Login (يغطي شاشات: Sign Up + OTP Verification) |
-| **Auth — User Login**          | ✅ مكتمل | `UserLoginCommand`, `UserGoogleLoginCommand` (يغطي شاشة: Login + Google/Apple/Facebook OAuth) |
-| **Auth — Staff Login**         | ✅ مكتمل | `StaffLoginCommand`, `StaffGoogleLoginCommand`, `RefreshTokenCommand`, `LogoutCommand` |
-| **Auth — Password Management** | ✅ مكتمل | `ChangePassword`, `ForgotPassword` (OTP عبر الإيميل), `ResetPassword` (يغطي شاشات: Forgot Password + Send OTP + Reset Password + Password Updated) |
-| **Users — Account Management** | ✅ مكتمل | `GetAllUsers`, `GetUserById`, `GetMyProfile`, `UpdateMyProfile`, `UpdateMyProfilePicture`, `ActivateUser`, `DeactivateUser`, `AssignRoleToUser`, `RemoveRoleFromUser` (يغطي شاشة: My Profile) |
-| **Auth — Staff Invitations**   | ✅ مكتمل | `SendInvitation`, `AcceptInvitation`, `AcceptInvitationWithGoogle`, `ValidateInvitation`, `StaffInvitationCreatedEventHandler` |
-| **Permission Management**      | ✅ مكتمل | `AssignPermissionToRole`, `RemovePermissionFromRole`, `UpdateRolePermissions`, `GetAllPermissions`, `GetRolePermissions`, `GetAllRolesWithPermissions` |
-| **OTP Verification**           | ✅ مكتمل | كيان `OtpVerification` + `OtpService` — **عبر الإيميل** (ليس الهاتف). الخدمة منفصلة وقابلة للتغيير لـ SMS لاحقاً |
-| **Categories**                 | ✅ مكتمل | `CreateCategory`, `UpdateCategory`, `DeleteCategory`, `GetCategories` + Entity + Controller (يغطي شاشة: Explore by Category) |
-| **Courses**                    | ✅ مكتمل | Entity (Aggregate Root) + Value Objects + `CreateCourse`, `AddLesson`, `AddCourseReview`, `PublishCourse`, `ToggleCourseBookmark`, `GetCourseById`, `GetCoursesPaged` + Domain Events (يغطي شاشات: Explore Skills + Course Detail + Continue Learning) |
-| **Enrollments**                | ✅ مكتمل | Entity + `EnrollInCourse`, `UpdateLessonProgress`, `GetUserEnrolledCourses` + Domain Events + Wallet Integration |
-| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged` + `SessionCompletedDomainEvent` (يغطي شاشات: Session Detail + Teach + Create Session) |
-| **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event |
-| **Bookings**                   | ✅ مكتمل | كيان `Booking` (AuditableEntity مع Factory Method) + `CreateBookingCommand`, `CompleteBookingCommand`, `CancelBookingCommand` + `BookingsController` (يغطي شاشات: Book a Session + Payment + Booking Confirmed) |
-| **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub (يغطي شاشات: Messages + Chat Conversation) |
-| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`) + CRUD + Reviews + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller (يغطي شاشة: Popular Instructor + Instructor Profile) |
-| **Wallet**                     | ✅ مكتمل | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + Optimistic Concurrency (يغطي شاشات: Wallet + Your Wallet card + Buy Credits) |
-| **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage) |
-| **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService` |
-| **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller |
-| **Infrastructure Core**        | ✅ مكتمل | Caching, Logging, CorrelationId, JWT, Hangfire, Outbox Pattern, GeoLocation, UserAgent Parsing |
+| **Auth — Staff Login**         | ✅ مكتمل | `StaffLoginCommand`, `StaffGoogleLoginCommand`, `RefreshTokenCommand`, `LogoutCommand`                                                                                                |
+| **Auth — Password Management** | ✅ مكتمل | `ChangePassword`, `ForgotPassword`, `ResetPassword`                                                                                                                                   |
+| **Users — Account Management** | ✅ مكتمل | `GetAllUsers`, `GetMyProfile`, `UpdateMyProfile`, `UpdateMyProfilePicture`, `ActivateUser`, `DeactivateUser`, `AssignRoleToUser`, `RemoveRoleFromUser`                                |
+| **Auth — Staff Invitations**   | ✅ مكتمل | `SendInvitation`, `AcceptInvitation`, `AcceptInvitationWithGoogle`, `ValidateInvitation`, `StaffInvitationCreatedEventHandler`                                                        |
+| **Permission Management**      | ✅ مكتمل | `AssignPermissionToRole`, `RemovePermissionFromRole`, `UpdateRolePermissions`, `GetAllPermissions`, `GetRolePermissions`, `GetAllRolesWithPermissions`                                |
+| **OTP Verification**           | ✅ مكتمل | كيان `OtpVerification` + `OtpService` في Infrastructure                                                                                                                               |
+| **Categories**                 | ✅ مكتمل | `CreateCategory`, `UpdateCategory`, `DeleteCategory`, `GetCategories` + Entity + Controller                                                                                           |
+| **Courses**                    | ✅ مكتمل | Entity (Aggregate Root) + Value Objects + `CreateCourse`, `AddLesson`, `AddCourseReview`, `PublishCourse`, `ToggleCourseBookmark`, `GetCourseById`, `GetCoursesPaged` + Domain Events |
+| **Enrollments**                | ✅ مكتمل | Entity + `EnrollInCourse`, `UpdateLessonProgress`, `GetUserEnrolledCourses` + Domain Events + Wallet Integration                                                                      |
+| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged`, `GetMySessionsPaged` + `SessionLocationType` enum, `SessionCompletedDomainEvent`                              |
+| **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
+| **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
+| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`, `InstructorAvailability`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus`, `AddInstructorAvailability`, `RemoveInstructorAvailability` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
+| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. |
+| **Booking**                    | ✅ مكتمل | Entity (rich aggregate with domain events + lifecycle) + `CreateBooking`, `CancelBooking`, `CompleteBooking`, `ChangeBookingStatus` + `GetBookingById`, `GetMyBookings`, `GetSessionBookings` + `BookingsController` |
+| **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
+| **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
+| **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
+| **Infrastructure Core**        | ✅ مكتمل | Caching, Logging, CorrelationId, JWT, Hangfire, Outbox Pattern, GeoLocation, UserAgent Parsing                                                                                        |
 
 ### ❌ Missing (غير موجود — مطلوب بناؤه)
 
-| Module                   | الأولوية  | ما يجب بناؤه                                                                                                            |
-| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع لشراء كريديت بفلوس حقيقية + كيان `Payment` + ربط مع Wallet. (شاشة Payment Methods تظهر "Coming Soon") |
-| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                    |
-| **Promo Codes**          | 🟢 منخفضة | الصلاحية موجودة (`PromoCodes.Manage`) لكن الـ Feature غير مبنية (شاشة Wallet تظهر tab لـ Promo Code)                      |
-| **Credit Packages**      | 🟢 منخفضة | الصلاحية موجودة (`Packages.Manage`) لكن الـ Feature غير مبنية (شاشة Wallet تظهر "Buy Credits")                           |
-| **Booking Queries**      | 🟡 متوسطة | Commands موجودة (Create, Complete, Cancel) لكن Queries غير موجودة (GetMyBookings, GetBookingById) — محتاجة للشاشة         |
+| Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
+| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
+| **Reviews (standalone)** | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
 
 ### 📋 Summary Table
 
 ```
 Module                  | Domain | Application | Infrastructure | API | Tests
-------------------------|--------|-------------|----------------|-----|------
+------------------------|--------|-------------|----------------|-----|-----
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Auth (User Register)    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Auth (User Login)       |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Auth (OTP - Email)      |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Courses                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Enrollments             |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Sessions                |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Bookings                |   ✅   |     ✅      |       ⬜       |  ✅  |  ⬜
-Wallet                  |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Booking                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⚠️
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Promo Codes             |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Credit Packages         |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Permission Management   |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-File Storage            |   —    |     —       |       ✅       |  ✅  |  ⬜
+OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+File Storage            |   —    |     —       |       ✅       |  ✅  |  ✅
 Google Drive Storage    |   —    |     ✅      |       ✅       |  —   |  ✅
-Email                   |   —    |     —       |       ✅       |  —   |  ⬜
+Email             |   —    |     —       |       ✅       |  —   |  ✅
 
 ✅ = Implemented   ⚠️ = Partial/Needs Work   ⬜ = Missing
 ```
 
 ---
 
-## 10. Mobile Screen → API Mapping
-
-جدول يربط كل شاشة في التطبيق بالـ API endpoints المسؤولة عنها:
-
-| الشاشة | الـ Endpoint(s) | الحالة |
-|--------|----------------|--------|
-| Splash / Onboarding | — (Client-side only) | N/A |
-| Sign Up | `POST /api/v1/auth/user/register` | ✅ |
-| OTP Verification (إيميل مش تليفون) | `POST /api/v1/auth/user/verify-email` + `POST /api/v1/auth/user/resend-verification-code` | ✅ |
-| Login | `POST /api/v1/auth/user/login` + `POST /api/v1/auth/user/login/google` | ✅ |
-| Forgot Password | `POST /api/v1/auth/password/forgot` | ✅ |
-| Send OTP (Reset Password) | نفس forgot → يرسل OTP عبر الإيميل | ✅ |
-| Reset Password | `POST /api/v1/auth/password/reset` | ✅ |
-| Password Updated | — (Client-side success screen) | ✅ |
-| Home | `GET /api/sessions` + `GET /api/wallets/me` + `GET /api/categories` | ✅ |
-| Explore Skills | `GET /api/sessions?category=X` + `GET /api/categories` | ✅ |
-| Session/Course Detail | `GET /api/sessions/{id}` + `GET /api/instructor-profiles/{userId}` | ✅ |
-| Book a Session | `POST /api/v1/bookings` | ✅ |
-| Payment (Credits) | خصم تلقائي من Wallet عند الحجز | ✅ |
-| Booking Confirmed | — (Client-side success screen) | ✅ |
-| My Profile | `GET /api/profile/me` + `GET /api/wallets/me` + `GET /api/instructor-profiles/me` | ✅ |
-| Messages | `GET /api/chat/conversations` | ✅ |
-| Chat (محادثة) | `GET /api/chat/conversations/{id}/messages` + `POST` + SignalR `/hubs/chat` | ✅ |
-| Wallet | `GET /api/wallets/me` + `GET /api/wallets/me/transactions` | ✅ |
-| Wallet → Buy Credits | ⬜ (Payments feature مطلوبة) | ❌ |
-| Wallet → Promo Code | ⬜ (Promo Codes feature مطلوبة) | ❌ |
-| Teach | `POST /api/sessions` + `GET /api/sessions?instructorId=me` | ✅ |
-| Create a New Session | `POST /api/sessions` | ✅ |
-
-> **ملاحظة**: شاشة OTP في التصميم تظهر "Check your phone" لكن الـ Backend يرسل عبر **الإيميل**. الخدمة منفصلة ويمكن تحويلها لـ SMS لاحقاً بدون تغيير في باقي الكود.
-
----
-
 > **عند طلب بناء feature جديدة**: سأتبع هذا الدليل خطوة بخطوة، مع استخدام الـ patterns الموجودة كمرجع:
 >
-> - **Commands**: ChangePassword (بسيط) أو CreateBooking (مع Wallet integration)
+> - **Commands**: ChangePassword (بسيط) أو CreateCourse (مع Aggregate Root)
 > - **Queries**: GetCoursesPaged (مع Pagination) أو GetAllUsers (مع Caching + Pagination)
 > - **Domain Events**: CourseEnrolledDomainEvent (مع خصم كريديت) أو SessionMaterialUploadedEvent
 > - **Aggregate Root**: Course (Rich Domain Model مع Value Objects)
 > - **Real-time**: Chat pattern (SignalR + IChatNotifier)
-> - **Booking Flow**: CreateBooking → Wallet Deduction → BookingConfirmed → Complete/Cancel

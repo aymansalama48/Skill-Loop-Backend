@@ -3,6 +3,7 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Sessions.Queries.Share;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Application.Features.Sessions.Queries.GetSessionById;
 
@@ -26,13 +27,11 @@ public sealed class GetSessionByIdQueryHandler : IQueryHandler<GetSessionByIdQue
             return Result<SessionResponse>.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
         }
 
-        var response = new SessionResponse(
-            session.Id,
-            session.InstructorId,
-            session.OwnerId,
-            session.Title,
-            session.Status,
-            session.CreatedAt);
+        // عدد الحجوزات النشطة عشان نحسب المقاعد المتاحة
+        var bookedParticipants = await SessionAvailabilityHelper.CountActiveBookingsAsync(
+            _dbContext, session.Id, cancellationToken);
+
+        var response = SessionAvailabilityHelper.BuildResponse(session, bookedParticipants, DateTime.UtcNow);
 
         return Result<SessionResponse>.Success(response);
     }

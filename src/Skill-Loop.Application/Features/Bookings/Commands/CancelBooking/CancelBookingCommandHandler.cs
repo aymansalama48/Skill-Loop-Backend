@@ -1,55 +1,73 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.CancelBooking;
 
 public sealed class CancelBookingCommandHandler(
-    IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : ICommandHandler<CancelBookingCommand, bool>
+    IApplicationDbContext _dbContext) : ICommandHandler<CancelBookingCommand>
 {
-    public async Task<Result<bool>> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue)
-            return Result<bool>.Failure(new Error("User.Unauthorized", "غير مصرح.", ErrorType.Unauthorized));
+        var utcNow = DateTime.UtcNow;
 
-        var userId = _currentUser.UserId.Value;
-
-        // 1. جلب الحجز
         var booking = await _dbContext.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);
 
         if (booking is null)
-            return Result<bool>.Failure(new Error("Booking.NotFound", "الحجز غير موجود.", ErrorType.NotFound));
-
-        // 2. التحقق من الصلاحيات (فقط الطالب صاحب الحجز أو المدرب يحق لهم الإلغاء)
-        if (booking.LearnerUserId != userId && booking.InstructorId != userId)
-            return Result<bool>.Failure(new Error("Booking.Forbidden", "لا تملك صلاحية إلغاء هذا الحجز.", ErrorType.Forbidden));
-
-        // 3. إلغاء الحجز من الدومين
-        var cancelResult = booking.Cancel();
-        if (cancelResult.IsFailure) return Result<bool>.Failure(cancelResult.Errors);
-
-        // 4. استرجاع الأموال لمحفظة الطالب (Refund)
-        var studentWallet = await _dbContext.UserWallets
-            .FirstOrDefaultAsync(w => w.UserId == booking.LearnerUserId, cancellationToken);
-
-        if (studentWallet is not null)
         {
-            // استخدمنا دالة AddCredits اللي إنت عاملها في UserWallet
-            var refundResult = studentWallet.AddCredits(
-                booking.PricePaid,
-                booking.Id,
-                "استرداد رصيد لإلغاء الحجز");
-
-            if (refundResult.IsFailure) return Result<bool>.Failure(refundResult.Errors);
+            return Result.Failure(BookingErrors.NotFound);
         }
 
-        // 5. حفظ التغييرات (الحجز اتلغى، والفلوس رجعت)
+        // 1. لازم نجيب الجلسة عشان نعرف مين المحاضر
+        var session = await _dbContext.Sessions
+            .AsNoTracking()
+            .FirstOrDefaultAsync(s => s.Id == booking.SessionId, cancellationToken);
+
+        if (session is null)
+        {
+            return Result.Failure(BookingErrors.SessionNotFound);
+        }
+
+        // 2. الإلغاء مسموح للمتعلم نفسه أو للمحاضر
+        var isLearner = booking.LearnerUserId == request.RequestedByUserId;
+        var isInstructor = session.InstructorId == request.RequestedByUserId || session.OwnerId == request.RequestedByUserId;
+
+        if (!isLearner && !isInstructor)
+        {
+            return Result.Failure(BookingErrors.NotLearner);
+        }
+
+        if (!booking.CanBeCancelled)
+        {
+            return Result.Failure(BookingErrors.CannotCancel);
+        }
+
+        // 3. تسجيل سبب الإلغاء (نفس الدالة بتعمل Emitting للحدث)
+        var shouldRefund = booking.IsRefundable && booking.PriceInCredits > 0;
+        var cancelResult = booking.Cancel(request.Reason, utcNow);
+
+        if (cancelResult.IsFailure)
+        {
+            return Result.Failure(cancelResult.Errors.First());
+        }
+
+        // 4. استرجاع الـ Credits للمتعلم لو الحجز كان قابل للاسترجاع
+        if (shouldRefund)
+        {
+            var refundResult = await BookingWalletHelper.RefundAsync(
+                _dbContext, booking, session.Title, cancellationToken);
+
+            if (refundResult.IsFailure)
+            {
+                return Result.Failure(refundResult.Errors.First());
+            }
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Result<bool>.Success(true);
+        return Result.Success();
     }
 }

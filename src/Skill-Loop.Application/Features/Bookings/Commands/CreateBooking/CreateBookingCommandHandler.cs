@@ -1,59 +1,122 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
-using Skill_Loop.Application.Common.Errors.Identity;
+using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Domain.Common.Results;
-
-// تعريف كلاس الكيان يدوياً عشان ميتعارضش مع اسم الـ namespace
-using BookingEntity = Skill_Loop.Domain.Entities.Booking.Booking;
+using Skill_Loop.Domain.Entities.Booking;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.CreateBooking;
 
 public sealed class CreateBookingCommandHandler(
-    IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : ICommandHandler<CreateBookingCommand, Guid>
+    IApplicationDbContext _dbContext) : ICommandHandler<CreateBookingCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue) return Result<Guid>.Failure(UserErrors.Unauthorized);
-        var learnerId = _currentUser.UserId.Value;
+        // كل المواعيد متخزنة UTC، فبنقارن بـ UtcNow مش بـ IDateTime (بتوقيت مصر)
+        var utcNow = DateTime.UtcNow;
 
-        // 1. جلب الجلسة للتأكد من سعرها ومدربها
+        // 1. جلب الجلسة
         var session = await _dbContext.Sessions
             .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
 
         if (session is null)
-            return Result<Guid>.Failure(new Error("Booking.SessionNotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
+        {
+            return Result<Guid>.Failure(BookingErrors.SessionNotFound);
+        }
 
-        // 2. جلب محفظة الطالب
-        var wallet = await _dbContext.UserWallets
-            .FirstOrDefaultAsync(w => w.UserId == learnerId, cancellationToken);
+        // 2. يمنع المتعلم إنه يحجز جلسته هو
+        if (session.InstructorId == request.LearnerUserId || session.OwnerId == request.LearnerUserId)
+        {
+            return Result<Guid>.Failure(BookingErrors.SelfBooking);
+        }
 
-        if (wallet is null || wallet.Balance < session.PriceInCredits)
-            return Result<Guid>.Failure(new Error("Booking.InsufficientFunds", "الرصيد غير كافٍ لإتمام الحجز.", ErrorType.Conflict));
+        // 3. الجلسة لازم تكون منشورة ومعلولة ولسه في المستقبل
+        if (session.Status != SessionStatus.Published)
+        {
+            return Result<Guid>.Failure(BookingErrors.SessionNotPublished);
+        }
 
-        // 3. إنشاء كيان الحجز
-        var bookingResult = BookingEntity.Create(
+        if (session.ScheduledAtUtc is null)
+        {
+            return Result<Guid>.Failure(BookingErrors.SessionNotScheduled);
+        }
+
+        if (session.ScheduledAtUtc.Value <= utcNow)
+        {
+            return Result<Guid>.Failure(BookingErrors.SessionInThePast);
+        }
+
+        // 4. منع الحجز المكرر (Idempotency)
+        var alreadyBooked = await _dbContext.Bookings
+            .AnyAsync(b =>
+                b.SessionId == request.SessionId &&
+                b.LearnerUserId == request.LearnerUserId &&
+                (b.Status == BookingStatus.Pending ||
+                 b.Status == BookingStatus.Confirmed ||
+                 b.Status == BookingStatus.InProgress ||
+                 b.Status == BookingStatus.Completed),
+                cancellationToken);
+
+        if (alreadyBooked)
+        {
+            return Result<Guid>.Failure(BookingErrors.AlreadyBooked);
+        }
+
+        // 5. التأكد إن فيه مقاعد فاضية
+        var activeBookingsCount = await _dbContext.Bookings
+            .CountAsync(b =>
+                b.SessionId == request.SessionId &&
+                (b.Status == BookingStatus.Pending ||
+                 b.Status == BookingStatus.Confirmed ||
+                 b.Status == BookingStatus.InProgress ||
+                 b.Status == BookingStatus.Completed),
+                cancellationToken);
+
+        if (!session.IsBookable(utcNow, activeBookingsCount))
+        {
+            return Result<Guid>.Failure(BookingErrors.SessionFull);
+        }
+
+        // 6. خصم الـ Credits من محفظة المتعلم بشكل ذري
+        if (session.CreditsPrice > 0)
+        {
+            var wallet = await _dbContext.UserWallets
+                .FirstOrDefaultAsync(w => w.UserId == request.LearnerUserId, cancellationToken);
+
+            if (wallet is null)
+            {
+                return Result<Guid>.Failure(BookingErrors.WalletNotFound);
+            }
+
+            var deductionResult = wallet.DeductCredits(
+                session.CreditsPrice,
+                session.Id,
+                $"Booking live session: {session.Title}");
+
+            if (deductionResult.IsFailure)
+            {
+                return Result<Guid>.Failure(deductionResult.Errors.First());
+            }
+        }
+
+        // 7. إنشاء الحجز — المصنع بيرفع BookingCreatedDomainEvent تلقائياً
+        var bookingResult = Booking.Create(
             session.Id,
-            learnerId,
-            session.InstructorId,
-            request.ScheduleDate,
-            request.StartTime,
-            session.DurationInMinutes,
-            session.PriceInCredits,
-            session.Type);
+            request.LearnerUserId,
+            session.CreditsPrice,
+            session.ScheduledAtUtc,
+            utcNow);
 
-        if (bookingResult.IsFailure) return Result<Guid>.Failure(bookingResult.Errors);
-        var booking = bookingResult.Data;
+        if (bookingResult.IsFailure)
+        {
+            return Result<Guid>.Failure(bookingResult.Errors.First());
+        }
 
-        // 4. خصم الرصيد من الطالب وتسجيل العملية (Receipt)
-        var deductResult = wallet.DeductCredits(session.PriceInCredits, booking.Id, $"حجز جلسة: {session.Title}");
-        if (deductResult.IsFailure) return Result<Guid>.Failure(deductResult.Errors);
-
-        // 5. حفظ كل التغييرات في قاعدة البيانات
+        var booking = bookingResult.Data!;
         _dbContext.Add(booking);
-        // ملاحظة: الـ EF Core بيعمل Track لتحديثات المحفظة لوحده لأننا جبناها بـ Tracking
+        session.AddBooking(booking);
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result<Guid>.Success(booking.Id);

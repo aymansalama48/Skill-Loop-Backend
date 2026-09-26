@@ -485,6 +485,7 @@ $RECYCLE.BIN/
 UploadedFiles/
 Logs/
 *.log
+appsettings.json
 appsettings.*.local.json
 .agents/
 .gemini/

@@ -8,8 +8,10 @@ using Skill_Loop.Application.Features.Sessions.Commands.ChangeSessionStatus;
 using Skill_Loop.Application.Features.Sessions.Commands.CreateSession;
 using Skill_Loop.Application.Features.Sessions.Commands.DeleteSession;
 using Skill_Loop.Application.Features.Sessions.Commands.UpdateSession;
+using Skill_Loop.Application.Features.Sessions.Queries.GetMySessionsPaged;
 using Skill_Loop.Application.Features.Sessions.Queries.GetSessionById;
 using Skill_Loop.Application.Features.Sessions.Queries.GetSessionsPaged;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
 
@@ -19,11 +21,15 @@ public class SessionsController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
 
+    // حقن ICurrentUser
     public SessionsController(ICurrentUser currentUser)
     {
         _currentUser = currentUser;
     }
 
+    /// <summary>
+    /// إنشاء جلسة لايف جديدة (مسودة) — المعلّم الحالي هو المالك
+    /// </summary>
     [HttpPost]
     public async Task<IResult> CreateSession(
             [FromBody] CreateSessionRequest request,
@@ -32,13 +38,17 @@ public class SessionsController : BaseApiController
         // 1. سحب الـ ID الخاص بالمستخدم الحالي من التوكن تلقائياً
         var instructorId = _currentUser.UserId ?? Guid.Empty;
 
-        // 2. تمريره للـ Command مع البيانات الجديدة
+        // 2. تمريره للـ Command
         var command = new CreateSessionCommand(
             request.Title,
             instructorId,
-            request.PriceInCredits,
-            request.DurationInMinutes,
-            request.Type);
+            request.Description,
+            request.ScheduledAtUtc,
+            request.DurationMinutes,
+            request.CreditsPrice,
+            request.LocationType,
+            request.LocationDetails,
+            request.MaxParticipants);
 
         var result = await Mediator.Send(command, cancellationToken);
 
@@ -51,13 +61,16 @@ public class SessionsController : BaseApiController
         [FromBody] UpdateSessionRequest request,
         CancellationToken cancellationToken)
     {
-        // تمرير البيانات الجديدة للـ Command
         var command = new UpdateSessionCommand(
             id,
             request.Title,
-            request.PriceInCredits,
-            request.DurationInMinutes,
-            request.Type);
+            request.Description,
+            request.ScheduledAtUtc,
+            request.DurationMinutes,
+            request.CreditsPrice,
+            request.LocationType,
+            request.LocationDetails,
+            request.MaxParticipants);
 
         var result = await Mediator.Send(command, cancellationToken);
 
@@ -94,16 +107,51 @@ public class SessionsController : BaseApiController
         return HandleResult(result);
     }
 
+    /// <summary>
+    /// تصفح الجلسات (استكشاف/فلترة) — inclui المقاعد المتاحة
+    /// </summary>
     [HttpGet]
     public async Task<IResult> GetSessionsPaged(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
         [FromQuery] Guid? instructorId = null,
+        [FromQuery] SessionStatus? status = null,
+        [FromQuery] DateTime? fromUtc = null,
+        [FromQuery] DateTime? toUtc = null,
+        [FromQuery] bool bookableOnly = false,
+        [FromQuery] int? maxCredits = null,
         CancellationToken cancellationToken = default)
     {
         var pagination = new PaginationParameters { PageNumber = pageNumber, PageSize = pageSize };
-        var query = new GetSessionsPagedQuery(pagination, instructorId);
+        var query = new GetSessionsPagedQuery(
+            pagination,
+            instructorId,
+            status,
+            fromUtc,
+            toUtc,
+            bookableOnly,
+            maxCredits);
 
+        var result = await Mediator.Send(query, cancellationToken);
+
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// لوحة المعلّم: جلساتي (قادمة / سابقة / بحالة معينة)
+    /// </summary>
+    [HttpGet("me")]
+    public async Task<IResult> GetMySessions(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        [FromQuery] SessionStatus? status = null,
+        [FromQuery] bool upcomingOnly = false,
+        [FromQuery] bool pastOnly = false,
+        CancellationToken cancellationToken = default)
+    {
+        var instructorId = _currentUser.UserId ?? Guid.Empty;
+
+        var query = new GetMySessionsPagedQuery(instructorId, pageNumber, pageSize, status, upcomingOnly, pastOnly);
         var result = await Mediator.Send(query, cancellationToken);
 
         return HandleResult(result);

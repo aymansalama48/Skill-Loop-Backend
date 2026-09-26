@@ -1,9 +1,15 @@
-﻿using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.Messaging;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.CreateBooking;
 
 public sealed record CreateBookingCommand(
     Guid SessionId,
-    DateTime ScheduleDate,
-    TimeSpan StartTime
-) : ICommand<Guid>;
+    Guid LearnerUserId) : ICommand<Guid>, ICacheInvalidatorCommand
+{
+    public IReadOnlyCollection<string> CacheKeys =>
+    [
+        "sessions:all",
+        $"sessions:{SessionId}"
+    ];
+}

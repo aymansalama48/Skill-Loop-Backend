@@ -2,7 +2,6 @@ namespace Skill_Loop.UnitTests.Features.Sessions.Commands.CreateSession;
 
 using FluentValidation.TestHelper;
 using Skill_Loop.Application.Features.Sessions.Commands.CreateSession;
-using Skill_Loop.Domain.Enums;
 using System;
 using Xunit;
 
@@ -18,8 +17,7 @@ public class CreateSessionCommandValidatorTests
     [Fact]
     public void Validate_ValidCommand_PassesValidation()
     {
-        // تمرير كافة المعاملات المطلوبة (Title, InstructorId, PriceInCredits, DurationInMinutes, Type)
-        var command = new CreateSessionCommand("Clean Architecture Session", Guid.NewGuid(), 100, 60, SessionType.Online);
+        var command = new CreateSessionCommand("Clean Architecture Session", Guid.NewGuid());
 
         var result = _validator.TestValidate(command);
 
@@ -32,7 +30,7 @@ public class CreateSessionCommandValidatorTests
     [InlineData(null)]
     public void Validate_EmptyTitle_HasValidationError(string? title)
     {
-        var command = new CreateSessionCommand(title!, Guid.NewGuid(), 100, 60, SessionType.Online);
+        var command = new CreateSessionCommand(title!, Guid.NewGuid());
 
         var result = _validator.TestValidate(command);
 
@@ -44,7 +42,7 @@ public class CreateSessionCommandValidatorTests
     public void Validate_TitleExceeds200Characters_HasValidationError()
     {
         var longTitle = new string('A', 201);
-        var command = new CreateSessionCommand(longTitle, Guid.NewGuid(), 100, 60, SessionType.Online);
+        var command = new CreateSessionCommand(longTitle, Guid.NewGuid());
 
         var result = _validator.TestValidate(command);
 
@@ -55,7 +53,7 @@ public class CreateSessionCommandValidatorTests
     [Fact]
     public void Validate_EmptyInstructorId_HasValidationError()
     {
-        var command = new CreateSessionCommand("Valid Title", Guid.Empty, 100, 60, SessionType.Online);
+        var command = new CreateSessionCommand("Valid Title", Guid.Empty);
 
         var result = _validator.TestValidate(command);
 

@@ -6,3 +6,8 @@ public sealed record WalletBalanceDeductedDomainEvent(
     Guid UserId,
     int AmountDeducted,
     int RemainingBalance) : IDomainEvent;
+
+public sealed record WalletBalanceRefundedDomainEvent(
+    Guid UserId,
+    int AmountRefunded,
+    int RemainingBalance) : IDomainEvent;

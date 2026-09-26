@@ -1,0 +1,146 @@
+# Backend Implementation Gap Analysis — SkillLoop
+
+> Compared the **actual code** (scanned every `.cs` file across `src/`, `tests/`, `docs/` and the EF migrations) against the app description ("Teach. Earn. Learn. Repeat" peer-to-peer credit economy). This file documents what exists in code vs. what still needs building. Code was not modified.
+>
+> **Analysis date**: 2026-09-26 — reflects state after PR #10 ("implement instructor profiles, reviews, and wallet automation via domain events"), all migrations through `20260925160842_AddInstructorReviewsAndWalletUpdates`, **plus the Session Scheduling + Live Booking implementation** (migration `20260926121933_AddSessionSchedulingAndBookingFlow`).
+
+---
+
+## Methodology
+
+- Scanned every `.cs` file across `src/`, `tests/`, `docs/` and the EF migrations.
+- Inspected: Domain entities, Enums, Application CQRS handlers/queries, Api controllers, Infrastructure configs, migrations, and unit tests.
+- "Implemented" means real, functional code with business logic. "Stub" means empty class/file with no logic. "Missing" means no code at all.
+
+---
+
+## 1. High-Level Feature Matrix
+
+| Feature (from description) | Domain Entity | App Layer (CQRS) | Infrastructure | API / Controller | Tests | Status |
+|---|---|---|---|---|---|---|
+| **Auth — Staff** (admin login, Google OAuth, JWT, refresh/logout) | `ApplicationUser`, `ApplicationRole`, `RefreshToken` | StaffAuth commands, RefreshToken, Logout, ChangePassword | JwtTokenGenerator, StaffAuthService, GoogleAuthProvider | AuthController | ✅ StaffLogin, RefreshToken, Logout | **Implemented** |
+| **Auth — User registration** (email+OTP, Google, password reset) | `OtpVerification` entity | RegisterUser, VerifyEmailOtp, ResendEmailOtp, UserLogin, UserGoogleLogin | OtpService, UserAuthService | AuthController | — | **Implemented (email-only)** |
+| **User / Profile** | — | AccountManagement (CRUD, avatar, activate/deactivate, roles) | UserManagementService | ProfileController, UsersController | ✅ Profile, Account Mgmt, Role Assignment | **Implemented** |
+| **Permission System (RBAC)** | `TbPermission`, `TbRolePermission` | PermissionManagement commands/queries | PermissionService | PermissionManagementController | ✅ AssignPermissionToRole | **Implemented** |
+| **OTP Verification** | `OtpVerification` | (no separate Otps feature folder) | OtpService (HMAC, expiry, cooldown, lockout) | — (used internally by RegisterUser/ResetPassword) | — | **Implemented (internal)** |
+| **Staff Invitations** | `StaffInvitation` | Send/Validate/Accept (password + Google) | InvitationService, token generation | StaffInvitationsController | ✅ SendInvitation, AcceptInvitation | **Implemented** |
+| **Site Settings** | `SiteSettings` | UpdateSiteSettings, GetSiteSettings | SiteSettingsService | SiteSettingsController | — | **Implemented** |
+| **Categories** | `Category` | Full CRUD (Create/Update/Delete/GetCategories) | CategoryConfiguration | CategoriesController | CategoryTests, Create/Update/Delete handler + validator tests | **Implemented** |
+| **Courses** | `Course`, `Section`, `Lesson`, `CourseReview`, `CourseBookmark`, value objects (`CoursePrice`, `CourseRating`, `VideoResource`, `PdfAttachment`) | Full: CreateCourse, PublishCourse, AddLesson, AddCourseReview, ToggleCourseBookmark, GetCoursesPaged (search/filter/sort/paged/cache), GetCourseById (cache) | CourseConfiguration, CategorySectionLessonConfiguration | CoursesController | CourseAggregateTests (real) | **Implemented** |
+| **Enrollment** | `Enrollment`, `LessonProgress` | Full: EnrollInCourse (atomic wallet deduction), UpdateLessonProgress (progress %, completion) | EnrollmentConfiguration | EnrollmentsController | EnrollmentAndWalletTests (real) | **Implemented** |
+| **Wallet** | `UserWallet`, `WalletTransaction` | **Queries**: GetMyWallet (lazy wallet creation), GetMyWalletTransactionsPaged. **Earning side**: `CreditInstructorWalletEventHandler` (course sales) + `CreditInstructorWalletOnSessionCompletedEventHandler` (live sessions) + instructor-profile stat handlers. **Refund side**: `UserWallet.RefundCredits` records a `CreditRefund` transaction, invoked by CancelBooking and booking rejection. **No buy/promo commands** — no `Payment` entity, no `PromoCode` entity. | UserWallet + WalletTransaction configured (optimistic concurrency via `RowVersion`) | WalletsController (balance + history only) | EnrollmentAndWalletTests, CreditInstructorWalletOnSessionCompletedEventHandlerTests | **Partial — earning + refund complete, no buy/promo commands** |
+| **Booking (live session)** | `Booking` (now a full aggregate: `SessionId`, `LearnerUserId`, `Status`, `PriceInCredits`, `ScheduledAtUtc`, `BookedAtUtc`, `StartedAtUtc`, `CompletedAtUtc`, `CancelledAtUtc`, `CancellationReason`; factory + lifecycle methods + domain events) | **Full**: CreateBooking (validates publish/schedule/capacity/duplicate, atomically deducts learner credits), CancelBooking (learner or instructor, refunds credits), ChangeBookingStatus (instructor-only: Confirmed/InProgress/Completed/Rejected/NoShow) + GetBookingById, GetMyBookings, GetSessionBookings | BookingConfiguration (FK to Sessions cascade, filtered unique index on (SessionId, LearnerUserId) for active statuses) | **BookingsController** (`api/v1/bookings`) | BookingTests, CreateBooking/CancelBooking/ChangeBookingStatus handler + validator tests, GetMyBookings/GetSessionBookings query tests | **Implemented** |
+| **Sessions (live teaching)** | `Session` (now with `Description`, `ScheduledAtUtc`, `DurationMinutes`, `CreditsPrice`, `LocationType`, `LocationDetails`, `MaxParticipants`, `Bookings` navigation + `IsBookable`/`AvailableSlots`/`UpdateSchedule`/`Complete`/`Cancel`) | Full CRUD: CreateSession, UpdateSession (partial-update scheduling), DeleteSession, ChangeSessionStatus + GetSessionById, GetSessionsPaged (filter by instructor/status/date-range/bookable-only/max-credits, returns live availability), **GetMySessionsPaged** (teach dashboard: upcoming/past/by-status). SessionMaterials: full upload/delete/reorder/get/download with booking-based access. | SessionConfiguration, SessionMaterialConfiguration | SessionsController (`api/v1/sessions`, incl. `GET /me`), SessionMaterialsController | SessionTests (scheduling + bookability), SessionMaterialTests, Command/Query/Validator tests (real) | **Implemented** |
+| **Instructor Profile** | `InstructorProfile` (bio, headline, approval, rating, stats) | Full: CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus (admin) + Reviews CRUD (Add/Update/Remove) + Queries (GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId) + EventHandlers (CourseEnrolled, SessionCompleted) | InstructorProfileConfiguration, InstructorReviewConfiguration | InstructorProfilesController | InstructorProfileTests, InstructorReviewTests, Create/Update/Review/Approval handler + validator tests, query tests | **Implemented** |
+| **Chat** | `Conversation`, `ChatMessage` | Full: SendMessage, StartConversation, GetMyConversations, GetConversationMessages, MarkConversationRead | ChatConfigurations | ChatController + SignalR ChatHub (`/hubs/chat`) | — (no chat unit tests) | **Implemented** |
+| **Reviews / Ratings** | `CourseReview`, `InstructorReview` | AddCourseReview (course), AddInstructorReview/UpdateInstructorReview/RemoveInstructorReview (instructor) | — (part of CourseConfiguration) | — (course via CoursesController, instructor via InstructorProfilesController) | — | **Implemented (course + instructor reviews; no session reviews)** |
+| **File Storage** | — | — | LocalFileStorage, GoogleDriveContentStorage (ICourseContentStorage) | TestFilesController, SessionMaterialsController | — | **Implemented** |
+| **Email / Notifications** | — | — | SmtpEmailSender, IdentityNotificationService, HTML templates | — | NotificationServiceTests | **Implemented** |
+| **Background Jobs / Outbox** | `OutboxMessage` | ProcessOutboxMessagesJob, CourseInvalidationHandler, SessionMaterialUploadedEventHandler | ProcessOutboxMessagesJob, HangfireJobScheduler, InsertOutboxMessagesInterceptor | Hangfire dashboard | RefreshDriveQuotaJobTests, NotificationServiceTests | **Implemented** |
+| **Caching (Redis)** | `ICacheService` | Cache-Aside in GetCoursesPaged, GetCourseById, Categories, GetSessionsPaged, GetMySessionsPaged, GetMyBookings, GetSessionBookings; key/prefix invalidation via domain events + `ICacheInvalidatorCommand` | RedisCacheService, MemoryCacheService | — | CacheServiceTests | **Implemented (with startup bug — see §3)** |
+
+---
+
+## 2. Gap Analysis vs. App Description
+
+### 2.1 Core Concepts
+
+| Concept | Description says | What code has | Gap |
+|---|---|---|---|
+| **User (symmetric learner+instructor)** | everyone is both student and teacher; Wallet, Enrollment, Teaching stats hang off same User | `ApplicationUser` exists with FirstName/LastName/AvatarUrl/IsActive/CreatedAt/LastLoginAt. `Roles` includes `Instructor` but it's never assigned in code — approval happens via `InstructorProfile.IsApproved` instead. | `ApplicationUser` is fine as-is. Instructor stats live in `InstructorProfile` (correct). The `Instructor` role is defined but unused — consider removing it and relying solely on `InstructorProfile.IsApproved`. |
+| **Course** | Sections → Lessons, videos/PDFs, level, pricing in Credits, Draft→Published | **Fully implemented.** `Course`/`Section`/`Lesson`/`CourseReview`/`CourseBookmark` with value objects, full CQRS handlers, Redis caching, cache invalidation on publish, unit tests. | None for core flow. |
+| **Instructor Profile** | bio, rating, sessions completed, credits earned | **Fully implemented.** `InstructorProfile` entity (AuditableEntity) with Headline, Bio, IsApproved, Rating, SessionsCompleted, CreditsEarned, and a collection of `InstructorReview` (1-5 stars + comment). Approval workflow via `ChangeInstructorApprovalStatus`. Rating auto-recalculated on add/update/remove review. Instructor stats updated via domain-event handlers: `CourseEnrolledEventHandler` increments `CreditsEarned`, `SessionCompletedEventHandler` increments `SessionsCompleted`. Full CRUD commands + `GetInstructorsPaged` (filterable/sortable), `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` queries. `InstructorProfilesController` with all endpoints. Migrations: `AddInstructorProfile`, `CreateInstructorProfileTable`, `AddInstructorReviewsAndWalletUpdates`. | **Unit tests exist** for entity, commands (Create/Update/Review/Approval), validators, and queries. Reviews are included in `GetInstructorFullProfileByUserId` response; no separate paginated reviews endpoint. |
+| **Enrollment** | atomic credit-deducted enrollment, lesson-by-lesson progress % | **Fully implemented.** `Enrollment.Create` emits `CourseEnrolledDomainEvent`; `MarkLessonCompleted` updates progress % and raises `CourseCompletedDomainEvent` at 100%. Atomic wallet deduction in `EnrollInCourseCommandHandler`. Idempotent (duplicate enrollment check). Unit tested. | None. |
+| **Session/Booking** | live 1:1/small-group slots; students pick date/time, pay Credits, online or in-person | **Both sides are now implemented.** `Session` carries the full slot model (`ScheduledAtUtc`, `DurationMinutes`, `CreditsPrice`, `LocationType` Online/Offline, `LocationDetails`, `MaxParticipants`) plus `IsBookable`/`AvailableSlots`/`UpdateSchedule`/`Complete`/`Cancel` and a `Bookings` navigation. `Booking` is a real auditable aggregate with a factory, guarded lifecycle (`Confirm`/`Start`/`Complete`/`Cancel`/`Reject`/`MarkNoShow`), price + schedule snapshots, and `BookingCreatedDomainEvent` / `BookingCancelledDomainEvent`. `CreateBooking` validates published status, scheduled-in-future, capacity, self-booking, and duplicate bookings, then atomically deducts learner credits. Cancel/reject refund through `UserWallet.RefundCredits` (logged as `CreditRefund`). Completion raises `SessionCompletedDomainEvent`, which now drives **both** `SessionCompletedEventHandler` (instructor stat) and `CreditInstructorWalletOnSessionCompletedEventHandler` (instructor wallet balance). `BookingStatus` extended to Pending/Confirmed/InProgress/Completed/Cancelled/Rejected/NoShow; `SessionStatus` to Draft/Published/Completed/Cancelled. | **None for the core booking loop.** Still missing: session reviews, skill tags on sessions, a session-level "requires instructor approval" switch (the `Pending` state exists in the domain but nothing produces it yet), and chat pre-wired to a booking. |
+| **Wallet** | Credits balance; earned by teaching (sessions + course sales); spent by learning (enroll + book); can buy more or use promo codes | `UserWallet` + `WalletTransaction` with `AddCredits`/`DeductCredits`/`RefundCredits` + optimistic concurrency (`RowVersion`). Deduction wired into enrollment **and booking**. `GetMyWalletQuery` (lazy wallet creation), `GetMyWalletTransactionsPagedQuery`, `WalletsController` (`GET /api/wallets/me`, `GET /api/wallets/me/transactions`). **Earning side**: `CreditInstructorWalletEventHandler` (course sales) **+ `CreditInstructorWalletOnSessionCompletedEventHandler` (live sessions — this was missing before)**; `CourseEnrolledEventHandler` / `SessionCompletedEventHandler` update `InstructorProfile` stats. **Refund side**: cancellations and rejections post a `CreditRefund` transaction back to the learner. **Still missing**: `BuyCredits` (no `Payment` entity), `ApplyPromoCode` (no `PromoCode` entity). | Add `BuyCreditsCommand` (Payment entity + gateway stub), `ApplyPromoCodeCommand` (PromoCode entity). Add WalletController endpoints for buy/promo. |
+| **Chat** | 1-to-1 real-time messaging between student/instructor, separate from course/enrollment | `Conversation` + `ChatMessage` entities, full CQRS (start, list conversations, get messages, send, mark read), REST controller + SignalR `ChatHub` at `/hubs/chat` with `ReceiveMessage`/`MessagesRead` events, `IChatNotifier` abstraction. | Fully matches description. (Push notifications for offline not implemented — documented as future work.) |
+| **Reviews/Ratings** | students rate courses and instructors after sessions/courses | `CourseReview` entity + `AddCourseReview` (rating aggregation via `CourseRating` VO). **Instructor reviews now implemented**: `InstructorReview` entity + `AddInstructorReview`/`UpdateInstructorReview`/`RemoveInstructorReview` (rating auto-aggregated on `InstructorProfile`). | |
+
+### 2.2 Primary User Flows
+
+| Flow | Description says | What code has | Gap |
+|---|---|---|---|
+| **Onboarding/Auth** | splash → onboarding → sign up / log in (email+password, Google, or OTP-based) → home | Email+password staff login + email+password user registration with OTP email verification + Google login (staff + user). **Apple and Facebook not implemented.** | Add Apple/Facebook providers for users. |
+| **Discover** | Home shows wallet balance, trending/recommended courses, Continue Learning; Explore search/filter by category/level/credits/rating | Home/Explore not in API (mobile client concern). Categories API exists with published course counts (cached). Courses paged query supports all filters. **Wallet balance endpoint now exists** (`GET /api/wallets/me`). **No "trending/recommended" endpoints**. `GetUserEnrolledCourses` covers "Continue Learning". | Add trending/recommendations query. |
+| **Learn** | Course Details → enroll (credits deducted atomically) → work through lessons, progress % | **Fully implemented.** `GetCourseById` (detail + syllabus), `EnrollInCourse` (atomic wallet deduction, idempotency), `UpdateLessonProgress` (progress %, completion). | None. |
+| **Book a live session** | pick instructor's Course → select date/time → confirm booking → pay Credits → chat | **Implemented end-to-end.** `GET /api/v1/sessions?bookableOnly=true&fromUtc=...` lists bookable slots with live `BookedParticipants`/`AvailableSlots`/`CreditsPrice`/`LocationType` → `POST /api/v1/bookings` creates the booking and atomically deducts credits → `GET /api/v1/bookings/me` and `GET /api/v1/bookings/session/{id}` track it → `POST /api/v1/bookings/{id}/cancel` (learner or instructor) refunds credits → `PATCH /api/v1/bookings/{id}/status?status=Completed` (instructor) marks it done, which credits the instructor wallet and increments their session count. Session materials are already gated on an active booking. | Chat is not yet pre-wired to a booking (no auto-created conversation on booking), and there is no reminder job for upcoming sessions. |
+| **Teach** | dashboard shows active/upcoming/completed sessions, credits earned; create new sessions/courses | **Partially implemented.** `CreateSessionCommand` + `SessionsController` create sessions with full scheduling and pricing. `GetMySessionsPagedQuery` (`GET /api/v1/sessions/me`) returns the instructor's own sessions filtered by status / upcoming / past, each with live booked-vs-capacity numbers. `GetSessionBookingsQuery` (`GET /api/v1/bookings/session/{id}`) lists who booked a given session. Earnings are now real: `CreditInstructorWalletOnSessionCompletedEventHandler` pays the instructor's wallet on completion and those transactions appear in `GET /api/wallets/me/transactions`. Lifetime instructor stats (sessions completed, credits earned, rating) are on `InstructorProfile` via `GetInstructorFullProfileByUserId`. | Still missing: an aggregated earnings summary endpoint (per-period totals across courses + sessions) and per-course revenue. |
+| **Wallet management** | view balance, transaction history, buy more credits, apply promo codes | **Balance + history now implemented** (`GET /api/wallets/me`, `GET /api/wallets/me/transactions`). **Still missing**: buy more credits, apply promo codes. | Implement BuyCredits (Payment entity), ApplyPromoCode (PromoCode entity). |
+
+### 2.3 Technical Architecture
+
+| Aspect | Description says | What code has | Gap |
+|---|---|---|---|
+| **Clean Architecture** | Domain / Application / Infrastructure / API | **Fully matches.** Same 4-layer structure, dependency flow `Api → Application → Domain ← Infrastructure`. | None. |
+| **CQRS (MediatR)** | Commands & Queries via MediatR | **Implemented.** `ICommand`/`IQuery`/`ICommandHandler`/`IQueryHandler` abstractions, validators, 7-behavior pipeline. | None. |
+| **EF Core + SQL Server** | Relational persistence | **Implemented.** `AppDbContext : IdentityDbContext`, 6 migrations (InitialCreate, AddChat, AddInstructorProfile, CreateInstructorProfileTable, AddInstructorReviewsAndWalletUpdates, **AddSessionSchedulingAndBookingFlow**), configurations, soft-delete global filter, optimistic concurrency on wallet. Bookings now have a real FK to Sessions (cascade) plus a filtered unique index preventing duplicate active bookings for the same learner/session pair. | None. |
+| **Redis caching** | Cache-Aside, event-driven invalidation | `ICacheService` abstraction + `RedisCacheService` + `MemoryCacheService`. Used by Categories/GetCoursesPaged/GetCourseById/GetSessionsPaged/GetMySessionsPaged/GetMyBookings/GetSessionBookings. `CourseInvalidationHandler` clears cache on publish; SessionMaterialUploadedEventHandler + instructor profile handlers also invalidate. Booking/session commands implement `ICacheInvalidatorCommand` to drop the affected session + booking keys. | **Startup bug**: if Redis connection string is missing/unreachable, `IConnectionMultiplexer` is not registered and `MemoryCacheService` registration is **commented out** (`AddCaching.cs:40`). No `ICacheService` is registered at all in that case → DI will fail. Fix: uncomment the `MemoryCacheService` fallback line. |
+| **SignalR** | Real-time chat | `ChatHub` at `/hubs/chat`, `ChatUserIdProvider`, `SignalRChatNotifier`, `MapChatHub()`. Live message delivery works. | Missing Redis backplane for scaling (multi-instance). Documented as future. |
+| **Hangfire + Outbox** | Reliable background/event-driven work, cache invalidation on publish | `ProcessOutboxMessagesJob` (runs every 5s via cron), `InsertOutboxMessagesInterceptor` (persists domain events before SaveChanges), `HangfireJobScheduler`, outbox table + index. `CourseInvalidationHandler` + `SessionMaterialUploadedEventHandler` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `CourseEnrolledEventHandler` (Instructors) + `SessionCompletedEventHandler` process events. `RefreshDriveQuotaJob` for Google Drive quota monitoring. | None functional. (`BookingCreatedDomainEvent` and `BookingCancelledDomainEvent` are published through the outbox but have no notification handler yet — they are the hook point for booking confirmation emails / reminders.) |
+
+---
+
+## 3. What Needs To Be Done (Prioritized Backlog)
+
+### Priority 1 — Critical (blocking the core "teach/exchange" loop) — ✅ DONE
+
+1. **Session scheduling (teach live slots) — SHIPPED**
+   - `Session` extended with `Description`, `ScheduledAtUtc`, `DurationMinutes`, `CreditsPrice`, `LocationType` (Online/Offline via the new `SessionLocationType` enum), `LocationDetails`, `MaxParticipants`, plus a `Bookings` navigation.
+   - `SessionStatus` extended to `Draft` / `Published` / `Completed` / `Cancelled`; `Completed` is now actually set by `Session.Complete()`.
+   - `SessionConfiguration` updated (new columns, length limits, `ScheduledAtUtc` and `(Status, ScheduledAtUtc)` indexes) + migration `20260926121933_AddSessionSchedulingAndBookingFlow`.
+   - `CreateSession` / `UpdateSession` commands + validators accept the scheduling fields (`UpdateSession` is a partial update, and refuses schedule/price changes while active bookings exist).
+   - `Session.IsBookable(utcNow, activeBookingsCount)` and `AvailableSlots(...)` encapsulate the slot rules; `EndsAtUtc` is computed.
+
+2. **Booking flow (book a live session) — SHIPPED**
+   - `Booking` rebuilt as a real aggregate: `AuditableEntity` base, factory `Booking.Create(...)` returning `Result<Booking>`, price + schedule snapshots, `BookedAtUtc` / `StartedAtUtc` / `CompletedAtUtc` / `CancelledAtUtc` / `CancellationReason`, guarded lifecycle `Confirm` / `Start` / `Complete` / `Cancel` / `Reject` / `MarkNoShow`, and `IsActive` / `IsRefundable` helpers.
+   - `BookingStatus` extended to `Pending` / `Confirmed` / `InProgress` / `Completed` / `Cancelled` / `Rejected` / `NoShow`.
+   - New domain events `BookingCreatedDomainEvent` and `BookingCancelledDomainEvent`, both flowing through the existing outbox.
+   - `CreateBookingCommand` — validates the session exists / is published / is scheduled in the future / has free slots / isn't the instructor's own / has no duplicate active booking, then deducts credits atomically from the learner wallet and creates the booking.
+   - `CancelBookingCommand` — learner or instructor; refunds credits via `UserWallet.RefundCredits` (logged as a `CreditRefund` transaction).
+   - `ChangeBookingStatusCommand` — instructor-only transitions (`Confirmed`, `InProgress`, `Completed`, `Rejected`, `NoShow`); rejection refunds the learner, completion raises `SessionCompletedDomainEvent` and marks the session `Completed` once no active bookings remain.
+   - Queries: `GetBookingByIdQuery`, `GetMyBookingsQuery` (as learner; filter by status / upcoming / past), `GetSessionBookingsQuery` (as instructor; filter by status).
+   - `BookingController` at `api/v1/bookings` — `POST`, `POST /{id}/cancel`, `PATCH /{id}/status`, `GET /me`, `GET /session/{sessionId}`, `GET /{id}`.
+   - **Wired `SessionCompletedDomainEvent` → instructor wallet** via the new `CreditInstructorWalletOnSessionCompletedEventHandler`.
+   - `BookingConfiguration` gained the FK to `Sessions` (cascade) and a filtered unique index on `(SessionId, LearnerUserId)` limited to active statuses, so a cancelled booking can be re-made.
+   - Test coverage: `BookingTests`, `CreateBookingCommandHandlerTests`, `CancelBookingCommandHandlerTests`, `ChangeBookingStatusCommandHandlerTests` + validator tests, `GetMyBookingsQueryHandlerTests`, `GetSessionBookingsQueryHandlerTests`, `CreditInstructorWalletOnSessionCompletedEventHandlerTests`, plus scheduling/bookability cases in `SessionTests`.
+
+### Priority 2 — Medium (wallet economy & teaching features)
+
+3. **Wallet management API — buy credits & promo codes** (still open)
+   - Add `BuyCreditsCommand` (create `Payment` entity, add credits to wallet, integrate payment gateway stub).
+   - Add `ApplyPromoCodeCommand` (`PromoCode` entity: code, credit-amount, expires, usage-limit, used-count).
+   - Add `WalletController` endpoints: `POST /api/wallets/me/buy`, `POST /api/wallets/me/promo-codes/apply`.
+
+4. **Teach dashboard — partially shipped**
+   - Done: my sessions filtered by status / upcoming / past with live booked-vs-capacity numbers (`GetMySessionsPagedQuery`), and the bookings for a given session (`GetSessionBookingsQuery`).
+   - Still open: an aggregated earnings summary (per-period credits across courses + sessions) and per-course revenue stats.
+
+### Priority 3 — Low (polish & extensions)
+
+5. **Session reviews** — add a `SessionReview` entity + commands/queries so learners can rate a live session (currently only course and instructor reviews exist).
+6. **Booking notifications** — no handler yet for `BookingCreatedDomainEvent` / `BookingCancelledDomainEvent`; add a confirmation email on booking and a reminder job for upcoming sessions.
+7. **Session "requires instructor approval"** — the `BookingStatus.Pending` state and `Booking.Confirm()` exist, but no session-level flag produces a `Pending` booking yet.
+8. **Unit tests coverage** — Booking and Sessions handlers are now covered; still thin for Wallet (buy/promo) and Chat.
+9. **Caching fallback fix** — uncomment the `MemoryCacheService` registration in `AddCaching.cs` so DI doesn't fail when Redis is unavailable.
+10. **Mobile auth providers** — Apple, Facebook login for users.
+11. **Push notifications (FCM)** — add a notification service for mobile push when the user is offline (chat + booking reminders).
+
+### Test-infrastructure note
+
+`InMemoryDbContextHelper` now builds `InMemoryAppDbContext` (a test-only subclass of `AppDbContext`) which clears concurrency tokens. The EF InMemory provider never generates values for `UserWallet.RowVersion` (`IsRowVersion()`), so **any** test that loaded and then updated a wallet threw `DbUpdateConcurrencyException`. This silently blocked handler-level wallet tests, including the new booking payment/refund tests.
+
+---
+
+## 4. Summary — Code vs. Description Reality Check
+
+The app description states that *"Courses/Enrollment, Wallet, Booking, Chat, OTP auth, and Reviews are designed (some with full technical specs) but largely not yet implemented in code."*
+
+The **actual code state has evolved significantly** since that description was written:
+
+- **Courses / Enrollment / Chat / Reviews (course) / OTP / Categories / Staff Invites / Site Settings** are **fully implemented** — real handlers, domain logic, caching, SignalR, unit tests all exist and are functional.
+- **Instructor Profile** is **fully implemented** (entity, reviews, approval workflow, CRUD, queries, event handlers, controller, migrations) — was entirely missing before.
+- **Wallet** has a complete domain model and is now wired into **both** sides of the economy: atomic deduction on enrollment **and** on booking, refunds on cancellation/rejection, and credit to the instructor wallet on course sale **and** on live-session completion — but it still has **no buy-credits or promo-code API**.
+- **Sessions** are **fully implemented**, including live-slot scheduling (date/time, duration, credit price, location type, capacity) with bookability and remaining-slot counts surfaced in the API, plus a teach-dashboard query for the instructor's own sessions.
+- **Booking** went from a bare entity + table to a **complete flow**: create with atomic credit payment and capacity/duplicate guards, list mine / list per session, cancel with refund, an instructor-driven status lifecycle, and a wallet payout for the instructor on completion.
+
+In short: the **learning side** (courses / enrollments / chat / categories / reviews / instructor profiles / wallet balance + history) and the **live-session exchange side** (scheduling → booking → credit payment → instructor payout) are both production-ready. The remaining backlog is the **wallet top-up economy (buy credits / promo codes), aggregated teach-dashboard reporting, session reviews, and non-staff auth providers**.

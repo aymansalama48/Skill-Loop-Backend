@@ -6,8 +6,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
-using System.Numerics;
-using static System.Net.Mime.MediaTypeNames;
+using System.Linq.Expressions;
 
 namespace Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 
@@ -55,7 +54,9 @@ public interface IApplicationDbContext
     Task<bool> AnyAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default);
     Task<int> CountAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default);
     Task<List<T>> ToListAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default);
+    Task<List<T>> ToListAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
     Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default);
+    Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
 
     IQueryable<T> AsNoTracking<T>(IQueryable<T> query) where T : class;
 
