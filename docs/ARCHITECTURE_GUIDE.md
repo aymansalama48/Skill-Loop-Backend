@@ -3,7 +3,7 @@
 > **Purpose**: دليل شامل لأي مطوّر جديد يشرح كيف يبني Feature كاملة في هذا الـ Codebase.
 > كل قاعدة مكتوبة هنا مأخوذة من الكود الفعلي، والمسارات مرفقة.
 >
-> **آخر تحديث**: 2026-09-25
+> **آخر تحديث**: 2026-09-26
 
 ---
 
@@ -300,10 +300,10 @@ public sealed record CoursePrice
 | `CourseLevel`      | `Beginner`, `Intermediate`, `Advanced`, `AllLevels` | مستوى الكورس                  |
 | `CourseStatus`     | `Draft`, `Published`, `Archived`                    | حالة نشر الكورس               |
 | `EnrollmentStatus` | `Active`, `Completed`, `Cancelled`                  | حالة التسجيل في الكورس        |
-| `TransactionType`  | `CreditReward`, `CreditDeduction`                   | نوع الحركة المالية في المحفظة |
+| `TransactionType`  | `CreditDeduction`, `CreditRefund`, `CreditReward`   | نوع الحركة المالية في المحفظة |
 | `SessionStatus`    | `Draft`, `Published`                                | حالة الجلسة                   |
-| `BookingStatus`    | `Confirmed`                                         | حالة حجز الجلسة               |
-| `MaterialType`     | `Document`, `Pdf`, `Presentation`                   | نوع الملف المرفق بالجلسة      |
+| `BookingStatus`    | `Confirmed`, `InProgress`, `Completed`              | حالة حجز الجلسة               |
+| `MaterialType`     | `PDF`, `Video`, `Image`, `Document`, `Other`        | نوع الملف المرفق بالجلسة      |
 | `OtpPurpose`       | `VerifyPhone`, `EmailVerification`, `PasswordReset` | الغرض من كود التحقق           |
 
 ---
@@ -706,12 +706,11 @@ Features/
 | **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)                          | ✅   |
 | **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                                               | ✅   |
 | **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                                                                                                  | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
-| **Wallets**            | —                                                                                                                                                                                                                                                                                                                         | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
+| **Wallets**            | — (no buy/promo commands yet)                                                                                                                                                                                                                                                                                             | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
 | **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                                               | —    |
 | **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
 | **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                                               | ✅   |
 | **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                                               | —    |
-| **Skills**             | (Commands exist)                                                                                                                                                                                                                                                                                                          | (Queries exist)                                                                                                  | —                                               | —    |
 
 ---
 
@@ -913,7 +912,7 @@ public class HangfireJobScheduler : IJobScheduler
 AddInfrastructure()
   ├── AddCoreServices()         ← IDateTime, ICurrentUser, ICorrelationContext, IGeoLocationService,
   │                                IIdentityNotificationService, IInvitationService, ISiteSettingsService
-  ├── AddCaching()              ← MemoryCacheService
+  ├── AddCaching()              ← RedisCacheService (with MemoryCacheService fallback if Redis unavailable)
   ├── AddPersistence()          ← AppDbContext + Interceptors
   ├── AddHangfireJobs()         ← Hangfire + JobScheduler
   ├── AddIdentityServices()     ← ASP.NET Identity + Database Seeder
@@ -1427,17 +1426,17 @@ public static class Courses
 | 4   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
 | 5   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
 | 6   | **Booking entity بسيط جداً**                                      | `Domain/Entities/Booking/Booking.cs` — كيان بسيط بدون Factory Method أو validation. يحتاج تطوير.                                                                                            |
-| 7   | **Session entity uses public setters**                            | `Domain/Entities/Sessions/Session.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات.                                                                  |
-| 8   | **`using System.Numerics` في AppDbContext**                       | `Infrastructure/Persistence/Data/AppDbContext.cs` — using غير مستخدم.                                                                                                                       |
-| 9   | **`using static System.Net.Mime.MediaTypeNames` في AppDbContext** | نفس الملف — using غير مستخدم.                                                                                                                                                               |
+| 7   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 8   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
+| 9   | **`using System.Numerics` في AppDbContext**                       | `Infrastructure/Persistence/Data/AppDbContext.cs` — using غير مستخدم.                                                                                                                       |
+| 10  | **`using static System.Net.Mime.MediaTypeNames` في AppDbContext** | نفس الملف — using غير مستخدم.                                                                                                                                                               |
 
 ### 🟢 Minor / Convention
 
 | #   | المشكلة                                                                                                                  |
 | --- | ------------------------------------------------------------------------------------------------------------------------ |
-| 10  | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
-| 11  | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
-| 12  | **Skills feature في Application** — يحتوي على Commands, Queries, Shared لكن يحتاج مراجعة إذا كانت ملفات فعّالة أم stubs. |
+| 11  | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
+| 12  | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
 
 ---
 
@@ -1462,7 +1461,7 @@ public static class Courses
 | **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
 | **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
 | **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
-| **Wallet**                     | ✅ مكتمل | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events |
+| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. لا يوجد unit tests للمحفظة. |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
 | **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
@@ -1481,18 +1480,18 @@ public static class Courses
 
 ```
 Module                  | Domain | Application | Infrastructure | API | Tests
-------------------------|--------|-------------|----------------|-----|------
+------------------------|--------|-------------|----------------|-----|-----
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ⚠️ (in-progress)
+Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⚠️ (in-progress)
 Courses                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Enrollments             |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Sessions                |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Booking                 |   ⚠️   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Wallet                  |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
+Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⬜
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
@@ -1501,8 +1500,7 @@ OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  �
 SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 File Storage            |   —    |     —       |       ✅       |  ✅  |  ⬜
 Google Drive Storage    |   —    |     ✅      |       ✅       |  —   |  ✅
-Email                   |   —    |     —       |       ✅       |  —   |  ⬜
-Skills                  |   ⬜   |     ⚠️      |       ⬜       |  ⬜  |  ⬜
+Email             |   —    |     —       |       ✅       |  —   |  ⬜
 
 ✅ = Implemented   ⚠️ = Partial/Needs Work   ⬜ = Missing
 ```
