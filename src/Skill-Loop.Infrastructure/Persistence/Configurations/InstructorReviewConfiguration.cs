@@ -12,6 +12,8 @@ internal sealed class InstructorReviewConfiguration : IEntityTypeConfiguration<I
 
         builder.HasKey(r => r.Id);
 
+        builder.Property(r => r.Id).ValueGeneratedOnAdd();
+
         builder.Property(r => r.Rating)
             .IsRequired();
 
