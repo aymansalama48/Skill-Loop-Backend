@@ -25,7 +25,7 @@ public static class InMemoryDbContextHelper
             .UseInMemoryDatabase("TestDb_" + System.Guid.NewGuid())
             .Options;
 
-        var dbContext = new Skill_Loop.Infrastructure.Persistence.Data.AppDbContext(options);
+        var dbContext = new InMemoryAppDbContext(options);
         return new InMemoryDbContextWrapper(dbContext);
     }
 

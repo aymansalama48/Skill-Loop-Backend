@@ -97,7 +97,7 @@ public class SessionMaterialUploadedEventHandlerTests
         var session = Session.Create(instructorId, instructorId, "Test Session");
         session.Id = sessionId;
 
-        var booking = new Booking { Id = Guid.NewGuid(), SessionId = sessionId, LearnerUserId = learnerId, Status = BookingStatus.Confirmed };
+        var booking = Booking.Create(sessionId, learnerId, 10).Data!;
 
         _dbContext.Add(session);
         _dbContext.Add(booking);
