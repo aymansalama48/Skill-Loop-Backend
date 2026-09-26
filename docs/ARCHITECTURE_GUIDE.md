@@ -1024,26 +1024,27 @@ Contracts/
 
 | Controller                       | Route                       | الوصف                                               |
 | -------------------------------- | --------------------------- | --------------------------------------------------- |
-| `AuthController`                 | `api/auth`                  | تسجيل الدخول، التوكن، OTP                           |
-| `ProfileController`              | `api/profile`               | إدارة الملف الشخصي للمستخدم الحالي                  |
-| `UsersController`                | `api/users`                 | إدارة المستخدمين (Admin)                            |
-| `PermissionManagementController` | `api/permission-management` | إدارة الصلاحيات والأدوار                            |
-| `StaffInvitationsController`     | `api/staff-invitations`     | دعوات الموظفين                                      |
-| `CategoriesController`           | `api/categories`            | CRUD التصنيفات                                      |
-| `CoursesController`              | `api/courses`               | CRUD الكورسات                                       |
-| `EnrollmentsController`          | `api/enrollments`           | التسجيل في الكورسات + تقدم الدروس                   |
+| `AuthController`                 | `api/v1/auth`               | تسجيل الدخول، التوكن، OTP                           |
+| `ProfileController`              | `api/v1/me`                 | إدارة الملف الشخصي للمستخدم الحالي                  |
+| `UsersController`                | `api/v1/users`              | إدارة المستخدمين (Admin)                            |
+| `PermissionManagementController` | `api/v1/permission-management` | إدارة الصلاحيات والأدوار                            |
+| `StaffInvitationsController`     | `api/v1/staff-invitations`  | دعوات الموظفين                                      |
+| `CategoriesController`           | `api/v1/categories`         | CRUD التصنيفات                                      |
+| `CoursesController`              | `api/v1/courses`            | CRUD الكورسات                                       |
+| `EnrollmentsController`          | `api/v1/enrollments`        | التسجيل في الكورسات + تقدم الدروس                   |
 | `InstructorProfilesController`   | `api/instructor-profiles`   | بروفايل المدرب + التقييمات + اعتماد الإدارة          |
 | `WalletsController`              | `api/wallets`               | رصيد المحفظة + سجل الحركات المالية                   |
-| `SessionsController`             | `api/sessions`              | CRUD الجلسات التعليمية                              |
-| `SessionMaterialsController`     | `api/session-materials`     | رفع/حذف/ترتيب ملفات الجلسات                         |
-| `ChatController`                 | `api/chat`                  | المحادثات والرسائل                                  |
-| `SiteSettingsController`         | `api/site-settings`         | إعدادات الموقع                                      |
+| `SessionsController`             | `api/v1/sessions`           | CRUD الجلسات التعليمية                              |
+| `SessionMaterialsController`     | `api/v1/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
+| `BookingsController`             | `api/v1/bookings`           | حجز الجلسات لايف                                     |
+| `ChatController`                 | `api/v1/chat`               | المحادثات والرسائل                                  |
+| `SiteSettingsController`         | `api/v1/site-settings`      | إعدادات الموقع                                      |
 | `DevController`                  | `api/v1/dev`                | تطوير فقط — quick-login (محمي بـ `IsDevelopment()`) |
 
 **مثال كامل — Controller Pattern**:
 
 ```csharp
-[Route("api/[controller]")]
+[Route("api/v1/[controller]")]
 public class CoursesController : BaseApiController
 {
     [HttpPost]
@@ -1067,7 +1068,7 @@ public class CoursesController : BaseApiController
 **القواعد**:
 
 - الـ Controller **لا يحتوي على منطق أعمال** — فقط mapping ثم `Mediator.Send()` ثم `HandleResult()`
-- Route: `[Route("api/[controller]")]` على الكلاس (أو على `BaseApiController`)
+- Route: `[Route("api/v1/[controller]")]` على الكلاس (أو على `BaseApiController`) — **ملاحظة**: `InstructorProfilesController` و `WalletsController` حالياً يستخدمان `[Route("api/[controller]")]` بدون `/v1`، وهذا inconsistence سيتم معالجته
 - كل action ترجع `Task<IResult>` (Minimal API result type)
 
 ---
@@ -1461,7 +1462,7 @@ public static class Courses
 | **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
 | **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
 | **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
-| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. لا يوجد unit tests للمحفظة. |
+| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. Unit tests جزئية (EventHandler + Enrollment tests only). |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
 | **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
@@ -1471,7 +1472,6 @@ public static class Courses
 
 | Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
 | ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Booking**              | 🟡 متوسطة | الكيان موجود (بسيط جداً) لكن يحتاج: Factory Method, Validation, Status Management, Application Features (Commands/Queries), Controller endpoints. |
 | **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
 | **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
 | **Reviews (standalone)** | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
@@ -1484,14 +1484,14 @@ Module                  | Domain | Application | Infrastructure | API | Tests
 Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ⚠️ (in-progress)
-Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ⚠️ (in-progress)
+Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Courses                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Enrollments             |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Sessions                |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
-Booking                 |   ⚠️   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⬜
+Booking                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⚠️
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜

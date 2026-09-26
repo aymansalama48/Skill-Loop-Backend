@@ -33,7 +33,7 @@
 | 📩 **Staff Invitations** | Admin sends invite via email → Staff accepts with password or Google account |
 | 🔑 **Permission System** | Granular module-based permissions · Role–Permission assignment · Dynamic RBAC |
 | 📱 **OTP Verification** | HMAC-hashed codes · Configurable expiry & cooldown · Max attempts lockout |
-| 🛠️ **Skills** | Create · Update · Get by ID · List with filtering |
+| 🎟️ **Live Session Booking** | Book sessions · Cancel with refund · Instructor status management · Credit payment |
 | 📊 **Observability** | Structured logging (Serilog) · Correlation IDs · Performance tracking |
 | ⚙️ **Background Jobs** | Outbox pattern with Hangfire for reliable domain event processing |
 
@@ -116,7 +116,7 @@ Skill-Loop/
 │   │   │   ├── InstructorProfilesController  # Instructor profiles & reviews
 │   │   │   ├── WalletsController       #     Wallet balance & transactions
 │   │   │   ├── ChatController          #     Real-time chat
-│   │   │   └── SkillsController       #     Skills CRUD
+│   │   │   └── BookingsController      #     Live session bookings
 │   │   ├── Contracts/                  #   Request/Response DTOs
 │   │   ├── Middlewares/                #   CorrelationId, GlobalExceptionHandler
 │   │   ├── Extensions/                #   Pipeline & DI extensions
@@ -133,7 +133,7 @@ Skill-Loop/
 │   │   │   ├── Sessions/              #   Sessions & Materials Commands & Queries
 │   │   │   ├── Chat/                  #   Chat Commands & Queries
 │   │   │   ├── Otps/                  #   OTP verification logic
-│   │   │   └── Skills/                #   Skills Commands & Queries
+│   │   │   └── Bookings/              #   Live session booking commands & queries
 │   │   ├── Common/
 │   │   │   ├── Behaviors/             #   MediatR pipeline behaviors
 │   │   │   ├── Abstractions/          #   Service interfaces
@@ -271,50 +271,60 @@ The API will be available at:
 
 ## 📡 API Endpoints
 
-### 🔐 Authentication (`/api/accounts`)
+### 🔐 Authentication (`/api/v1/auth`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/accounts/login` | ❌ | Staff login (email + password) |
-| `POST` | `/api/accounts/google-login` | ❌ | Staff login via Google OAuth |
-| `POST` | `/api/accounts/refresh-token` | ❌ | Refresh access token |
-| `POST` | `/api/accounts/logout` | ✅ | Revoke refresh token |
-| `POST` | `/api/accounts/forgot-password` | ❌ | Request password reset link |
-| `POST` | `/api/accounts/reset-password` | ❌ | Reset password with token |
-| `POST` | `/api/accounts/change-password` | ✅ | Change current password |
+| `POST` | `/api/v1/auth/staff/login` | ❌ | Staff login (email + password) |
+| `POST` | `/api/v1/auth/staff/login/google` | ❌ | Staff login via Google OAuth |
+| `POST` | `/api/v1/auth/user/login` | ❌ | User login (email + password) |
+| `POST` | `/api/v1/auth/user/login/google` | ❌ | User login via Google OAuth |
+| `POST` | `/api/v1/auth/user/register` | ❌ | Register new user |
+| `POST` | `/api/v1/auth/user/verify-email` | ❌ | Verify email with OTP |
+| `POST` | `/api/v1/auth/user/resend-verification-code` | ❌ | Resend email verification code |
+| `POST` | `/api/v1/auth/refresh-token` | ❌ | Refresh access token |
+| `POST` | `/api/v1/auth/logout` | ✅ | Revoke refresh token |
+| `POST` | `/api/v1/auth/password/forgot` | ❌ | Request password reset link |
+| `POST` | `/api/v1/auth/password/reset` | ❌ | Reset password with token |
 
-### 👤 Account Management (`/api/accounts`)
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/accounts/me/profile` | ✅ | Get current user profile |
-| `PUT` | `/api/accounts/me/profile` | ✅ | Update profile info |
-| `PUT` | `/api/accounts/me/profile/picture` | ✅ | Update avatar |
-| `GET` | `/api/accounts` | 🔒 Admin | List all users (paginated) |
-| `PUT` | `/api/accounts/{userId}/activate` | 🔒 Admin | Activate a user |
-| `PUT` | `/api/accounts/{userId}/deactivate` | 🔒 Admin | Deactivate a user |
-| `POST` | `/api/accounts/{userId}/roles` | 🔒 Admin | Assign role to user |
-| `DELETE` | `/api/accounts/{userId}/roles/{roleName}` | 🔒 Admin | Remove role from user |
-
-### 📩 Staff Invitations (`/api/staff-invitations`)
+### 👤 Profile Management (`/api/v1/me`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/staff-invitations/send` | 🔒 Admin | Send invitation email |
-| `GET` | `/api/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
-| `POST` | `/api/staff-invitations/accept` | ❌ | Accept with password |
-| `POST` | `/api/staff-invitations/accept-google` | ❌ | Accept with Google account |
+| `GET` | `/api/v1/me` | ✅ | Get current user profile |
+| `PUT` | `/api/v1/me` | ✅ | Update profile info |
+| `PATCH` | `/api/v1/me/picture` | ✅ | Update avatar |
+| `POST` | `/api/v1/me/change-password` | ✅ | Change current password |
 
-### 🔑 Permission Management (`/api/permission-management`)
+### 👥 User Management (`/api/v1/users`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/permission-management/permissions` | ✅ | Get all permissions |
-| `GET` | `/api/permission-management/roles` | ✅ | Get all roles with permissions |
-| `GET` | `/api/permission-management/roles/{roleId}` | ✅ | Get permissions for a role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/{permissionId}/assign` | ✅ | Assign permission to role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/{permissionId}/remove` | ✅ | Remove permission from role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/update` | ✅ | Batch update role permissions |
+| `GET` | `/api/v1/users` | 🔒 Admin | List all users (paginated) |
+| `PATCH` | `/api/v1/users/{userId}/activate` | 🔒 Admin | Activate a user |
+| `PATCH` | `/api/v1/users/{userId}/deactivate` | 🔒 Admin | Deactivate a user |
+| `POST` | `/api/v1/users/{userId}/roles` | 🔒 Admin | Assign role to user |
+| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | 🔒 Admin | Remove role from user |
+
+### 📩 Staff Invitations (`/api/v1/staff-invitations`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/staff-invitations/send` | 🔒 Admin | Send invitation email |
+| `GET` | `/api/v1/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
+| `POST` | `/api/v1/staff-invitations/accept` | ❌ | Accept with password |
+| `POST` | `/api/v1/staff-invitations/accept-google` | ❌ | Accept with Google account |
+
+### 🔑 Permission Management (`/api/v1/permission-management`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/permission-management/permissions` | ✅ | Get all permissions |
+| `GET` | `/api/v1/permission-management/roles` | ✅ | Get all roles with permissions |
+| `GET` | `/api/v1/permission-management/roles/{roleId}` | ✅ | Get permissions for a role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/{permissionId}/assign` | ✅ | Assign permission to role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/{permissionId}/remove` | ✅ | Remove permission from role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/update` | ✅ | Batch update role permissions |
 
 > **Legend:** ❌ Public · ✅ Authenticated · 🔒 Admin Only
 
@@ -338,6 +348,80 @@ The API will be available at:
 |--------|----------|------|-------------|
 | `GET` | `/api/wallets/me` | ✅ | Get current user's wallet balance |
 | `GET` | `/api/wallets/me/transactions` | ✅ | Get transaction history (paginated) |
+
+### 📚 Courses (`/api/v1/courses`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/courses` | ❌ | List courses (paged, search, filter, sort) |
+| `GET` | `/api/v1/courses/{id}` | ❌ | Get course details with syllabus |
+| `POST` | `/api/v1/courses` | ✅ | Create a new course (draft) |
+| `POST` | `/api/v1/courses/{id}/publish` | ✅ | Publish course to catalog |
+| `POST` | `/api/v1/courses/{id}/sections/{sectionId}/lessons` | ✅ | Add lesson to section |
+| `POST` | `/api/v1/courses/{id}/reviews` | ✅ | Add course review & rating |
+| `POST` | `/api/v1/courses/{id}/bookmark` | ✅ | Toggle course bookmark |
+
+### 📝 Enrollments (`/api/v1/enrollments`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/enrollments/enroll` | ✅ | Enroll in course (atomic credit deduction) |
+| `GET` | `/api/v1/enrollments/my-courses` | ✅ | Get enrolled courses with progress |
+| `POST` | `/api/v1/enrollments/{courseId}/lessons/progress` | ✅ | Update lesson progress |
+
+### 🗂️ Categories (`/api/v1/categories`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/categories` | ❌ | List all categories with course counts |
+| `POST` | `/api/v1/categories` | 🔒 Admin | Create category (with icon upload) |
+| `PUT` | `/api/v1/categories/{id}` | 🔒 Admin | Update category |
+| `DELETE` | `/api/v1/categories/{id}` | 🔒 Admin | Delete category |
+
+### 🎓 Sessions (`/api/v1/sessions`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/sessions` | ✅ | List sessions (filter by instructor, status, date, bookable) |
+| `GET` | `/api/v1/sessions/me` | ✅ | Instructor's own sessions (upcoming/past) |
+| `GET` | `/api/v1/sessions/{id}` | ✅ | Get session details |
+| `POST` | `/api/v1/sessions` | ✅ | Create session (draft) |
+| `PUT` | `/api/v1/sessions/{id}` | ✅ | Update session |
+| `DELETE` | `/api/v1/sessions/{id}` | ✅ | Delete session |
+| `PATCH` | `/api/v1/sessions/{id}/status` | ✅ | Change session status |
+
+### 🎟️ Session Materials (`/api/v1/sessions/{sessionId}/materials`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/sessions/{sessionId}/materials` | ✅ | List session materials |
+| `GET` | `/api/v1/sessions/{sessionId}/materials/{materialId}/download` | ✅ | Get download info for material |
+| `POST` | `/api/v1/sessions/{sessionId}/materials` | ✅ | Upload session material |
+| `DELETE` | `/api/v1/sessions/{sessionId}/materials/{materialId}` | ✅ | Delete session material |
+| `PATCH` | `/api/v1/sessions/{sessionId}/materials/reorder` | ✅ | Reorder materials |
+
+### 🎟️ Bookings (`/api/v1/bookings`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/bookings` | ✅ | Book a session (deducts credits) |
+| `POST` | `/api/v1/bookings/{id}/cancel` | ✅ | Cancel booking (refunds credits) |
+| `PATCH` | `/api/v1/bookings/{id}/status` | ✅ (Instructor) | Change booking status |
+| `GET` | `/api/v1/bookings/me` | ✅ | Get my bookings as learner |
+| `GET` | `/api/v1/bookings/session/{sessionId}` | ✅ | Get bookings for a session (instructor) |
+| `GET` | `/api/v1/bookings/{id}` | ✅ | Get booking details |
+
+### 💬 Chat (`/api/v1/chat`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/chat/conversations` | ✅ | Start/get conversation |
+| `GET` | `/api/v1/chat/conversations` | ✅ | List my conversations |
+| `GET` | `/api/v1/chat/conversations/{id}/messages` | ✅ | Get conversation messages (paged) |
+| `POST` | `/api/v1/chat/conversations/{id}/messages` | ✅ | Send message |
+| `POST` | `/api/v1/chat/conversations/{id}/read` | ✅ | Mark messages as read |
+
+> **Real-time:** SignalR Hub at `/hubs/chat` — `ReceiveMessage`, `MessagesRead` events
 
 ---
 
