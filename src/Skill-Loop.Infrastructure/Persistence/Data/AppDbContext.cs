@@ -21,9 +21,6 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // ==============================
     // DbSets الخاصة بـ Entity Framework
     // ==============================
-  
-
-
 
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
@@ -46,6 +43,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => Set<Skill_Loop.Domain.Entities.Chat.Conversation>();
     public DbSet<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => Set<Skill_Loop.Domain.Entities.Chat.ChatMessage>();
 
+    // 🔔 إشعارات جوه التطبيق (In-App)
+    public DbSet<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -53,7 +53,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
         // 1. تطبيق كل إعدادات الجداول من الـ Configurations
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
-        // 2. تطبيق الفلتر العام للـ Soft Delete (باستخدام الدالة اللي عملناها) 👇
+        // 2. تطبيق الفلتر العام للـ Soft Delete
         builder.ApplySoftDeleteGlobalFilters();
     }
 }

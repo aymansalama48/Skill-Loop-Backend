@@ -1,3 +1,4 @@
+
 namespace Skill_Loop.UnitTests.Common;
 
 using System.Collections.Generic;
@@ -51,6 +52,7 @@ public static class InMemoryDbContextHelper
         public IQueryable<SessionMaterial> SessionMaterials => _dbContext.SessionMaterials;
         public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Conversations;
         public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.ChatMessages;
+        public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => _dbContext.Notifications;
 
         public void Add<TEntity>(TEntity entity) where TEntity : class => _dbContext.Add(entity);
         public void Update<TEntity>(TEntity entity) where TEntity : class => _dbContext.Update(entity);
