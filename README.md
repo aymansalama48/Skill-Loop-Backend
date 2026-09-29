@@ -25,10 +25,17 @@
 |---|---|
 | 🔐 **Authentication** | Staff Login (Email/Password) · Google OAuth · JWT Access & Refresh Tokens · Secure Logout |
 | 👤 **Account Management** | Profile CRUD · Avatar Upload · Password Change · Forgot/Reset Password · Activate/Deactivate Users |
+| 🎤 **Instructor Profiles** | Create/Update Profile · Approval Workflow · Availability Slots · Reviews & Ratings · Instructor Stats (Sessions Completed, Credits Earned) |
+| 💰 **Wallets** | View Balance · Transaction History (Paginated) · Auto-Credit on Course Enrollment · Optimistic Concurrency |
+| 📚 **Courses & Enrollments** | Course Create & Publish · Sections & Lessons · Course Reviews · Bookmarks · Enrollment · Lesson Progress Tracking |
+| 🎓 **Sessions & Materials** | Session CRUD · Status Management · File Upload/Download (Google Drive) · Material Reordering |
+| 💬 **Real-time Chat** | 1-on-1 Conversations · SignalR WebSocket · Read Receipts · Message Notifications |
+| 🛟 **Support & FAQ** | Public FAQ Search · Authenticated Contact Requests · Staff Answering & Publishing · Email Notifications |
+| 🔔 **In-App Notifications** | Notification feed (paginated) · Unread count · Mark one/all as read |
 | 📩 **Staff Invitations** | Admin sends invite via email → Staff accepts with password or Google account |
 | 🔑 **Permission System** | Granular module-based permissions · Role–Permission assignment · Dynamic RBAC |
 | 📱 **OTP Verification** | HMAC-hashed codes · Configurable expiry & cooldown · Max attempts lockout |
-| 🛠️ **Skills** | Create · Update · Get by ID · List with filtering |
+| 🎟️ **Live Session Booking** | Book sessions · Cancel with refund · Instructor status management · Credit payment |
 | 📊 **Observability** | Structured logging (Serilog) · Correlation IDs · Performance tracking |
 | ⚙️ **Background Jobs** | Outbox pattern with Hangfire for reliable domain event processing |
 
@@ -52,10 +59,10 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 
 ### Layer Responsibilities
 
-- **Domain** — Pure business entities (`StaffInvitation`, `OtpVerification`), base entity types (`AuditableEntity`, `SoftDeleteEntity`), domain events, enums, and the `Result<T>` pattern for error handling.
+- **Domain** — Pure business entities (`Course`, `InstructorProfile`, `Session`, `UserWallet`, `StaffInvitation`, `OtpVerification`), base entity types (`AuditableEntity`, `SoftDeleteEntity`), domain events, enums, and the `Result<T>` pattern for error handling.
 - **Application** — Commands & Queries (CQRS) via MediatR, FluentValidation, AutoMapper, and a rich pipeline of cross-cutting behaviors (Logging → Performance → Authorization → Validation → Caching → Cache Invalidation → Transaction).
-- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage, Hangfire background jobs, Outbox pattern, and in-memory caching.
-- **Api** — ASP.NET Core controllers, request/response contracts, global exception handling, correlation ID middleware, Serilog integration, and Scalar (OpenAPI) documentation.
+- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage (local + Google Drive), Hangfire background jobs, Outbox pattern, and cache-aside caching (in-memory + Redis).
+- **Api** — ASP.NET Core controllers, request/response contracts, global exception handling, correlation ID middleware, Serilog integration, SignalR (real-time chat), and Scalar (OpenAPI) documentation.
 
 ---
 
@@ -84,6 +91,7 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 - **Hangfire** — Background job processing & outbox consumer
 - **MailKit** — SMTP email delivery
 - **Serilog** — Structured logging (Console + File sinks + enrichers)
+- **StackExchange.Redis** — Distributed cache (alongside the in-memory cache)
 - **UAParser** — User-agent detection
 
 ### API Documentation
@@ -101,10 +109,24 @@ Skill-Loop/
 ├── src/
 │   ├── Skill-Loop.Api/                # 🌐 Presentation Layer
 │   │   ├── Controllers/               #   API endpoints
-│   │   │   ├── AccountsController     #     Auth, profile, user management
+│   │   │   ├── AuthController           #     Login, Google login, register, OTP, refresh, logout
+│   │   │   ├── ProfileController        #     Current user profile
+│   │   │   ├── UsersController          #     Admin user management
 │   │   │   ├── StaffInvitationsController  # Invitation flow
 │   │   │   ├── PermissionManagementController  # RBAC management
-│   │   │   └── SkillsController       #     Skills CRUD
+│   │   │   ├── CoursesController       #     Courses CRUD
+│   │   │   ├── EnrollmentsController   #     Course enrollment & progress
+│   │   │   ├── SessionsController      #     Sessions CRUD
+│   │   │   ├── SessionMaterialsController  # Session file management
+│   │   │   ├── InstructorProfilesController  # Instructor profiles & reviews
+│   │   │   ├── WalletsController       #     Wallet balance & transactions
+│   │   │   ├── ChatController          #     Real-time chat
+│   │   │   ├── SupportController       #     Public FAQ + user contact requests
+│   │   │   ├── SupportManagementController  # Staff support queue (answer/publish/delete)
+│   │   │   ├── NotificationsController #     In-app notifications
+│   │   │   ├── SiteSettingsController  #     Public site settings (SuperAdmin update)
+│   │   │   ├── DevController           #     Development-only helpers
+│   │   │   └── BookingsController      #     Live session bookings
 │   │   ├── Contracts/                  #   Request/Response DTOs
 │   │   ├── Middlewares/                #   CorrelationId, GlobalExceptionHandler
 │   │   ├── Extensions/                #   Pipeline & DI extensions
@@ -113,8 +135,19 @@ Skill-Loop/
 │   ├── Skill-Loop.Application/        # 📋 Application Layer
 │   │   ├── Features/
 │   │   │   ├── Accounts/              #   Auth, Account Mgmt, Permissions, Invitations
-│   │   │   ├── Otps/                  #   OTP verification logic
-│   │   │   └── Skills/                #   Skills Commands & Queries
+│   │   │   ├── Categories/            #   Categories Commands & Queries
+│   │   │   ├── Courses/               #   Course Commands, Queries & Events
+│   │   │   ├── Enrollments/           #   Enrollment & Lesson Progress
+│   │   │   ├── Instructors/           #   Instructor Profile CRUD, Reviews, EventHandlers, Availability
+│   │   │   ├── Wallets/               #   Wallet Queries, DTOs & EventHandlers
+│   │   │   ├── Sessions/              #   Sessions & Materials Commands & Queries
+│   │   │   ├── Chat/                  #   Chat Commands & Queries
+│   │   │   ├── Support/               #   FAQ & support requests Commands/Queries
+│   │   │   ├── Notifications/         #   In-app notifications Commands/Queries
+│   │   │   ├── SiteSettings/          #   Site settings Commands/Queries
+│   │   │   └── Bookings/              #   Live session booking commands & queries
+│   │   │
+│   │   │   (OTP verification is not a separate feature folder — `OtpService` lives in Infrastructure and is used by the Accounts user-auth commands.)
 │   │   ├── Common/
 │   │   │   ├── Behaviors/             #   MediatR pipeline behaviors
 │   │   │   ├── Abstractions/          #   Service interfaces
@@ -125,14 +158,24 @@ Skill-Loop/
 │   │
 │   ├── Skill-Loop.Domain/            # 🏛️ Domain Layer
 │   │   ├── Entities/
+│   │   │   ├── Booking/               #   Booking entity
+│   │   │   ├── Chat/                  #   Conversation, ChatMessage
+│   │   │   ├── Courses/               #   Course aggregate, Value Objects, Events
+│   │   │   ├── Enrollments/           #   Enrollment, LessonProgress, Events
+│   │   │   ├── Instructors/           #   InstructorProfile, InstructorReview
 │   │   │   ├── Invitation/            #   StaffInvitation + domain events
-│   │   │   └── OtpVerification/       #   OTP entity
+│   │   │   ├── OtpVerification/       #   OTP entity
+│   │   │   ├── Session/               #   Session, SessionMaterial, Events
+│   │   │   ├── SiteSettings/          #   SiteSettings entity
+│   │   │   ├── Support/               #   SupportQuestion entity
+│   │   │   ├── Notifications/         #   Notification entity
+│   │   │   └── Wallets/               #   UserWallet, WalletTransaction, Events
 │   │   ├── Common/
 │   │   │   ├── Entities/              #   BaseEntity, AuditableEntity, SoftDeleteEntity
 │   │   │   ├── Events/               #   Domain event base types
 │   │   │   └── Results/              #   Result<T>, Error, ErrorType
-│   │   ├── Enums/                     #   OtpPurpose, etc.
-│   │   └── Constants/                 #   Domain constants
+│   │   ├── Enums/                     #   OtpPurpose, SessionStatus, BookingStatus, etc.
+│   │   └── Constants/                 #   Roles, Permissions
 │   │
 │   └── Skill-Loop.Infrastructure/     # 🔧 Infrastructure Layer
 │       ├── Persistence/
@@ -244,52 +287,206 @@ The API will be available at:
 
 ## 📡 API Endpoints
 
-### 🔐 Authentication (`/api/accounts`)
+### 🔐 Authentication (`/api/v1/auth`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/accounts/login` | ❌ | Staff login (email + password) |
-| `POST` | `/api/accounts/google-login` | ❌ | Staff login via Google OAuth |
-| `POST` | `/api/accounts/refresh-token` | ❌ | Refresh access token |
-| `POST` | `/api/accounts/logout` | ✅ | Revoke refresh token |
-| `POST` | `/api/accounts/forgot-password` | ❌ | Request password reset link |
-| `POST` | `/api/accounts/reset-password` | ❌ | Reset password with token |
-| `POST` | `/api/accounts/change-password` | ✅ | Change current password |
+| `POST` | `/api/v1/auth/staff/login` | ❌ | Staff login (email + password) |
+| `POST` | `/api/v1/auth/staff/login/google` | ❌ | Staff login via Google OAuth |
+| `POST` | `/api/v1/auth/user/login` | ❌ | User login (email + password) |
+| `POST` | `/api/v1/auth/user/login/google` | ❌ | User login via Google OAuth |
+| `POST` | `/api/v1/auth/user/register` | ❌ | Register new user |
+| `POST` | `/api/v1/auth/user/verify-email` | ❌ | Verify email with OTP |
+| `POST` | `/api/v1/auth/user/resend-verification-code` | ❌ | Resend email verification code |
+| `POST` | `/api/v1/auth/refresh-token` | ❌ | Refresh access token |
+| `POST` | `/api/v1/auth/logout` | ✅ | Revoke refresh token |
+| `POST` | `/api/v1/auth/password/forgot` | ❌ | Request password reset link |
+| `POST` | `/api/v1/auth/password/reset` | ❌ | Reset password with token |
 
-### 👤 Account Management (`/api/accounts`)
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `GET` | `/api/accounts/me/profile` | ✅ | Get current user profile |
-| `PUT` | `/api/accounts/me/profile` | ✅ | Update profile info |
-| `PUT` | `/api/accounts/me/profile/picture` | ✅ | Update avatar |
-| `GET` | `/api/accounts` | 🔒 Admin | List all users (paginated) |
-| `PUT` | `/api/accounts/{userId}/activate` | 🔒 Admin | Activate a user |
-| `PUT` | `/api/accounts/{userId}/deactivate` | 🔒 Admin | Deactivate a user |
-| `POST` | `/api/accounts/{userId}/roles` | 🔒 Admin | Assign role to user |
-| `DELETE` | `/api/accounts/{userId}/roles/{roleName}` | 🔒 Admin | Remove role from user |
-
-### 📩 Staff Invitations (`/api/staff-invitations`)
+### 👤 Profile Management (`/api/v1/me`)
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/staff-invitations/send` | 🔒 Admin | Send invitation email |
-| `GET` | `/api/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
-| `POST` | `/api/staff-invitations/accept` | ❌ | Accept with password |
-| `POST` | `/api/staff-invitations/accept-google` | ❌ | Accept with Google account |
+| `GET` | `/api/v1/me` | ✅ | Get current user profile |
+| `PUT` | `/api/v1/me` | ✅ | Update profile info |
+| `PATCH` | `/api/v1/me/picture` | ✅ | Update avatar |
+| `POST` | `/api/v1/me/change-password` | ✅ | Change current password |
 
-### 🔑 Permission Management (`/api/permission-management`)
+### 👥 User Management (`/api/v1/users`)
+
+> ⚠️ **Security**: `[Authorize(Roles = "Admin,SuperAdmin")]` is **commented out** at `UsersController.cs:15`, so these endpoints are currently reachable anonymously.
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/permission-management/permissions` | ✅ | Get all permissions |
-| `GET` | `/api/permission-management/roles` | ✅ | Get all roles with permissions |
-| `GET` | `/api/permission-management/roles/{roleId}` | ✅ | Get permissions for a role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/{permissionId}/assign` | ✅ | Assign permission to role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/{permissionId}/remove` | ✅ | Remove permission from role |
-| `POST` | `/api/permission-management/roles/{roleId}/permissions/update` | ✅ | Batch update role permissions |
+| `GET` | `/api/v1/users` | ⚠️ None | List all users (paginated) |
+| `PATCH` | `/api/v1/users/{userId}/activate` | ⚠️ None | Activate a user |
+| `PATCH` | `/api/v1/users/{userId}/deactivate` | ⚠️ None | Deactivate a user |
+| `POST` | `/api/v1/users/{userId}/roles` | ⚠️ None | Assign role to user |
+| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | ⚠️ None | Remove role from user |
+
+### 📩 Staff Invitations (`/api/v1/staff-invitations`)
+
+> ⚠️ **Security**: `[Authorize(Roles = "Admin")]` is **commented out** at `StaffInvitationsController.cs:21`, so `POST /send` is currently reachable anonymously.
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/staff-invitations/send` | ⚠️ None | Send invitation email |
+| `GET` | `/api/v1/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
+| `POST` | `/api/v1/staff-invitations/accept` | ❌ | Accept with password |
+| `POST` | `/api/v1/staff-invitations/accept-google` | ❌ | Accept with Google account |
+
+### 🔑 Permission Management (`/api/v1/permission-management`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/permission-management/permissions` | ✅ | Get all permissions |
+| `GET` | `/api/v1/permission-management/roles` | ✅ | Get all roles with permissions |
+| `GET` | `/api/v1/permission-management/roles/{roleId}` | ✅ | Get permissions for a role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/{permissionId}/assign` | ✅ | Assign permission to role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/{permissionId}/remove` | ✅ | Remove permission from role |
+| `POST` | `/api/v1/permission-management/roles/{roleId}/permissions/update` | ✅ | Batch update role permissions |
 
 > **Legend:** ❌ Public · ✅ Authenticated · 🔒 Admin Only
+
+### 🎤 Instructor Profiles (`/api/instructor-profiles`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/instructor-profiles` | ❌ | List approved instructors (paginated, filterable) |
+| `GET` | `/api/instructor-profiles/{userId}` | ❌ | Get instructor profile by user ID |
+| `GET` | `/api/instructor-profiles/me` | ✅ | Get current user's instructor profile |
+| `POST` | `/api/instructor-profiles/me` | ✅ | Create instructor profile for current user |
+| `PUT` | `/api/instructor-profiles/me` | ✅ | Update instructor profile |
+| `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
+| `POST` | `/api/instructor-profiles/{profileId}/availabilities` | ✅ | Add availability slot |
+| `DELETE` | `/api/instructor-profiles/{profileId}/availabilities/{availabilityId}` | ✅ | Remove availability slot |
+| `POST` | `/api/instructor-profiles/{profileId}/reviews` | ✅ | Add a review for an instructor |
+| `PUT` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Update a review |
+| `DELETE` | `/api/instructor-profiles/{profileId}/reviews/{reviewId}` | ✅ | Remove a review |
+
+### 💰 Wallets (`/api/wallets`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/wallets/me` | ✅ | Get current user's wallet balance |
+| `GET` | `/api/wallets/me/transactions` | ✅ | Get transaction history (paginated) |
+
+### 📚 Courses (`/api/v1/courses`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/courses` | ❌ | List courses (paged, search, filter, sort) |
+| `GET` | `/api/v1/courses/{id}` | ❌ | Get course details with syllabus |
+| `POST` | `/api/v1/courses` | ✅ | Create a new course (draft) |
+| `POST` | `/api/v1/courses/{id}/publish` | ✅ | Publish course to catalog |
+| `POST` | `/api/v1/courses/{id}/sections/{sectionId}/lessons` | ✅ | Add lesson to section |
+| `POST` | `/api/v1/courses/{id}/reviews` | ✅ | Add course review & rating |
+| `POST` | `/api/v1/courses/{id}/bookmark` | ✅ | Toggle course bookmark |
+
+### 📝 Enrollments (`/api/v1/enrollments`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/enrollments/enroll` | ✅ | Enroll in course (atomic credit deduction) |
+| `GET` | `/api/v1/enrollments/my-courses` | ✅ | Get enrolled courses with progress |
+| `POST` | `/api/v1/enrollments/{courseId}/lessons/progress` | ✅ | Update lesson progress |
+
+### 🗂️ Categories (`/api/v1/categories`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/categories` | ❌ | List all categories with course counts |
+| `POST` | `/api/v1/categories` | 🔒 Admin | Create category (with icon upload) |
+| `PUT` | `/api/v1/categories/{id}` | 🔒 Admin | Update category |
+| `DELETE` | `/api/v1/categories/{id}` | 🔒 Admin | Delete category |
+
+### 🎓 Sessions (`/api/v1/sessions`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/sessions` | ✅ | List sessions (filter by instructor, status, date, bookable) |
+| `GET` | `/api/v1/sessions/me` | ✅ | Instructor's own sessions (upcoming/past) |
+| `GET` | `/api/v1/sessions/{id}` | ✅ | Get session details |
+| `POST` | `/api/v1/sessions` | ✅ | Create session (draft) |
+| `PUT` | `/api/v1/sessions/{id}` | ✅ | Update session |
+| `DELETE` | `/api/v1/sessions/{id}` | ✅ | Delete session |
+| `PATCH` | `/api/v1/sessions/{id}/status` | ✅ | Change session status |
+
+### 🎟️ Session Materials (`/api/sessions/{sessionId}/materials`)
+
+> This controller is **not** versioned (`api/sessions`, not `api/v1/sessions`).
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/sessions/{sessionId}/materials` | ✅ | List session materials |
+| `GET` | `/api/sessions/{sessionId}/materials/{materialId}/download` | ✅ | Download the material file (streamed from Google Drive) |
+| `POST` | `/api/sessions/{sessionId}/materials` | ✅ | Upload session material |
+| `DELETE` | `/api/sessions/{sessionId}/materials/{materialId}` | ✅ | Delete session material |
+| `PUT` | `/api/sessions/{sessionId}/materials/reorder` | ✅ | Reorder materials |
+
+### 🎟️ Bookings (`/api/v1/bookings`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/bookings` | ✅ | Book a session (deducts credits) |
+| `POST` | `/api/v1/bookings/{id}/cancel` | ✅ | Cancel booking (refunds credits) |
+| `PATCH` | `/api/v1/bookings/{id}/status` | ✅ (Instructor) | Change booking status |
+| `GET` | `/api/v1/bookings/me` | ✅ | Get my bookings as learner |
+| `GET` | `/api/v1/bookings/session/{sessionId}` | ✅ | Get bookings for a session (instructor) |
+| `GET` | `/api/v1/bookings/{id}` | ✅ | Get booking details |
+
+### 💬 Chat (`/api/v1/chat`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `POST` | `/api/v1/chat/conversations` | ✅ | Start/get conversation |
+| `GET` | `/api/v1/chat/conversations` | ✅ | List my conversations |
+| `GET` | `/api/v1/chat/conversations/{id}/messages` | ✅ | Get conversation messages (paged) |
+| `POST` | `/api/v1/chat/conversations/{id}/messages` | ✅ | Send message |
+| `POST` | `/api/v1/chat/conversations/{id}/read` | ✅ | Mark messages as read |
+
+> **Real-time:** SignalR Hub at `/hubs/chat` — `ReceiveMessage`, `MessagesRead` events
+
+### 🛟 Support & FAQ (`/api/support`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/support/questions` | ❌ | Search published FAQ (paged, search, category) |
+| `GET` | `/api/support/questions/{id}` | ❌ | Get a published FAQ question |
+| `POST` | `/api/support/contact` | ✅ | Submit a support question (identity from JWT) |
+| `GET` | `/api/support/questions/mine` | ✅ | My support questions + their answers |
+| `POST` | `/api/support/questions/{id}/email-answer` | ✅ | Email a published answer to me |
+
+### 🛟 Support Management (`/api/support/manage`) — 🔒 Admin,Staff
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/support/manage/questions` | 🔒 Admin,Staff | All questions (filter by published/answered) |
+| `GET` | `/api/support/manage/questions/unanswered` | 🔒 Admin,Staff | Questions waiting for an answer |
+| `GET` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Full details incl. asker email |
+| `POST` | `/api/support/manage/questions` | 🔒 Admin,Staff | Create a FAQ question |
+| `POST` | `/api/support/manage/questions/{id}/answer` | 🔒 Admin,Staff | Answer + email the answer |
+| `PUT` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Update a question |
+| `PATCH` | `/api/support/manage/questions/{id}/publication` | 🔒 Admin,Staff | Publish / unpublish |
+| `DELETE` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Delete a question |
+
+### 🔔 Notifications (`/api/v1/notifications`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/notifications` | ✅ | My notifications (paged, newest first) |
+| `GET` | `/api/v1/notifications/unread-count` | ✅ | Unread notification count |
+| `POST` | `/api/v1/notifications/{notificationId}/read` | ✅ | Mark one as read |
+| `POST` | `/api/v1/notifications/read-all` | ✅ | Mark all as read |
+
+### ⚙️ Site Settings (`/api/SiteSettings`)
+
+> This controller has no route attribute, so it inherits `BaseApiController`'s `api/[controller]` — hence the capitalized segment.
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/SiteSettings` | ❌ | Get current site settings |
+| `PUT` | `/api/SiteSettings` | 🔒 SuperAdmin | Update site settings |
 
 ---
 
@@ -321,6 +518,21 @@ dotnet test tests/Skill-Loop.UnitTests
 
 ---
 
+## 📚 Documentation
+
+Deeper docs live in [`docs/`](docs):
+
+| Doc | Covers |
+|-----|--------|
+| [ARCHITECTURE_GUIDE.md](docs/ARCHITECTURE_GUIDE.md) | Layer-by-layer walkthrough: entities, enums, events, behaviors, DI, caching |
+| [BACKEND_GAP_ANALYSIS.md](docs/BACKEND_GAP_ANALYSIS.md) | Feature matrix, test coverage, and known gaps |
+| [Support_Subsystem.md](docs/Support_Subsystem.md) | FAQ + support requests: endpoints, caching, email, domain rules |
+| [Chat_Subsystem.md](docs/Chat_Subsystem.md) | Real-time chat and SignalR |
+| [Course_And_Enrollment_Subsystem.md](docs/Course_And_Enrollment_Subsystem.md) | Courses, sections, lessons, enrollment, progress |
+| [explanation.md](docs/explanation.md) | High-level code map and request flows |
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -333,7 +545,7 @@ dotnet test tests/Skill-Loop.UnitTests
 
 ## 📝 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**.
 
 ---
 

@@ -33,5 +33,22 @@ public sealed class Category : AuditableEntity
             Description = description,
             DisplayOrder = displayOrder
         });
+ 
+    }
+    public Result Update(string name, string slug, string? iconUrl, string? description, int displayOrder)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+            return Result.Failure(new Error("Category.EmptyName", "Category name is required.", ErrorType.Validation));
+
+        if (string.IsNullOrWhiteSpace(slug))
+            return Result.Failure(new Error("Category.EmptySlug", "Category slug is required.", ErrorType.Validation));
+
+        Name = name.Trim();
+        Slug = slug.Trim().ToLowerInvariant();
+        IconUrl = iconUrl;
+        Description = description;
+        DisplayOrder = displayOrder;
+
+        return Result.Success();
     }
 }

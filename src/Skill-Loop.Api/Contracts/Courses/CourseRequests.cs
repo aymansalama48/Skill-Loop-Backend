@@ -33,3 +33,33 @@ public sealed record GetCoursesRequest(
     int? MaxCredits = null,
     double? MinRating = null,
     CourseSortOption SortBy = CourseSortOption.Newest);
+
+
+public sealed record AddSectionRequest(string Title, int OrderIndex);
+
+public sealed record UpdateCourseDetailsRequest(
+    string Title,
+    string Description,
+    string ThumbnailUrl,
+    int Credits,
+    CourseLevel Level,
+    Guid CategoryId);
+
+public sealed record UpdateSectionRequest(string Title, int OrderIndex);
+
+public sealed record ReorderSectionsRequest(Dictionary<Guid, int> SectionOrders);
+
+public sealed record UpdateLessonRequest(
+    string Title,
+    string VideoUrl,
+    TimeSpan Duration,
+    string? StreamingResolution,
+    string? ExternalProviderId,
+    int OrderIndex,
+    bool IsPreviewable);
+
+public sealed record ReorderLessonsRequest(Dictionary<Guid, int> LessonOrders);
+
+public sealed record UploadCourseMaterialRequest(Microsoft.AspNetCore.Http.IFormFile File, Skill_Loop.Domain.Enums.MaterialType? MaterialType);
+
+public sealed record UploadLessonMaterialRequest(Microsoft.AspNetCore.Http.IFormFile File, Skill_Loop.Domain.Enums.MaterialType? MaterialType);

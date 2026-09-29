@@ -7,7 +7,6 @@ using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
 using Skill_Loop.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 
@@ -64,8 +63,7 @@ public sealed class GetSessionMaterialDownloadInfoQueryHandler : IQueryHandler<G
                     b.SessionId == request.SessionId &&
                     b.LearnerUserId == currentUserId &&
                     (b.Status == BookingStatus.Confirmed ||
-                     b.Status == BookingStatus.InProgress ||
-                     b.Status == BookingStatus.Completed),
+                     b.Status == BookingStatus.Completed), // اكتفينا بالحالتين دول فقط
                     cancellationToken);
         }
 

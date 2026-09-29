@@ -11,9 +11,9 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Abstractions.External.Email;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial.Events;
 using Skill_Loop.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Domain.Entities.Session.Events;
 
 public sealed class SessionMaterialUploadedEventHandler(
     IJobScheduler jobScheduler,
@@ -38,15 +38,14 @@ public sealed class SessionMaterialUploadedEventHandler(
         }
 
         var activeLearnerIds = await dbContext.Bookings
-            .AsNoTracking()
-            .Where(b =>
-                b.SessionId == material.SessionId &&
-                (b.Status == BookingStatus.Confirmed ||
-                 b.Status == BookingStatus.InProgress ||
-                 b.Status == BookingStatus.Completed))
-            .Select(b => b.LearnerUserId)
-            .Distinct()
-            .ToListAsync(cancellationToken);
+                    .AsNoTracking()
+                    .Where(b =>
+                        b.SessionId == material.SessionId &&
+                        (b.Status == BookingStatus.Confirmed ||
+                         b.Status == BookingStatus.Completed)) // تم حذف InProgress
+                    .Select(b => b.LearnerUserId)
+                    .Distinct()
+                    .ToListAsync(cancellationToken);
 
         if (activeLearnerIds.Count == 0)
         {

@@ -64,37 +64,28 @@ public sealed class LessonConfiguration : IEntityTypeConfiguration<Lesson>
             .IsRequired()
             .HasMaxLength(200);
 
-        // Value Object: VideoResource
-        builder.OwnsOne(l => l.Video, video =>
-        {
-            video.Property(v => v.VideoUrl)
-                .HasColumnName("VideoUrl")
-                .IsRequired()
-                .HasMaxLength(1000);
+        builder.Property(l => l.VideoUrl)
+            .HasColumnName("VideoUrl")
+            .IsRequired()
+            .HasMaxLength(1000);
 
-            video.Property(v => v.Duration)
-                .HasColumnName("Duration")
-                .IsRequired();
+        builder.Property(l => l.Duration)
+            .HasColumnName("Duration")
+            .IsRequired();
 
-            video.Property(v => v.StreamingResolution)
-                .HasColumnName("StreamingResolution")
-                .HasMaxLength(50);
+        builder.Property(l => l.StreamingResolution)
+            .HasColumnName("StreamingResolution")
+            .HasMaxLength(50);
 
-            video.Property(v => v.ExternalProviderId)
-                .HasColumnName("ExternalProviderId")
-                .HasMaxLength(150);
-        });
+        builder.Property(l => l.ExternalProviderId)
+            .HasColumnName("ExternalProviderId")
+            .HasMaxLength(150);
 
-        // Value Object collection: Resources
-        builder.OwnsMany(l => l.Resources, resource =>
-        {
-            resource.ToTable("LessonResources");
-            resource.WithOwner().HasForeignKey("LessonId");
-            resource.Property<Guid>("Id").ValueGeneratedOnAdd();
-            resource.HasKey("Id");
-            resource.Property(r => r.FileName).HasMaxLength(256).IsRequired();
-            resource.Property(r => r.StorageUrl).HasMaxLength(1000).IsRequired();
-        });
+        // LessonMaterials
+        builder.HasMany(l => l.Resources)
+            .WithOne(m => m.Lesson)
+            .HasForeignKey(m => m.LessonId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.HasIndex(l => new { l.SectionId, l.OrderIndex });
     }

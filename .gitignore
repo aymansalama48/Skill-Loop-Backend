@@ -485,8 +485,13 @@ $RECYCLE.BIN/
 UploadedFiles/
 Logs/
 *.log
+appsettings.json
 appsettings.*.local.json
 .agents/
 .gemini/
 .idea/
 .vscode/
+
+
+
+google-drive-key.json

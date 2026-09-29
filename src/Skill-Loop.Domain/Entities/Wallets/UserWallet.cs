@@ -63,3 +63,20 @@ public sealed class UserWallet : AuditableEntity
         return Result.Success();
     }
 }
+
+    /// <summary>
+    /// استرجاع credits (إلغاء حجز / استرجاع purchase) — بيتسجل كـ CreditRefund
+    /// عشان الـ transaction history يبقى واضح.
+    /// </summary>
+    public Result RefundCredits(int amount, Guid referenceId, string description)
+    {
+        if (amount <= 0)
+            return Result.Failure(new Error("Wallet.InvalidAmount", "Refund amount must be positive.", ErrorType.Validation));
+
+        Balance += amount;
+        _transactions.Add(WalletTransaction.Create(Id, amount, TransactionType.CreditRefund, referenceId, description));
+
+        AddDomainEvent(new WalletBalanceRefundedDomainEvent(UserId, amount, Balance));
+        return Result.Success();
+    }
+}

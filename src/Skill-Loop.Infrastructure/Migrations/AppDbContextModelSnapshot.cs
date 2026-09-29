@@ -131,22 +131,64 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<DateTime>("BookedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CancellationReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime?>("CancelledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<Guid>("LearnerUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<int>("PriceInCredits")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("datetime2");
+
                     b.Property<Guid>("SessionId")
                         .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("StartedAtUtc")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
                     b.HasKey("Id");
 
                     b.HasIndex("LearnerUserId");
 
                     b.HasIndex("SessionId");
+
+                    b.HasIndex("SessionId", "LearnerUserId")
+                        .IsUnique()
+                        .HasFilter("[Status] IN ('Pending', 'Confirmed', 'InProgress', 'Completed')");
+
+                    b.HasIndex("SessionId", "LearnerUserId", "Status");
 
                     b.ToTable("Bookings", (string)null);
                 });
@@ -562,6 +604,139 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.ToTable("LessonProgresses", (string)null);
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorAvailability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("InstructorProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstructorProfileId");
+
+                    b.ToTable("InstructorAvailabilities", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Bio")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CreditsEarned")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Headline")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<bool>("IsApproved")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<double>("Rating")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(3, 2)
+                        .HasColumnType("float(3)")
+                        .HasDefaultValue(0.0);
+
+                    b.Property<int>("SessionsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("InstructorProfiles", (string)null);
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorReview", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("DeletedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<Guid>("InstructorProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<Guid>("LearnerUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("Rating")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstructorProfileId");
+
+                    b.ToTable("InstructorReviews", (string)null);
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Invitation.StaffInvitation", b =>
                 {
                     b.Property<Guid>("Id")
@@ -812,48 +987,7 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.Session", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("InstructorId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("OwnerId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
-
-                    b.Property<string>("Title")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("InstructorId");
-
-                    b.HasIndex("OwnerId");
-
-                    b.ToTable("Sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial", b =>
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.SessionMaterial", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -916,6 +1050,86 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.ToTable("SessionMaterials", (string)null);
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.Session", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("CreditsPrice")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(0);
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<int>("DurationMinutes")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(60);
+
+                    b.Property<Guid>("InstructorId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("LocationDetails")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("LocationType")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasDefaultValue("Online");
+
+                    b.Property<int>("MaxParticipants")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasDefaultValue(1);
+
+                    b.Property<Guid>("OwnerId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime?>("ScheduledAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstructorId");
+
+                    b.HasIndex("OwnerId");
+
+                    b.HasIndex("ScheduledAtUtc");
+
+                    b.HasIndex("Status", "ScheduledAtUtc");
+
+                    b.ToTable("Sessions", (string)null);
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.SiteSettings.SiteSettings", b =>
                 {
                     b.Property<Guid>("Id")
@@ -964,6 +1178,7 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.CreditPurchase", b =>
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Support.SupportQuestion", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -1004,6 +1219,49 @@ namespace Skill_Loop.Infrastructure.Migrations
 
                     b.Property<int>("TotalMinor")
                         .HasColumnType("int");
+                    b.Property<string>("Answer")
+                        .HasMaxLength(5000)
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("AnsweredAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("AskedByUserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Category")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<bool>("EmailSent")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("EmailSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<bool>("IsAnswered")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<bool>("IsPublished")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Question")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -1021,6 +1279,27 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("UserId", "CreatedAt");
 
                     b.ToTable("CreditPurchases", (string)null);
+                    b.Property<string>("UserEmail")
+                        .HasMaxLength(256)
+                        .HasColumnType("nvarchar(256)");
+
+                    b.Property<string>("UserName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AskedByUserId");
+
+                    b.HasIndex("Category");
+
+                    b.HasIndex("CreatedAt");
+
+                    b.HasIndex("IsAnswered");
+
+                    b.HasIndex("IsPublished");
+
+                    b.ToTable("SupportQuestions", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>
@@ -1402,6 +1681,15 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Booking.Booking", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", null)
+                        .WithMany("Bookings")
+                        .HasForeignKey("SessionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Chat.ChatMessage", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Chat.Conversation", null)
@@ -1621,9 +1909,36 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.SessionMaterial.SessionMaterial", b =>
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorAvailability", b =>
                 {
-                    b.HasOne("Skill_Loop.Domain.Entities.Session.Session", "Session")
+                    b.HasOne("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", null)
+                        .WithMany("Availabilities")
+                        .HasForeignKey("InstructorProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
+                {
+                    b.HasOne("Skill_Loop.Infrastructure.Persistence.IdentityModels.ApplicationUser", null)
+                        .WithOne()
+                        .HasForeignKey("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorReview", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", null)
+                        .WithMany("Reviews")
+                        .HasForeignKey("InstructorProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.SessionMaterial", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", "Session")
                         .WithMany("Materials")
                         .HasForeignKey("SessionId")
                         .OnDelete(DeleteBehavior.Cascade)
@@ -1693,8 +2008,17 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("LessonProgresses");
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.Session", b =>
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
                 {
+                    b.Navigation("Availabilities");
+
+                    b.Navigation("Reviews");
+                });
+
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.Session", b =>
+                {
+                    b.Navigation("Bookings");
+
                     b.Navigation("Materials");
                 });
 

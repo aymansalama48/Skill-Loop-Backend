@@ -46,7 +46,7 @@ Client ──(REST POST أو Hub.SendMessage)──► SendMessageCommand
 
 ## 6. حدود معروفة / تطوير لاحق
 - نص فقط (مفيش صور/ملفات). - مفيش حذف/تعديل رسائل. - مفيش "يكتب الآن…".
-- لو الطرف Offline: مفيش Push Notification (لما نعمل FCM نضيف Domain Event + Handler).
+- لو الطرف Offline: مفيش Push Notification خارجي (FCM/APNs). الإشعار **جوه التطبيق** موجود فعلاً: `ChatMessageSentEvent` + `ChatMessageSentEventHandler` بينشئوا صف `Notification` في جدول `Notifications` (دلوقتي ده مصدر الإشعارات الوحيد). لما نعمل FCM هنضيف قناة خارجية جديدة بس، مش Domain Event جديد.
 - Pagination بالـ Offset؛ ممكن يتحول لـ Cursor لو الرسايل كترت.
 - شغّل أكتر من نسخة من الـ API؟ هتحتاج Redis backplane لـ SignalR.
 - قاعدة "مين يقدر يكلم مين" حالياً: أي مستخدم نشط. لو فيه شرط (مثلاً لازم يكون مشترك في كورس المعلم) بيتضاف في `StartConversationCommandHandler`.

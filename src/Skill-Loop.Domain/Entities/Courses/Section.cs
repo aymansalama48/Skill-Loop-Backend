@@ -23,4 +23,20 @@ public sealed class Section : BaseEntity
         };
 
     internal void AddLesson(Lesson lesson) => _lessons.Add(lesson);
+
+    internal void UpdateDetails(string title, int orderIndex)
+    {
+        Title = title.Trim();
+        OrderIndex = orderIndex;
+    }
+
+    internal void UpdateOrder(int orderIndex)
+    {
+        OrderIndex = orderIndex;
+    }
+
+    internal void RemoveLesson(Lesson lesson)
+    {
+        _lessons.Remove(lesson);
+    }
 }
