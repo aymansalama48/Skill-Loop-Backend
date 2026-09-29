@@ -1038,6 +1038,8 @@ Contracts/
 | `SessionMaterialsController`     | `api/v1/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
 | `BookingsController`             | `api/v1/bookings`           | حجز الجلسات لايف                                     |
 | `ChatController`                 | `api/v1/chat`               | المحادثات والرسائل                                  |
+| `SupportController`              | `api/support`               | الـ FAQ العام + استفسارات المستخدم المسجّل            |
+| `SupportManagementController`    | `api/support/manage`        | إدارة الاستفسارات لفريق الدعم (رد/نشر/تعديل/حذف)   |
 | `SiteSettingsController`         | `api/v1/site-settings`      | إعدادات الموقع                                      |
 | `DevController`                  | `api/v1/dev`                | تطوير فقط — quick-login (محمي بـ `IsDevelopment()`) |
 
@@ -1137,7 +1139,8 @@ UnitTests/
 │   ├── Cache/
 │   │   └── CacheServiceTests.cs
 │   └── Notifications/
-│       └── NotificationServiceTests.cs
+│       ├── NotificationServiceTests.cs
+│       └── SupportNotificationContractsTests.cs   ← ثوابت ISP/DIP (reflection)
 └── Features/
     ├── Accounts/
     │   ├── AccountManagement/
@@ -1233,6 +1236,17 @@ UnitTests/
     │       │   └── GetMyBookingsQueryHandlerTests.cs
     │       └── GetSessionBookings/
     │           └── GetSessionBookingsQueryHandlerTests.cs
+    ├── Support/
+    │   ├── SupportQuestionTests.cs              ← اختبارات الكيان
+    │   ├── SupportCacheInvalidationTests.cs      ← ثوابت بادئات الكاش لكل Command
+    │   ├── Commands/
+    │   │   ├── AnswerSupportQuestion/
+    │   │   ├── SendFaqAnswerEmail/
+    │   │   ├── SetSupportQuestionPublication/
+    │   │   └── SubmitContactForm/
+    │   └── Queries/
+    │       ├── GetMySupportQuestions/
+    │       └── GetPublishedSupportQuestionsPaged/
 ```
 
 **Note**: `BookingTests.cs` (entity-level tests) is also present at the root level of `Features/Bookings/`.
@@ -1495,8 +1509,9 @@ public static class Courses
 | **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`, `InstructorAvailability`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus`, `AddInstructorAvailability`, `RemoveInstructorAvailability` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
 | **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. |
 | **Booking**                    | ✅ مكتمل | Entity (rich aggregate with domain events + lifecycle) + `CreateBooking`, `CancelBooking`, `CompleteBooking`, `ChangeBookingStatus` + `GetBookingById`, `GetMyBookings`, `GetSessionBookings` + `BookingsController` |
+| **Support**                      | ✅ مكتمل | Entity (`SupportQuestion`) + `SubmitContactForm`, `CreateSupportQuestion`, `AnswerSupportQuestion`, `UpdateSupportQuestion`, `SetSupportQuestionPublication`, `DeleteSupportQuestion`, `SendFaqAnswerEmail` + `GetPublishedSupportQuestionsPaged`, `GetSupportQuestionById`, `GetMySupportQuestions`, `GetSupportQuestionsPaged`, `GetSupportQuestionDetails` + `SupportNotificationService` + قالبَي `ContactFormConfirmation`/`SupportNotification`/`AnswerNotification` — تفاصيل في [Support_Subsystem.md](Support_Subsystem.md) |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
-| **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
+| **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService` + `SupportNotificationService`                                                                                     |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
 | **Infrastructure Core**        | ✅ مكتمل | Caching, Logging, CorrelationId, JWT, Hangfire, Outbox Pattern, GeoLocation, UserAgent Parsing                                                                                        |
 
@@ -1526,6 +1541,7 @@ Booking                 |   ✅   |     ✅      |       ✅       |  ✅  |  �
 Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⚠️
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Support (FAQ + Contact) |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
 Permission Management   |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
