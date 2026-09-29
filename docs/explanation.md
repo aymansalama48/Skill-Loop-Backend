@@ -55,6 +55,7 @@
 | `LessonProgress.cs` | Tracks completion of individual lessons |
 | `InstructorProfile.cs` | Instructor's public profile: headline, bio, approval status, rating, stats (sessions completed, credits earned) |
 | `InstructorReview.cs` | Student rating + comment on an instructor |
+| `InstructorAvailability.cs` | Recurring availability slot (day of week + time range) for an instructor |
 | `Session.cs` | Live teaching slot: schedule, duration, price, location (online/offline), capacity, bookings |
 | `SessionMaterial.cs` | Files attached to a session (PDF, video, etc.) — stored on Google Drive |
 | `Booking.cs` | Learner's reservation of a session: status lifecycle, price snapshot, refund logic |
@@ -65,7 +66,10 @@
 | `StaffInvitation.cs` | Admin invitation for staff onboarding |
 | `OtpVerification.cs` | OTP codes for email verification/password reset |
 | `SiteSettings.cs` | Global platform configuration |
-| `ApplicationUser/ApplicationRole/RefreshToken` | Identity extensions |
+| `SupportQuestion.cs` | FAQ entry / support request: question, answer, publication + email state |
+| `Notification.cs` | In-app notification (currently created by chat events) |
+
+> Identity models are **not** in the Domain layer: `ApplicationUser` / `ApplicationRole` / `RefreshToken` / `TbPermission` / `TbRolePermission` live in `Skill-Loop.Infrastructure/Persistence/IdentityModels/`.
 
 #### Value Objects (`Domain/Entities/Courses/ValueObjects/`)
 | File | Purpose |
@@ -76,7 +80,7 @@
 | `PdfAttachment.cs` | PDF file name, storage URL, size |
 
 #### Enums (`Domain/Enums/`)
-`CourseLevel`, `CourseStatus`, `EnrollmentStatus`, `TransactionType`, `SessionStatus`, `BookingStatus`, `MaterialType`, `OtpPurpose`, `SessionLocationType`
+`CourseLevel`, `CourseStatus`, `EnrollmentStatus`, `TransactionType`, `SessionStatus`, `SessionType`, `SessionLocationType`, `BookingStatus`, `MaterialType`, `OtpPurpose`
 
 #### Domain Events (`Domain/Entities/*/Events/`)
 Events raised by entities and processed asynchronously via Outbox pattern:
@@ -84,8 +88,9 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 - `CourseEnrolled/LessonCompleted/CourseCompletedDomainEvent`
 - `SessionMaterialUploadedEvent`, `SessionCompletedDomainEvent`
 - `BookingCreatedDomainEvent`, `BookingCancelledDomainEvent`
-- `WalletBalanceDeductedDomainEvent`
+- `WalletBalanceDeductedDomainEvent`, `WalletBalanceRefundedDomainEvent`
 - `StaffInvitationCreatedEvent`
+- `ChatMessageSentEvent`
 
 #### Base Classes (`Domain/Common/Entities/`)
 `Entity` → `BaseEntity` (Guid V7) → `AuditableEntity` (CreatedAt/By, UpdatedAt/By) → `SoftDeleteEntity` (IsDeleted, DeletedAt/By)
@@ -103,7 +108,7 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 
 | Feature | Commands | Queries | Event Handlers |
 |---------|----------|---------|----------------|
-| **Accounts/Auth** | StaffLogin, StaffGoogleLogin, RegisterUser, VerifyEmailOtp, RefreshToken, Logout, ForgotPassword, ResetPassword, ChangePassword, SendInvitation, AcceptInvitation, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture | GetMyProfile, GetAllUsers, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated |
+| **Accounts/Auth** | StaffLogin, StaffGoogleLogin, UserLogin, UserGoogleLogin, RegisterUser, VerifyEmailOtp, ResendEmailOtp, RefreshToken, Logout, ForgotPassword, ResetPassword, ChangePassword, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRoleToUser, RemoveRoleFromUser, AssignPermissionToRole, RemovePermissionFromRole, UpdateRolePermissions, UpdateMyProfile, UpdateMyProfilePicture | GetMyProfile, GetAllUsers, GetUserById, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated |
 | **Categories** | CreateCategory, UpdateCategory, DeleteCategory | GetCategories | — |
 | **Courses** | CreateCourse, AddLesson, PublishCourse, AddCourseReview, ToggleCourseBookmark | GetCourseById, GetCoursesPaged (search/filter/sort/cache) | CourseInvalidationHandler (cache clear) |
 | **Enrollments** | EnrollInCourse (atomic wallet deduction), UpdateLessonProgress | GetUserEnrolledCourses | — |
@@ -111,8 +116,10 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 | **Wallets** | — | GetMyWallet (lazy creation), GetMyWalletTransactionsPaged | CreditInstructorWallet (course sales), CreditInstructorWalletOnSessionCompleted (live sessions) |
 | **Sessions** | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus | GetSessionById, GetSessionsPaged (filter by instructor/status/date/bookable), GetMySessionsPaged (instructor dashboard) | — |
 | **Session Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials | GetSessionMaterials, GetSessionMaterialDownloadInfo | SessionMaterialUploaded |
-| **Bookings** | CreateBooking (atomic payment + capacity check), CancelBooking (refund), ChangeBookingStatus (instructor lifecycle), CompleteBooking | GetBookingById, GetMyBookings, GetSessionBookings | — |
-| **Chat** | StartConversation, SendMessage, MarkConversationRead | GetMyConversations, GetConversationMessages | — |
+| **Bookings** | CreateBooking (atomic payment + capacity check), CancelBooking (refund), ChangeBookingStatus (instructor lifecycle), CompleteBooking (no controller endpoint yet) | GetBookingById, GetMyBookings, GetSessionBookings | — |
+| **Chat** | StartConversation, SendMessage, MarkConversationRead | GetMyConversations, GetConversationMessages | ChatMessageSent (creates in-app notification) |
+| **Notifications** | MarkNotificationRead, MarkAllNotificationsRead | GetMyNotifications, GetUnreadNotificationCount | — |
+| **Support** | SubmitContactForm, SendFaqAnswerEmail, AnswerSupportQuestion, CreateSupportQuestion, UpdateSupportQuestion, SetSupportQuestionPublication, DeleteSupportQuestion | GetPublishedSupportQuestionsPaged, GetSupportQuestionById, GetSupportQuestionsPaged, GetSupportQuestionDetails, GetMySupportQuestions | — |
 | **SiteSettings** | UpdateSiteSettings | GetSiteSettings | — |
 
 #### Pipeline Behaviors (MediatR) — Order Matters
@@ -128,6 +135,8 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 - `ICacheService`, `ICacheableQuery`, `ICacheInvalidatorCommand`
 - `IEmailSender`, `IFileStorage`, `ICourseContentStorage` (Google Drive)
 - `IJobScheduler` (Hangfire), `IChatNotifier` (SignalR)
+- `ISupportRequestNotifier`, `ISupportAnswerNotifier` (support emails, split per ISP)
+- `ISiteSettingsService`, `IGeoLocationService`, `IUserAgentParser`
 - `IApplicationUrlService`, `IClientContext`
 
 ---
@@ -138,7 +147,7 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 | File | Purpose |
 |------|---------|
 | `AppDbContext.cs` | DbContext with all DbSets; applies configurations + soft-delete global filter |
-| `Configurations/*.cs` | EF Core fluent API for each entity (31 configuration files) |
+| `Configurations/*.cs` | EF Core fluent API for each entity (21 files, 29 `IEntityTypeConfiguration` classes) |
 | `Interceptors/` | `AuditableEntityInterceptor`, `SoftDeleteInterceptor`, `InsertOutboxMessagesInterceptor` |
 | `Outbox/OutboxMessage.cs` | Reliable event publishing table |
 | `Seed/ContextSeed.cs` | Creates roles, permissions, role-permission mappings on startup |
@@ -170,11 +179,13 @@ Events raised by entities and processed asynchronously via Outbox pattern:
 #### Background Jobs
 | File | Purpose |
 |------|---------|
-| `ProcessOutboxMessagesJob.cs` | Runs every 5s: reads Outbox → publishes via MediatR |
-| `RefreshDriveQuotaJob.cs` | Monitors Google Drive storage quota |
+| `ProcessOutboxMessagesJob.cs` | Runs every 5s: reads Outbox → publishes via MediatR (the only `RecurringJob` actually scheduled) |
+| `RefreshDriveQuotaJob.cs` | Intended Google Drive quota monitor — **registered in DI but never scheduled**, so it does not currently run |
 
 #### Dependency Injection (`DependencyInjection/`)
-Modular registration: `AddPersistence`, `AddIdentityServices`, `AddJwtAuthentication`, `AddExternalAuth`, `AddMail`, `AddFileStorage`, `AddGoogleDriveStorage`, `AddCaching`, `AddHangfireJobs`, `AddOtpService`, `AddBaseUrl`, `AddDatabaseSeeder`
+Modular registration inside `AddInfrastructure()`: `AddPersistence`, `AddIdentityServices`, `AddJwtAuthentication`, `AddExternalAuth`, `AddMail`, `AddFileStorage`, `AddGoogleDriveStorage`, `AddCaching`, `AddHangfireJobs`, `AddOtpService`, `AddBaseUrl`.
+
+`AddDatabaseSeeder` is **not** part of that chain — it's an `IApplicationBuilder` extension (`AddDatabaseSeeder.cs:17`) called directly as `app.SeedDatabaseAsync()` from `Program.cs:16`.
 
 ---
 
@@ -183,21 +194,26 @@ Modular registration: `AddPersistence`, `AddIdentityServices`, `AddJwtAuthentica
 #### Controllers (`Controllers/`)
 | Controller | Route | Responsibility |
 |------------|-------|----------------|
-| `AuthController` | `/api/auth` | Login, Google login, register, OTP, refresh, logout, password reset |
-| `ProfileController` | `/api/profile` | Current user profile CRUD, avatar, password change |
-| `UsersController` | `/api/users` | Admin: list users, activate/deactivate, assign roles |
-| `PermissionManagementController` | `/api/permission-management` | Role-permission matrix management |
-| `StaffInvitationsController` | `/api/staff-invitations` | Send/validate/accept invitations |
-| `CategoriesController` | `/api/categories` | Category CRUD |
-| `CoursesController` | `/api/courses` | Course CRUD, publish, lessons, reviews, bookmarks |
-| `EnrollmentsController` | `/api/enrollments` | Enroll, my courses, lesson progress |
-| `InstructorProfilesController` | `/api/instructor-profiles` | Instructor CRUD, approval, reviews |
+| `AuthController` | `/api/v1/auth` | Login, Google login, register, OTP, refresh, logout, password reset |
+| `ProfileController` | `/api/v1/me` | Current user profile CRUD, avatar, password change |
+| `UsersController` | `/api/v1/users` | Admin: list users, activate/deactivate, assign roles |
+| `PermissionManagementController` | `/api/v1/permission-management` | Role-permission matrix management |
+| `StaffInvitationsController` | `/api/v1/staff-invitations` | Send/validate/accept invitations |
+| `CategoriesController` | `/api/v1/categories` | Category CRUD |
+| `CoursesController` | `/api/v1/courses` | Create/publish course, add lessons, reviews, bookmarks (no update/delete endpoints) |
+| `EnrollmentsController` | `/api/v1/enrollments` | Enroll, my courses, lesson progress |
+| `InstructorProfilesController` | `/api/instructor-profiles` | Instructor CRUD, approval, reviews, availability |
 | `WalletsController` | `/api/wallets` | Balance, transaction history |
-| `SessionsController` | `/api/sessions` | Session CRUD, scheduling, instructor dashboard |
+| `SessionsController` | `/api/v1/sessions` | Session CRUD, scheduling, instructor dashboard |
 | `SessionMaterialsController` | `/api/sessions/{id}/materials` | Upload/download/reorder materials |
-| `BookingsController` | `/api/bookings` | Create/cancel/change status, my bookings, session bookings |
-| `ChatController` | `/api/chat` | Conversations, messages, mark read |
-| `SiteSettingsController` | `/api/site-settings` | Get/update site settings |
+| `BookingsController` | `/api/v1/bookings` | Create/cancel/change status, my bookings, session bookings |
+| `ChatController` | `/api/v1/chat` | Conversations, messages, mark read |
+| `SupportController` | `/api/support` | Public FAQ search, contact form, my questions, email answer |
+| `SupportManagementController` | `/api/support/manage` | Staff support queue: answer, publish, update, delete |
+| `NotificationsController` | `/api/v1/notifications` | My notifications, unread count, mark read |
+| `SiteSettingsController` | `/api/SiteSettings` | Get/update site settings (no route attribute — inherited from `BaseApiController`) |
+| `DevController` | `/api/v1/dev` | Development-only helpers |
+| `TestFilesController` | `/api/test/files` | Local file storage test endpoints |
 
 #### SignalR (`Hubs/`)
 - `ChatHub` at `/hubs/chat` — Real-time 1-on-1 messaging
@@ -220,7 +236,7 @@ Request DTOs per feature (e.g., `CreateCourseRequest`, `EnrollInCourseRequest`, 
 
 ### 1. Atomic Enrollment (Course)
 ```
-POST /api/enrollments/enroll
+POST /api/v1/enrollments/enroll
   → EnrollInCourseCommand
   → Handler: Check wallet balance → UserWallet.DeductCredits() → Enrollment.Create()
   → Raises CourseEnrolledDomainEvent
@@ -229,13 +245,13 @@ POST /api/enrollments/enroll
 
 ### 2. Live Session Booking
 ```
-GET /api/sessions?bookableOnly=true → Lists sessions with AvailableSlots
-POST /api/bookings
+GET /api/v1/sessions?bookableOnly=true → Lists sessions with AvailableSlots
+POST /api/v1/bookings
   → CreateBookingCommand
   → Handler: Validate session (published, future, capacity, not self, no duplicate)
   → UserWallet.DeductCredits() → Booking.Create() → BookingCreatedDomainEvent
   → Outbox → (future: confirmation email)
-PATCH /api/bookings/{id}/status?status=Completed
+PATCH /api/v1/bookings/{id}/status?status=Completed
   → ChangeBookingStatusCommand (instructor only)
   → Booking.Complete() → SessionCompletedDomainEvent
   → Outbox → CreditInstructorWalletOnSessionCompletedEventHandler → Instructor wallet + stats
@@ -262,22 +278,24 @@ Entity.AddDomainEvent(event)
 
 | Table | Key Columns |
 |-------|-------------|
-| `Courses` | Id, Title, Description, CreditsPrice, Level, Status, InstructorId, CategoryId, AverageRating, TotalReviews, IsDeleted |
-| `Sections` | Id, CourseId, Title, Order |
-| `Lessons` | Id, SectionId, Title, VideoUrl, Duration, Order |
+| `Courses` | Id, Title, Description, Credits (from the `CoursePrice` owned type), Level, Status, InstructorId, CategoryId, AverageRating (`float(3)`), TotalReviews, IsDeleted |
+| `CourseSections` | Id, CourseId, Title, OrderIndex |
+| `CourseLessons` | Id, SectionId, Title, OrderIndex, IsPreviewable (attachments/videos live in owned collections) |
 | `Enrollments` | Id, UserId, CourseId, CreditsPaid, Status, ProgressPercentage, LastWatchedLessonId |
 | `UserWallets` | Id, UserId (UK), Balance, RowVersion (concurrency) |
-| `WalletTransactions` | Id, UserWalletId, Amount, Type (CreditDeduction/Refund/Reward), Description |
+| `WalletTransactions` | Id, WalletId, Amount, Type (CreditDeduction/CreditRefund/CreditReward), ReferenceId, Description, OccurredAt |
 | `Sessions` | Id, InstructorId, Title, Description, ScheduledAtUtc, DurationMinutes, CreditsPrice, LocationType, LocationDetails, MaxParticipants, Status |
 | `Bookings` | Id, SessionId, LearnerUserId, Status, PriceInCredits, ScheduledAtUtc, BookedAtUtc, StartedAtUtc, CompletedAtUtc, CancelledAtUtc, CancellationReason |
-| `SessionMaterials` | Id, SessionId, FileName, StorageUrl, FileSize, MaterialType, Order, GoogleDriveFileId |
+| `SessionMaterials` | Id, SessionId, FileName, DriveFileId, DriveFolderId, MimeType, SizeBytes, MaterialType, SortOrder, UploadedByUserId |
 | `Conversations` | Id, ParticipantOneId, ParticipantTwoId, LastMessageAt, LastMessagePreview |
 | `ChatMessages` | Id, ConversationId, SenderId, Content, SentAt, ReadAt |
+| `Notifications` | Id, UserId, Type, Title, Body, IsRead, ReadAt, CreatedAt |
+| `SupportQuestions` | Id, Question, Answer, Category, IsPublished, IsAnswered, AnsweredAt, UserEmail, UserName, AskedByUserId, EmailSent, EmailSentAt |
 | `InstructorProfiles` | Id, UserId (1-1), Headline, Bio, IsApproved, Rating, SessionsCompleted, CreditsEarned |
 | `InstructorReviews` | Id, InstructorProfileId, LearnerUserId, Rating, Comment, IsDeleted |
 | `InstructorAvailabilities` | Id, InstructorProfileId, DayOfWeek, StartTime, EndTime |
-| `TbPermission` | Id, Name (e.g., "Categories.Manage") |
-| `TbRolePermission` | RoleId, PermissionId |
+| `TbPermissions` | Id, Name (e.g., "Categories.Manage"), Module |
+| `TbRolePermissions` | RoleId, PermissionId, GrantedAt |
 | `OutboxMessages` | Id, Type, Content (JSON), OccurredOnUtc, ProcessedOnUtc, RetryCount |
 
 ---
@@ -302,7 +320,7 @@ Entity.AddDomainEvent(event)
 | Patterns | Clean Architecture, CQRS (MediatR), DDD, Outbox Pattern |
 | Validation | FluentValidation 12 |
 | Mapping | AutoMapper 16 |
-| Caching | Redis (StackExchange.Redis) + MemoryCache fallback |
+| Caching | Redis (StackExchange.Redis) + MemoryCacheService (⚠️ الـ fallback معطّل في `AddCaching.cs:40`) |
 | Background Jobs | Hangfire (SQL Server storage) |
 | Real-time | SignalR (WebSocket) |
 | Email | MailKit (SMTP) |
@@ -324,7 +342,7 @@ Entity.AddDomainEvent(event)
 | Staff Invitations | ✅ Implemented |
 | Site Settings | ✅ Implemented |
 | Categories | ✅ Implemented |
-| Courses (CRUD, Search, Cache) | ✅ Implemented |
+| Courses (Create/Publish/Lessons, Search, Cache) | ✅ Implemented — no update/delete endpoints |
 | Enrollments (Atomic + Progress) | ✅ Implemented |
 | Instructor Profiles & Reviews | ✅ Implemented |
 | Instructor Availability | ✅ Implemented |
@@ -354,8 +372,10 @@ Entity.AddDomainEvent(event)
 - Session reviews (`SessionReview` entity + commands/queries)
 - Booking notifications (email on create, reminder job for upcoming)
 - Session "requires instructor approval" flag → `BookingStatus.Pending`
-- Unit test coverage for Wallet (buy/promo), Chat, OTP (Booking/Sessions/Instructors fully covered)
+- Unit test coverage gaps: Wallet (buy/promo), **Notifications**, and `GetMySessionsPaged` (Chat, OTP, Support, Categories, Site Settings, file storage are covered)
 - Fix Redis fallback registration in `AddCaching.cs`
+- Schedule `RefreshDriveQuotaJob` (registered in DI but never scheduled) or remove it
+- Expose `CompleteBookingCommand` via `BookingsController` (command + tests exist, no endpoint)
 - Mobile auth: Apple, Facebook providers
 - Push notifications (FCM) for offline chat/booking alerts
 

@@ -71,6 +71,7 @@
 | GET | `/manage/questions?isAnswered=&isPublished=` | كل الاستفسارات + بيانات صاحب الاستفسار |
 | GET | `/manage/questions/unanswered` | طابور المستني رد |
 | GET | `/manage/questions/{id}` | تفاصيل كاملة (منها `UserEmail`, `EmailSent`) |
+| POST | `/manage/questions` | إنشاء سؤال FAQ جديد. Body: `{ "question", "answer", "category", "isPublished" }` |
 | POST | `/manage/questions/{id}/answer` | Body: `{ "answer", "publish" }` — بيرد + يبعت الإيميل |
 | PUT | `/manage/questions/{id}` | تعديل كامل |
 | PATCH | `/manage/questions/{id}/publication` | نشر / إلغاء نشر |
@@ -107,6 +108,8 @@
 
 كل الـ Commands بتنفّذ `ICacheInvalidatorCommand` وبترجّع `SupportCacheKeys.All`، وده بيوصل لـ `RemoveByPrefixAsync` — فبادئة واحدة بتمسح كل الصفحات والبحثات والتصنيفات مرة واحدة. البادئات في `Features/Support/Share/SupportCacheKeys.cs`.
 
+> استثناء واحد: `SendFaqAnswerEmail` بيبعت إيميل بس ومش بيعدّل على السؤال، فبيرجّع بادئة السؤال الواحد بس (`support:question:{id}`) بدل `All` — أرخص من مسح الكاش كله مقابل تغيير صفر.
+
 ## 6. تصميم SOLID
 
 | المبدأ | التطبيق |
@@ -131,22 +134,23 @@
 | `SupportQuestion.AnswerNotAvailable` | NotFound | مفيش إجابة متاحة للإرسال |
 | `SupportQuestion.Unauthenticated` | Unauthorized | حاول يبعت استفسار من غير توكن |
 | `SupportQuestion.MissingIdentifier` | Unauthorized | التوكن مفيهوش `UserId` |
+| `SupportNotification.MissingRecipient` | Validation | مفيش إيميل مرسل (المستخدم أو الـ support email) |
 | `SupportNotification.EmailFailed` | Failure | فشل إرسال الإيميل (بينتسجل، مش بيرمي exception) |
 
 ## 8. الاختبارات
 
-`tests/Skill-Loop.UnitTests/Features/Support/` — 63 اختبار:
+`tests/Skill-Loop.UnitTests/Features/Support/` — 52 اختبار (عدد الـ `[Fact]`/`[Theory]` methods)، وكمان 4 في `External/Notifications/SupportNotificationContractsTests.cs` (الإجمالي 56 method). ملاحظة: الـ `[Theory]` في `SupportCacheInvalidationTests` و `SupportNotificationContractsTests` بيتنفذوا كـ cases متعددة، فعدد الـ test cases اللي بيشتغلها xUnit أعلى من 56:
 
-| الملف | التغطية |
-|---|---|
-| `SupportQuestionTests.cs` | كل قواعد الـ Domain + الحالات الفاشلة |
-| `SupportCacheInvalidationTests.cs` | كل Command بيرجّع بادئات الكاش الثلاثة |
-| `Commands/SubmitContactForm/…Tests.cs` | الرفض بدون توكن، استخراج الهوية من الـ JWT، الإيميلات، نجاح الطلب حتى لو الإيميل وقع |
-| `Commands/AnswerSupportQuestion/…Tests.cs` | الرد، النشر، `MarkEmailSent`، وبقاء الرد لو الإيميل وقع |
-| `Commands/SendFaqAnswerEmail/…Tests.cs` | الرفض لو السؤال مش منشور أو متجاوبش |
-| `Commands/SetSupportQuestionPublication/…Tests.cs` | رفض النشر من غير إجابة + طابور unanswered |
-| `Queries/GetPublishedSupportQuestionsPaged/…Tests.cs` | **المنشور بس** في اللستة والتفاصيل (حماية الـ Anonymous) |
-| `Queries/GetMySupportQuestions/…Tests.cs` | كل مستخدم بيشوف استفساراته هو بس |
+| الملف | Methods | التغطية |
+|---|---|---|
+| `SupportQuestionTests.cs` | 17 | كل قواعد الـ Domain + الحالات الفاشلة |
+| `SupportCacheInvalidationTests.cs` | 1 | كل Command بيرجّع بادئات الكاش الصح |
+| `Commands/SubmitContactForm/…Tests.cs` | 6 | الرفض بدون توكن، استخراج الهوية من الـ JWT، الإيميلات، نجاح الطلب حتى لو الإيميل وقع |
+| `Commands/AnswerSupportQuestion/…Tests.cs` | 7 | الرد، النشر، `MarkEmailSent`، وبقاء الرد لو الإيميل وقع |
+| `Commands/SendFaqAnswerEmail/…Tests.cs` | 5 | الرفض لو السؤال مش منشور أو متجاوبش |
+| `Commands/SetSupportQuestionPublication/…Tests.cs` | 5 | رفض النشر من غير إجابة + طابور unanswered |
+| `Queries/GetPublishedSupportQuestionsPaged/…Tests.cs` | 8 | **المنشور بس** في اللستة والتفاصيل (حماية الـ Anonymous) |
+| `Queries/GetMySupportQuestions/…Tests.cs` | 3 | كل مستخدم بيشوف استفساراته هو بس |
 
 `tests/Skill-Loop.UnitTests/External/Notifications/SupportNotificationContractsTests.cs` — ثوابت ISP/DIP بالـ reflection.
 

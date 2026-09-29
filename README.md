@@ -27,9 +27,11 @@
 | 👤 **Account Management** | Profile CRUD · Avatar Upload · Password Change · Forgot/Reset Password · Activate/Deactivate Users |
 | 🎤 **Instructor Profiles** | Create/Update Profile · Approval Workflow · Availability Slots · Reviews & Ratings · Instructor Stats (Sessions Completed, Credits Earned) |
 | 💰 **Wallets** | View Balance · Transaction History (Paginated) · Auto-Credit on Course Enrollment · Optimistic Concurrency |
-| 📚 **Courses & Enrollments** | Course CRUD · Sections & Lessons · Course Reviews · Bookmarks · Enrollment · Lesson Progress Tracking |
+| 📚 **Courses & Enrollments** | Course Create & Publish · Sections & Lessons · Course Reviews · Bookmarks · Enrollment · Lesson Progress Tracking |
 | 🎓 **Sessions & Materials** | Session CRUD · Status Management · File Upload/Download (Google Drive) · Material Reordering |
 | 💬 **Real-time Chat** | 1-on-1 Conversations · SignalR WebSocket · Read Receipts · Message Notifications |
+| 🛟 **Support & FAQ** | Public FAQ Search · Authenticated Contact Requests · Staff Answering & Publishing · Email Notifications |
+| 🔔 **In-App Notifications** | Notification feed (paginated) · Unread count · Mark one/all as read |
 | 📩 **Staff Invitations** | Admin sends invite via email → Staff accepts with password or Google account |
 | 🔑 **Permission System** | Granular module-based permissions · Role–Permission assignment · Dynamic RBAC |
 | 📱 **OTP Verification** | HMAC-hashed codes · Configurable expiry & cooldown · Max attempts lockout |
@@ -59,7 +61,7 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 
 - **Domain** — Pure business entities (`Course`, `InstructorProfile`, `Session`, `UserWallet`, `StaffInvitation`, `OtpVerification`), base entity types (`AuditableEntity`, `SoftDeleteEntity`), domain events, enums, and the `Result<T>` pattern for error handling.
 - **Application** — Commands & Queries (CQRS) via MediatR, FluentValidation, AutoMapper, and a rich pipeline of cross-cutting behaviors (Logging → Performance → Authorization → Validation → Caching → Cache Invalidation → Transaction).
-- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage (local + Google Drive), Hangfire background jobs, Outbox pattern, and in-memory caching.
+- **Infrastructure** — EF Core with SQL Server, ASP.NET Core Identity, JWT token management, Google Auth, email (MailKit/SMTP), file storage (local + Google Drive), Hangfire background jobs, Outbox pattern, and cache-aside caching (in-memory + Redis).
 - **Api** — ASP.NET Core controllers, request/response contracts, global exception handling, correlation ID middleware, Serilog integration, SignalR (real-time chat), and Scalar (OpenAPI) documentation.
 
 ---
@@ -89,6 +91,7 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 - **Hangfire** — Background job processing & outbox consumer
 - **MailKit** — SMTP email delivery
 - **Serilog** — Structured logging (Console + File sinks + enrichers)
+- **StackExchange.Redis** — Distributed cache (alongside the in-memory cache)
 - **UAParser** — User-agent detection
 
 ### API Documentation
@@ -106,7 +109,9 @@ Skill-Loop/
 ├── src/
 │   ├── Skill-Loop.Api/                # 🌐 Presentation Layer
 │   │   ├── Controllers/               #   API endpoints
-│   │   │   ├── AccountsController     #     Auth, profile, user management
+│   │   │   ├── AuthController           #     Login, Google login, register, OTP, refresh, logout
+│   │   │   ├── ProfileController        #     Current user profile
+│   │   │   ├── UsersController          #     Admin user management
 │   │   │   ├── StaffInvitationsController  # Invitation flow
 │   │   │   ├── PermissionManagementController  # RBAC management
 │   │   │   ├── CoursesController       #     Courses CRUD
@@ -116,6 +121,11 @@ Skill-Loop/
 │   │   │   ├── InstructorProfilesController  # Instructor profiles & reviews
 │   │   │   ├── WalletsController       #     Wallet balance & transactions
 │   │   │   ├── ChatController          #     Real-time chat
+│   │   │   ├── SupportController       #     Public FAQ + user contact requests
+│   │   │   ├── SupportManagementController  # Staff support queue (answer/publish/delete)
+│   │   │   ├── NotificationsController #     In-app notifications
+│   │   │   ├── SiteSettingsController  #     Public site settings (SuperAdmin update)
+│   │   │   ├── DevController           #     Development-only helpers
 │   │   │   └── BookingsController      #     Live session bookings
 │   │   ├── Contracts/                  #   Request/Response DTOs
 │   │   ├── Middlewares/                #   CorrelationId, GlobalExceptionHandler
@@ -132,8 +142,12 @@ Skill-Loop/
 │   │   │   ├── Wallets/               #   Wallet Queries, DTOs & EventHandlers
 │   │   │   ├── Sessions/              #   Sessions & Materials Commands & Queries
 │   │   │   ├── Chat/                  #   Chat Commands & Queries
-│   │   │   ├── Otps/                  #   OTP verification logic
+│   │   │   ├── Support/               #   FAQ & support requests Commands/Queries
+│   │   │   ├── Notifications/         #   In-app notifications Commands/Queries
+│   │   │   ├── SiteSettings/          #   Site settings Commands/Queries
 │   │   │   └── Bookings/              #   Live session booking commands & queries
+│   │   │
+│   │   │   (OTP verification is not a separate feature folder — `OtpService` lives in Infrastructure and is used by the Accounts user-auth commands.)
 │   │   ├── Common/
 │   │   │   ├── Behaviors/             #   MediatR pipeline behaviors
 │   │   │   ├── Abstractions/          #   Service interfaces
@@ -153,6 +167,8 @@ Skill-Loop/
 │   │   │   ├── OtpVerification/       #   OTP entity
 │   │   │   ├── Session/               #   Session, SessionMaterial, Events
 │   │   │   ├── SiteSettings/          #   SiteSettings entity
+│   │   │   ├── Support/               #   SupportQuestion entity
+│   │   │   ├── Notifications/         #   Notification entity
 │   │   │   └── Wallets/               #   UserWallet, WalletTransaction, Events
 │   │   ├── Common/
 │   │   │   ├── Entities/              #   BaseEntity, AuditableEntity, SoftDeleteEntity
@@ -298,19 +314,23 @@ The API will be available at:
 
 ### 👥 User Management (`/api/v1/users`)
 
+> ⚠️ **Security**: `[Authorize(Roles = "Admin,SuperAdmin")]` is **commented out** at `UsersController.cs:15`, so these endpoints are currently reachable anonymously.
+
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/v1/users` | 🔒 Admin | List all users (paginated) |
-| `PATCH` | `/api/v1/users/{userId}/activate` | 🔒 Admin | Activate a user |
-| `PATCH` | `/api/v1/users/{userId}/deactivate` | 🔒 Admin | Deactivate a user |
-| `POST` | `/api/v1/users/{userId}/roles` | 🔒 Admin | Assign role to user |
-| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | 🔒 Admin | Remove role from user |
+| `GET` | `/api/v1/users` | ⚠️ None | List all users (paginated) |
+| `PATCH` | `/api/v1/users/{userId}/activate` | ⚠️ None | Activate a user |
+| `PATCH` | `/api/v1/users/{userId}/deactivate` | ⚠️ None | Deactivate a user |
+| `POST` | `/api/v1/users/{userId}/roles` | ⚠️ None | Assign role to user |
+| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | ⚠️ None | Remove role from user |
 
 ### 📩 Staff Invitations (`/api/v1/staff-invitations`)
 
+> ⚠️ **Security**: `[Authorize(Roles = "Admin")]` is **commented out** at `StaffInvitationsController.cs:21`, so `POST /send` is currently reachable anonymously.
+
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/v1/staff-invitations/send` | 🔒 Admin | Send invitation email |
+| `POST` | `/api/v1/staff-invitations/send` | ⚠️ None | Send invitation email |
 | `GET` | `/api/v1/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
 | `POST` | `/api/v1/staff-invitations/accept` | ❌ | Accept with password |
 | `POST` | `/api/v1/staff-invitations/accept-google` | ❌ | Accept with Google account |
@@ -337,7 +357,6 @@ The API will be available at:
 | `GET` | `/api/instructor-profiles/me` | ✅ | Get current user's instructor profile |
 | `POST` | `/api/instructor-profiles/me` | ✅ | Create instructor profile for current user |
 | `PUT` | `/api/instructor-profiles/me` | ✅ | Update instructor profile |
-| `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
 | `PATCH` | `/api/instructor-profiles/users/{userId}/approval-status` | 🔒 Admin | Approve/suspend an instructor |
 | `POST` | `/api/instructor-profiles/{profileId}/availabilities` | ✅ | Add availability slot |
 | `DELETE` | `/api/instructor-profiles/{profileId}/availabilities/{availabilityId}` | ✅ | Remove availability slot |
@@ -393,15 +412,17 @@ The API will be available at:
 | `DELETE` | `/api/v1/sessions/{id}` | ✅ | Delete session |
 | `PATCH` | `/api/v1/sessions/{id}/status` | ✅ | Change session status |
 
-### 🎟️ Session Materials (`/api/v1/sessions/{sessionId}/materials`)
+### 🎟️ Session Materials (`/api/sessions/{sessionId}/materials`)
+
+> This controller is **not** versioned (`api/sessions`, not `api/v1/sessions`).
 
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/v1/sessions/{sessionId}/materials` | ✅ | List session materials |
-| `GET` | `/api/v1/sessions/{sessionId}/materials/{materialId}/download` | ✅ | Get download info for material |
-| `POST` | `/api/v1/sessions/{sessionId}/materials` | ✅ | Upload session material |
-| `DELETE` | `/api/v1/sessions/{sessionId}/materials/{materialId}` | ✅ | Delete session material |
-| `PATCH` | `/api/v1/sessions/{sessionId}/materials/reorder` | ✅ | Reorder materials |
+| `GET` | `/api/sessions/{sessionId}/materials` | ✅ | List session materials |
+| `GET` | `/api/sessions/{sessionId}/materials/{materialId}/download` | ✅ | Download the material file (streamed from Google Drive) |
+| `POST` | `/api/sessions/{sessionId}/materials` | ✅ | Upload session material |
+| `DELETE` | `/api/sessions/{sessionId}/materials/{materialId}` | ✅ | Delete session material |
+| `PUT` | `/api/sessions/{sessionId}/materials/reorder` | ✅ | Reorder materials |
 
 ### 🎟️ Bookings (`/api/v1/bookings`)
 
@@ -425,6 +446,47 @@ The API will be available at:
 | `POST` | `/api/v1/chat/conversations/{id}/read` | ✅ | Mark messages as read |
 
 > **Real-time:** SignalR Hub at `/hubs/chat` — `ReceiveMessage`, `MessagesRead` events
+
+### 🛟 Support & FAQ (`/api/support`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/support/questions` | ❌ | Search published FAQ (paged, search, category) |
+| `GET` | `/api/support/questions/{id}` | ❌ | Get a published FAQ question |
+| `POST` | `/api/support/contact` | ✅ | Submit a support question (identity from JWT) |
+| `GET` | `/api/support/questions/mine` | ✅ | My support questions + their answers |
+| `POST` | `/api/support/questions/{id}/email-answer` | ✅ | Email a published answer to me |
+
+### 🛟 Support Management (`/api/support/manage`) — 🔒 Admin,Staff
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/support/manage/questions` | 🔒 Admin,Staff | All questions (filter by published/answered) |
+| `GET` | `/api/support/manage/questions/unanswered` | 🔒 Admin,Staff | Questions waiting for an answer |
+| `GET` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Full details incl. asker email |
+| `POST` | `/api/support/manage/questions` | 🔒 Admin,Staff | Create a FAQ question |
+| `POST` | `/api/support/manage/questions/{id}/answer` | 🔒 Admin,Staff | Answer + email the answer |
+| `PUT` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Update a question |
+| `PATCH` | `/api/support/manage/questions/{id}/publication` | 🔒 Admin,Staff | Publish / unpublish |
+| `DELETE` | `/api/support/manage/questions/{id}` | 🔒 Admin,Staff | Delete a question |
+
+### 🔔 Notifications (`/api/v1/notifications`)
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/v1/notifications` | ✅ | My notifications (paged, newest first) |
+| `GET` | `/api/v1/notifications/unread-count` | ✅ | Unread notification count |
+| `POST` | `/api/v1/notifications/{notificationId}/read` | ✅ | Mark one as read |
+| `POST` | `/api/v1/notifications/read-all` | ✅ | Mark all as read |
+
+### ⚙️ Site Settings (`/api/SiteSettings`)
+
+> This controller has no route attribute, so it inherits `BaseApiController`'s `api/[controller]` — hence the capitalized segment.
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| `GET` | `/api/SiteSettings` | ❌ | Get current site settings |
+| `PUT` | `/api/SiteSettings` | 🔒 SuperAdmin | Update site settings |
 
 ---
 
@@ -456,6 +518,21 @@ dotnet test tests/Skill-Loop.UnitTests
 
 ---
 
+## 📚 Documentation
+
+Deeper docs live in [`docs/`](docs):
+
+| Doc | Covers |
+|-----|--------|
+| [ARCHITECTURE_GUIDE.md](docs/ARCHITECTURE_GUIDE.md) | Layer-by-layer walkthrough: entities, enums, events, behaviors, DI, caching |
+| [BACKEND_GAP_ANALYSIS.md](docs/BACKEND_GAP_ANALYSIS.md) | Feature matrix, test coverage, and known gaps |
+| [Support_Subsystem.md](docs/Support_Subsystem.md) | FAQ + support requests: endpoints, caching, email, domain rules |
+| [Chat_Subsystem.md](docs/Chat_Subsystem.md) | Real-time chat and SignalR |
+| [Course_And_Enrollment_Subsystem.md](docs/Course_And_Enrollment_Subsystem.md) | Courses, sections, lessons, enrollment, progress |
+| [explanation.md](docs/explanation.md) | High-level code map and request flows |
+
+---
+
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -468,7 +545,7 @@ dotnet test tests/Skill-Loop.UnitTests
 
 ## 📝 License
 
-This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
+This project is licensed under the **MIT License**.
 
 ---
 

@@ -121,6 +121,7 @@ public enum ErrorType
 | `Result.Failure(string)`              | `Result`    | فشل برسالة (يُحوّل لـ Error مع `ErrorType.Failure`) |
 | `Result<T>.Success(T data, message?)` | `Result<T>` | نجاح مع بيانات                                      |
 | `Result<T>.Failure(Error error)`      | `Result<T>` | فشل بخطأ واحد                                       |
+| `Result<T>.Failure(IEnumerable<Error>)` | `Result<T>` | فشل بعدة أخطاء (`Result.cs:86`)                  |
 
 **Properties**: `Succeeded`, `IsSuccess`, `IsFailure`, `Message`, `Errors`, `Data` (في `Result<T>`).
 
@@ -159,10 +160,15 @@ public abstract class BaseEntity : Entity
 ```
 Domain/Entities/
 ├── Booking/
-│   └── Booking.cs                    ← BaseEntity (حجز جلسة)
+│   ├── Booking.cs                    ← AuditableEntity (حجز جلسة)
+│   ├── BookingDomainErrors.cs        ← أخطاء الـ Domain للـ Booking
+│   └── Events/
+│       └── BookingDomainEvents.cs    ← BookingCreated / BookingCancelled
 ├── Chat/
 │   ├── Conversation.cs               ← AuditableEntity (محادثة 1-لـ-1)
-│   └── ChatMessage.cs                ← BaseEntity (رسالة واحدة)
+│   ├── ChatMessage.cs                ← BaseEntity (رسالة واحدة)
+│   └── Events/
+│       └── ChatMessageSentEvent.cs
 ├── Courses/
 │   ├── Course.cs                     ← SoftDeleteEntity (الكورس الرئيسي — Aggregate Root)
 │   ├── Category.cs                   ← AuditableEntity (التصنيف)
@@ -184,9 +190,14 @@ Domain/Entities/
 │       └── EnrollmentDomainEvents.cs
 ├── Instructors/
 │   ├── InstructorProfile.cs          ← AuditableEntity (بروفايل المدرب — Aggregate Root)
-│   └── InstructorReview.cs           ← SoftDeleteEntity (تقييم المدرب من الطلاب)
+│   ├── InstructorReview.cs           ← SoftDeleteEntity (تقييم المدرب من الطلاب)
+│   └── InstructorAvailability.cs     ← BaseEntity (مواعيد توفر المدرب)
 ├── Invitation/
-│   └── StaffInvitation.cs            ← AuditableEntity (دعوة موظف)
+│   ├── StaffInvitation.cs            ← AuditableEntity (دعوة موظف)
+│   └── Events/
+│       └── StaffInvitationCreatedEvent.cs
+├── Notifications/
+│   └── Notification.cs               ← AuditableEntity (إشعار جوه التطبيق)
 ├── OtpVerification/
 │   └── OtpVerification.cs            ← BaseEntity (كود التحقق)
 ├── Session/
@@ -197,6 +208,8 @@ Domain/Entities/
 │       └── SessionCompletedDomainEvent.cs
 ├── SiteSettings/
 │   └── SiteSettings.cs              ← BaseEntity (إعدادات الموقع)
+├── Support/
+│   └── SupportQuestion.cs            ← AuditableEntity (سؤال FAQ / استفسار دعم)
 └── Wallets/
     ├── UserWallet.cs                 ← AuditableEntity (محفظة المستخدم)
     ├── WalletTransaction.cs          ← BaseEntity (حركة مالية)
@@ -226,6 +239,7 @@ public sealed class InstructorProfile : AuditableEntity
     public int SessionsCompleted { get; private set; }
     public int CreditsEarned { get; private set; }
     public IReadOnlyCollection<InstructorReview> Reviews => _reviews.AsReadOnly();
+    public IReadOnlyCollection<InstructorAvailability> Availabilities => _availabilities.AsReadOnly();
 
     private InstructorProfile() { }
 
@@ -238,6 +252,8 @@ public sealed class InstructorProfile : AuditableEntity
     public Result AddReview(Guid learnerUserId, int rating, string? comment) { ... }
     public Result UpdateReview(Guid reviewId, Guid learnerUserId, int rating, string? comment) { ... }
     public Result RemoveReview(Guid reviewId, Guid learnerUserId) { ... }
+    public Result AddAvailability(DayOfWeek day, TimeSpan start, TimeSpan end) { ... }
+    public Result RemoveAvailability(Guid availabilityId) { ... }
     private void RecalculateRating() { ... } // حساب متوسط التقييم تلقائياً
 }
 ```
@@ -301,8 +317,10 @@ public sealed record CoursePrice
 | `CourseStatus`     | `Draft`, `Published`, `Archived`                    | حالة نشر الكورس               |
 | `EnrollmentStatus` | `Active`, `Completed`, `Cancelled`                  | حالة التسجيل في الكورس        |
 | `TransactionType`  | `CreditDeduction`, `CreditRefund`, `CreditReward`   | نوع الحركة المالية في المحفظة |
-| `SessionStatus`    | `Draft`, `Published`                                | حالة الجلسة                   |
-| `BookingStatus`    | `Confirmed`, `InProgress`, `Completed`              | حالة حجز الجلسة               |
+| `SessionStatus`    | `Draft`, `Published`, `Completed`, `Cancelled`    | حالة الجلسة                   |
+| `SessionType`      | `Online`, `Offline`                                | نوع الجلسة                     |
+| `SessionLocationType` | `Online`, `Offline`                             | مكان الجلسة (أونلاين/أوفلاين)  |
+| `BookingStatus`    | `Pending`, `Confirmed`, `InProgress`, `Completed`, `Cancelled`, `Rejected`, `NoShow` | حالة حجز الجلسة |
 | `MaterialType`     | `PDF`, `Video`, `Image`, `Document`, `Other`        | نوع الملف المرفق بالجلسة      |
 | `OtpPurpose`       | `VerifyPhone`, `EmailVerification`, `PasswordReset` | الغرض من كود التحقق           |
 
@@ -332,6 +350,9 @@ public sealed record CoursePrice
 | **Enrollment** | `LessonCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, Guid LessonId)`          | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
 | **Enrollment** | `CourseCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId)`                         | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
 | **Wallet**     | `WalletBalanceDeductedDomainEvent(Guid UserId, int AmountDeducted, int RemainingBalance)`           | `Entities/Wallets/Events/WalletDomainEvents.cs`              |
+| **Wallet**     | `WalletBalanceRefundedDomainEvent(Guid UserId, int AmountRefunded, int RemainingBalance)`          | `Entities/Wallets/Events/WalletDomainEvents.cs`              |
+| **Booking**    | `BookingCreatedDomainEvent(...)` / `BookingCancelledDomainEvent(...)`                                | `Entities/Booking/Events/BookingDomainEvents.cs`              |
+| **Chat**       | `ChatMessageSentEvent(Guid MessageId, Guid ConversationId, Guid SenderId)`                           | `Entities/Chat/Events/ChatMessageSentEvent.cs`                 |
 | **Session**    | `SessionMaterialUploadedEvent(SessionMaterial Material)`                                            | `Entities/Session/Events/SessionMaterialUploadedEvent.cs`    |
 | **Session**    | `SessionCompletedDomainEvent(Guid SessionId, Guid InstructorId, Guid LearnerUserId, int PriceInCredits)` | `Entities/Session/Events/SessionCompletedDomainEvent.cs` |
 | **Invitation** | `StaffInvitationCreatedEvent(StaffInvitation Invitation)`                                           | `Entities/Invitation/Events/StaffInvitationCreatedEvent.cs`  |
@@ -443,11 +464,15 @@ public class Permissions
 
 > **طريقة إضافة صلاحية جديدة**: أضف `nested static class` بداخل `Permissions` وأضف `const string` بداخلها. الـ Seed يلتقطها تلقائياً عبر Reflection.
 
-**Seeding** (`src/Skill-Loop.Infrastructure/Persistence/Seed/ContextSeed.cs`):
+**Seeding** (`src/Skill-Loop.Infrastructure/Persistence/Seed/ContextSeed.cs`, driven by `AddDatabaseSeeder.cs`):
 
-1. ينشئ الأدوار من `Roles.All`
-2. يجلب كل الصلاحيات من `Permissions.GetAllPermissions()` ويضيف الجديد لجدول `TbPermission`
-3. يربط كل الصلاحيات بدور `SuperAdmin` عبر جدول `TbRolePermission`
+1. `MigrateAsync()` — يطبّق الـ migrations المعلقة
+2. ينشئ الأدوار من `Roles.All`
+3. يجلب كل الصلاحيات من `Permissions.GetAllPermissions()` ويضيف الجديد لجدول `TbPermissions`
+4. يربط كل الصلاحيات بدور `SuperAdmin` عبر جدول `TbRolePermissions`
+5. ينشئ حساب الـ SuperAdmin و `SeedSiteSettingsAsync` لصف إعدادات الموقع
+
+> كل ده بيشتغل في `app.SeedDatabaseAsync()` **قبل** بناء الـ HTTP pipeline (`Program.cs`).
 
 ---
 
@@ -544,6 +569,8 @@ public static class ResultFactory
 
 ```
 Errors/
+├── Bookings/
+│   └── BookingErrors.cs
 ├── Chat/
 │   └── ChatErrors.cs
 ├── Files/
@@ -558,9 +585,14 @@ Errors/
 │   └── InstructorProfileErrors.cs
 ├── Invitations/
 │   └── InvitationErrors.cs
+├── Notifications/
+│   └── NotificationErrors.cs
 └── Sessions/
+    ├── SessionErrors.cs
     └── SessionMaterialErrors.cs
 ```
+
+> Support أخطاءه مش هنا — هو بيستخدم `Result` مع أكواد `SupportQuestion.*` جوّه الـ Handlers والـ Domain مباشرة (شوف [Support_Subsystem.md](Support_Subsystem.md)).
 
 **InstructorProfileErrors**:
 
@@ -586,7 +618,7 @@ public static class InstructorProfileErrors
 - الأخطاء الثابتة: `public static readonly Error`
 - الأخطاء الديناميكية: `public static Error MethodName(string details) => new(...)`
 - كود الخطأ: `"DOMAIN_ERROR_CODE"` بحروف كبيرة وفواصل underscores
-- الوصف: نص عربي واضح
+- الوصف: نص واضح — أغلبه بالإنجليزي (مثل `"User not found."`)، وبعضه بالعربي (زي أخطاء الدعم)
 
 ```csharp
 // مثال من UserErrors.cs
@@ -693,23 +725,28 @@ Features/
     │       └── {EventName}EventHandler.cs
     ├── DTOs/
     │   └── {Feature}Dto.cs  (DTOs مشتركة)
-    └── Shared/
+    └── Shared/  (أو Share/)
         └── {Feature}Response.cs  (اختياري)
 ```
+
+> **انحراف مقصود موجود في الكود**: الميزات دي بتستخدم ملف واحد مدمج `{Action}.cs` (الـ Command + الـ Handler + الـ Validator في نفس الملف) بدل 3 ملفات منفصلة: `Enrollments`, `Courses`, `Chat`, `Notifications`, `Bookings`/`Support` جزئياً. كمان مجلد الـ DTOs المشتركة اسمه `Share/` في `Support` و `Instructors` و `Sessions/Queries`.
 
 #### Features الموجودة حالياً
 
 | Feature                | Commands                                                                                                                                                                                                                                                                                                                  | Queries                                                                                                          | EventHandlers                                   | DTOs |
 | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---- |
-| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture, AssignPermission, RemovePermission, UpdateRolePermissions | GetAllUsers, GetMyProfile, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated                          | ✅   |
+| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, UserLogin, UserGoogleLogin, RegisterUser, VerifyEmailOtp, ResendEmailOtp, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRoleToUser, RemoveRoleFromUser, AssignPermissionToRole, RemovePermissionFromRole, UpdateRolePermissions, UpdateMyProfile, UpdateMyProfilePicture | GetAllUsers, GetMyProfile, GetUserById, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated                          | ✅   |
 | **Categories**         | CreateCategory, UpdateCategory, DeleteCategory                                                                                                                                                                                                                                                                            | GetCategories                                                                                                    | —                                               | —    |
-| **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)                          | ✅   |
+| **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (CourseInvalidationHandler)                   | ✅   |
 | **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                                               | ✅   |
-| **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                                                                                                  | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
+| **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorAvailability, RemoveInstructorAvailability, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                    | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
 | **Wallets**            | — (no buy/promo commands yet)                                                                                                                                                                                                                                                                                             | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
-| **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                                               | —    |
+| **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged, GetMySessionsPaged                                                             | —                                               | ✅ (`Queries/Share/SessionResponse.cs`) |
 | **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
-| **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                                               | ✅   |
+| **Bookings**           | CreateBooking, CancelBooking, ChangeBookingStatus, CompleteBooking (بدون endpoint في الكنترولر)                                                                                                                                                                                                                            | GetBookingById, GetMyBookings, GetSessionBookings                                                                | —                                               | —    |
+| **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | ChatMessageSent (ينشئ In-app Notification)      | ✅   |
+| **Notifications**      | MarkNotificationRead, MarkAllNotificationsRead                                                                                                                                                                                                                                                                             | GetMyNotifications, GetUnreadNotificationCount                                                                     | —                                               | ✅   |
+| **Support**            | SubmitContactForm, SendFaqAnswerEmail, CreateSupportQuestion, UpdateSupportQuestion, AnswerSupportQuestion, SetSupportQuestionPublication, DeleteSupportQuestion                                                                                                                                                       | GetPublishedSupportQuestionsPaged, GetSupportQuestionById, GetSupportQuestionsPaged, GetSupportQuestionDetails, GetMySupportQuestions | —                              | ✅ (`Share/`) |
 | **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                                               | —    |
 
 ---
@@ -723,12 +760,17 @@ Features/
 | **Cache**       | `ICacheService`            | قراءة/كتابة الكاش                    |
 | **Cache**       | `ICacheableQuery<T>`       | Query مع caching                     |
 | **Cache**       | `ICacheInvalidatorCommand` | Command يمسح الكاش                   |
-| **Client**      | `IClientContext`           | بيانات العميل (IP, User-Agent, etc.) |
+| **Client**      | `IClientContext`           | بيانات العميل (IP, User-Agent, etc.) — الواجهة في `Common/Abstractions/Web/` والتنفيذ في `Infrastructure/External/Client/` |
+| **Client**      | `IGeoLocationService`      | تحديد الموقع من الـ IP               |
+| **Client**      | `IUserAgentParser`         | تحليل الـ User-Agent                  |
 | **Email**       | `IEmailSender`             | إرسال البريد الإلكتروني              |
 | **FileStorage** | `IFileStorage`             | رفع/حذف ملفات محلياً                 |
 | **Jobs**        | `IJobScheduler`            | جدولة Hangfire jobs                  |
+| **Notifications** | `ISupportRequestNotifier` | إشعار فريق الدعم باستفسار جديد      |
+| **Notifications** | `ISupportAnswerNotifier` | إشعار المستخدم بإجابة الفريق         |
 | **Realtime**    | `IChatNotifier`            | إشعارات الشات اللحظي (SignalR)       |
 | **Routing**     | `IApplicationUrlService`   | توليد الروابط الأساسية               |
+| **Settings**    | `ISiteSettingsService`     | قراءة إعدادات الموقع                  |
 | **Storage**     | `ICourseContentStorage`    | تخزين ملفات الكورسات (Google Drive)  |
 
 #### IChatNotifier — واجهة الشات اللحظي
@@ -768,6 +810,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // Instructor Profiles
     public DbSet<InstructorProfile> InstructorProfiles => Set<InstructorProfile>();
     public DbSet<InstructorReview> InstructorReviews => Set<InstructorReview>();
+    public DbSet<InstructorAvailability> InstructorAvailabilities => Set<InstructorAvailability>();
 
     // Core
     public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
@@ -796,6 +839,10 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
 
+    // Notifications & Support
+    public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<SupportQuestion> SupportQuestions => Set<SupportQuestion>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
@@ -817,9 +864,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 | `CategorySectionLessonConfiguration.cs` | Category, Section, Lesson                                 |
 | `ChatConfigurations.cs`                 | Conversation, ChatMessage                                 |
 | `CourseConfiguration.cs`                | Course (Aggregate + Value Objects)                        |
-| `EnrollmentAndWalletConfigurations.cs`  | Enrollment, LessonProgress, UserWallet, WalletTransaction |
+| `EnrollmentAndWalletConfigurations.cs`  | Enrollment, LessonProgress, UserWallet, WalletTransaction, CourseBookmark, CourseReview |
 | `InstructorProfileConfiguration.cs`     | InstructorProfile (1-to-1 مع ApplicationUser)             |
 | `InstructorReviewConfiguration.cs`      | InstructorReview (1-لـ-متعدد مع InstructorProfile)        |
+| `InstructorAvailabilityConfiguration.cs`| InstructorAvailability (1-لـ-متعدد مع InstructorProfile)  |
+| `NotificationConfiguration.cs`          | Notification                                             |
 | `OtpVerificationConfiguration.cs`       | OtpVerification                                           |
 | `OutboxMessageConfiguration.cs`         | OutboxMessage                                             |
 | `RefreshTokenConfiguration.cs`          | RefreshToken                                              |
@@ -827,6 +876,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 | `SessionMaterialConfiguration.cs`       | SessionMaterial                                           |
 | `SiteSettingsConfiguration.cs`          | SiteSettings                                              |
 | `StaffInvitationConfiguration.cs`       | StaffInvitation                                           |
+| `SupportQuestionConfiguration.cs`       | SupportQuestion                                           |
 | `TbPermissionConfiguration.cs`          | TbPermission                                              |
 | `TbRolePermissionConfiguration.cs`      | TbRolePermission                                          |
 
@@ -911,11 +961,13 @@ public class HangfireJobScheduler : IJobScheduler
 ```
 AddInfrastructure()
   ├── AddCoreServices()         ← IDateTime, ICurrentUser, ICorrelationContext, IGeoLocationService,
-  │                                IIdentityNotificationService, IInvitationService, ISiteSettingsService
-  ├── AddCaching()              ← RedisCacheService (with MemoryCacheService fallback if Redis unavailable)
+  │                                IIdentityNotificationService, IInvitationService, ISiteSettingsService,
+  │                                IApplicationUrlService, IClientContext, IUserAgentParser,
+  │                                ISupportRequestNotifier, ISupportAnswerNotifier
+  ├── AddCaching()              ← RedisCacheService (⚠️ the MemoryCacheService fallback is commented out — see §8)
   ├── AddPersistence()          ← AppDbContext + Interceptors
   ├── AddHangfireJobs()         ← Hangfire + JobScheduler
-  ├── AddIdentityServices()     ← ASP.NET Identity + Database Seeder
+  ├── AddIdentityServices()     ← ASP.NET Identity + tokens + permissions + user management
   ├── AddJwtAuthentication()    ← JWT Bearer
   ├── AddExternalAuth()         ← Google Auth
   ├── AddMail()                 ← SMTP
@@ -924,6 +976,8 @@ AddInfrastructure()
   ├── AddBaseUrl()              ← Backend/Frontend URLs
   └── AddOtpService()           ← OTP Settings
 ```
+
+> `AddDatabaseSeeder()` **مش** جزء من سلسلة `AddInfrastructure()`. هو extension method على `IApplicationBuilder` (`AddDatabaseSeeder.cs:17`) بيتنادى مباشرة من `Program.cs:16` عبر `app.SeedDatabaseAsync()`، وده بيحصل **قبل** بناء الـ HTTP pipeline.
 
 ---
 
@@ -983,15 +1037,18 @@ Contracts/
 │   └── PaginationRequest.cs
 ├── Auth/
 │   └── ...
+├── Bookings/
+│   └── BookingRequests.cs
 ├── Categories/
 │   └── ...
 ├── Chat/
-│   └── ...
+│   └── ChatRequests.cs
 ├── Courses/
-│   └── ...
+│   └── CourseRequests.cs
 ├── Enrollments/
-│   └── ...
+│   └── EnrollmentRequests.cs
 ├── Instructors/
+│   ├── AddAvailabilityRequest.cs
 │   ├── AddInstructorReviewRequest.cs
 │   ├── ChangeInstructorApprovalStatusRequest.cs
 │   ├── CreateInstructorProfileRequest.cs
@@ -1002,19 +1059,21 @@ Contracts/
 │   └── ...
 ├── Sessions/
 │   └── ...
-├── Skills/
-│   └── ...
 ├── StaffInvitations/
 │   └── ...
+├── Support/
+│   └── SupportRequests.cs
 └── Users/
     └── ...
 ```
+
+> مفيش مجلد `Skills/` — اللي اسمه كده فيرمي في `Courses/CourseRequests.cs`.
 
 **Convention**:
 
 - اسم الكلاس: `{Action}Request`
 - يكون `sealed record` (positional أو init-only)
-- يُستخدم فقط في الـ Controller، ولا يخترق طبقة Application
+- يُستخدم فقط في الـ Controller، ولا يخترق طبقة Application — **استثناء واحد**: `SiteSettingsController.UpdateSettings` بيربط `UpdateSiteSettingsCommand` مباشرة كـ `[FromBody]`
 
 ---
 
@@ -1035,13 +1094,15 @@ Contracts/
 | `InstructorProfilesController`   | `api/instructor-profiles`   | بروفايل المدرب + التقييمات + اعتماد الإدارة          |
 | `WalletsController`              | `api/wallets`               | رصيد المحفظة + سجل الحركات المالية                   |
 | `SessionsController`             | `api/v1/sessions`           | CRUD الجلسات التعليمية                              |
-| `SessionMaterialsController`     | `api/v1/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
+| `SessionMaterialsController`     | `api/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
 | `BookingsController`             | `api/v1/bookings`           | حجز الجلسات لايف                                     |
 | `ChatController`                 | `api/v1/chat`               | المحادثات والرسائل                                  |
+| `NotificationsController`        | `api/v1/notifications`      | إشعارات المستخدم + عدد غير المقروء                   |
 | `SupportController`              | `api/support`               | الـ FAQ العام + استفسارات المستخدم المسجّل            |
 | `SupportManagementController`    | `api/support/manage`        | إدارة الاستفسارات لفريق الدعم (رد/نشر/تعديل/حذف)   |
-| `SiteSettingsController`         | `api/v1/site-settings`      | إعدادات الموقع                                      |
+| `SiteSettingsController`         | `api/SiteSettings`          | إعدادات الموقع — مفيش `[Route]`، فبيترث `api/[controller]` من `BaseApiController` |
 | `DevController`                  | `api/v1/dev`                | تطوير فقط — quick-login (محمي بـ `IsDevelopment()`) |
+| `TestFilesController`            | `api/test/files`            | endpoints اختبار الـ file storage                    |
 
 **مثال كامل — Controller Pattern**:
 
@@ -1070,7 +1131,7 @@ public class CoursesController : BaseApiController
 **القواعد**:
 
 - الـ Controller **لا يحتوي على منطق أعمال** — فقط mapping ثم `Mediator.Send()` ثم `HandleResult()`
-- Route: `[Route("api/v1/[controller]")]` على الكلاس (أو على `BaseApiController`) — **ملاحظة**: `InstructorProfilesController` و `WalletsController` حالياً يستخدمان `[Route("api/[controller]")]` بدون `/v1`، وهذا inconsistence سيتم معالجته
+- Route: `[Route("api/v1/[controller]")]` على الكلاس (أو على `BaseApiController`) — **ملاحظة**: مش كل الكنترولرات متسقة. اللي **مش** versioned: `InstructorProfilesController` (`api/instructor-profiles`)، `WalletsController` (`api/wallets`)، `SessionMaterialsController` (`api/sessions`)، `SupportController` / `SupportManagementController` (`api/support`)، `TestFilesController` (`api/test/files`)، و `SiteSettingsController` (مفيش route خالص — ورث `api/SiteSettings`)
 - كل action ترجع `Task<IResult>` (Minimal API result type)
 
 ---
@@ -1096,7 +1157,7 @@ public class CoursesController : BaseApiController
 Pipeline Order:
 1. CorrelationIdMiddleware
 2. ExceptionHandler
-3. SerilogRequestLogging
+3. UseSerilogLogging()  (extension مخصص في PipelineExtensions، مش UseSerilogRequestLogging)
 4. HTTPS Redirection
 5. CORS ("AllowFrontend")
 6. Static Files (/uploads)
@@ -1133,121 +1194,49 @@ Pipeline Order:
 ```
 UnitTests/
 ├── Common/
-│   ├── InMemoryDbContextHelper.cs       ← Helper لـ InMemory DbContext
+│   ├── InMemoryDbContextHelper.cs       ← Helper لـ InMemory DbContext (و InMemoryAppDbContext)
 │   └── MockCourseContentStorage.cs      ← Mock للـ Google Drive
+├── BackgroundJobs/
+│   └── RefreshDriveQuotaJobTests.cs
 ├── External/
 │   ├── Cache/
 │   │   └── CacheServiceTests.cs
-│   └── Notifications/
-│       ├── NotificationServiceTests.cs
-│       └── SupportNotificationContractsTests.cs   ← ثوابت ISP/DIP (reflection)
+│   ├── Email/
+│   │   ├── EmailTemplateEngineTests.cs
+│   │   └── EmailSenderTests.cs
+│   ├── FileStorage/
+│   │   └── LocalFileStorageTests.cs
+│   ├── Notifications/
+│   │   ├── NotificationServiceTests.cs
+│   │   └── SupportNotificationContractsTests.cs   ← ثوابت ISP/DIP (reflection)
+│   └── Security/
+│       └── OtpServiceTests.cs
 └── Features/
-    ├── Accounts/
-    │   ├── AccountManagement/
-    │   │   ├── Commands/
-    │   │   │   ├── ActivateUser/ActivateUserCommandHandlerTests.cs
-    │   │   │   ├── ChangePassword/ChangePasswordCommandHandlerTests.cs
-    │   │   │   ├── ForgotPassword/ForgotPasswordCommandHandlerTests.cs
-    │   │   │   ├── ResetPassword/ResetPasswordCommandHandlerTests.cs
-    │   │   │   └── UpdateMyProfile/UpdateMyAccountProfileCommandHandlerTests.cs
-    │   │   └── Queries/
-    │   │       ├── GetAllUsers/
-    │   │       │   ├── GetAllUsersQueryHandlerTests.cs
-    │   │       │   └── GetAllUsersQueryValidatorTests.cs
-    │   │       ├── GetMyProfile/GetMyAccountProfileQueryHandlerTests.cs
-    │   │       └── GetUserById/
-    │   │           ├── GetUserByIdQueryHandlerTests.cs
-    │   │           └── GetUserByIdQueryValidatorTests.cs
-    │   ├── Authentication/
-    │   │   └── Commands/
-    │   │       ├── Logout/LogoutCommandHandlerTests.cs
-    │   │       └── RefreshToken/RefreshTokenCommandHandlerTests.cs
-    │   ├── PermissionManagement/
-    │   │   └── Commands/
-    │   │       └── AssignPermissionToRole/AssignPermissionToRoleCommandHandlerTests.cs
-    │   ├── StaffAuth/
-    │   │   └── Commands/
-    │   │       └── StaffLogin/StaffLoginCommandHandlerTests.cs
-    │   └── StaffInvitations/
-    │       └── Commands/
-    │           ├── AcceptInvitation/AcceptInvitationCommandHandlerTests.cs
-    │           └── SendInvitation/SendStaffInvitationCommandHandlerTests.cs
+    ├── Accounts/                        ← AccountManagement, Authentication, PermissionManagement,
+    │                                       StaffAuth, StaffInvitations
+    ├── Bookings/                        ← BookingTests + Commands (Create/Cancel/Change/Complete) + Queries
+    ├── Categories/                      ← CategoryTests + Commands + Queries
+    ├── Chat/                            ← Commands (StartConversation, SendMessage, MarkConversationRead)
+    │                                       + Queries (GetMyConversations, GetConversationMessages)
     ├── Courses/
     │   └── CourseAggregateTests.cs
     ├── Enrollments/
     │   └── EnrollmentAndWalletTests.cs
-    ├── Instructors/
-    │   └── Commands/
-    │       ├── AddInstructorAvailability/
-    │       │   └── AddInstructorAvailabilityCommandHandlerTests.cs
-    │       ├── ChangeInstructorApprovalStatus/
-    │       │   ├── ChangeInstructorApprovalStatusCommandHandlerTests.cs
-    │       │   └── ChangeInstructorApprovalStatusCommandValidatorTests.cs
-    │       ├── CreateMyInstructorProfile/
-    │       │   └── CreateMyInstructorProfileCommandHandlerTests.cs
-    │       ├── RemoveInstructorAvailability/
-    │       │   └── RemoveInstructorAvailabilityCommandHandlerTests.cs
-    │       └── UpdateMyInstructorProfile/
-    │           └── UpdateMyInstructorProfileCommandHandlerTests.cs
-    └── Sessions/
-        ├── SessionTests.cs
-        ├── SessionMaterialTests.cs
-        ├── Commands/
-        │   ├── ChangeSessionStatus/
-        │   │   ├── ChangeSessionStatusCommandHandlerTests.cs
-        │   │   └── ChangeSessionStatusCommandValidatorTests.cs
-        │   ├── CreateSession/
-        │   │   ├── CreateSessionCommandHandlerTests.cs
-        │   │   └── CreateSessionCommandValidatorTests.cs
-        │   ├── DeleteSession/
-        │   │   ├── DeleteSessionCommandHandlerTests.cs
-        │   │   └── DeleteSessionCommandValidatorTests.cs
-        │   └── UpdateSession/
-        │       ├── UpdateSessionCommandHandlerTests.cs
-        │       └── UpdateSessionCommandValidatorTests.cs
-        ├── Queries/
-        │   ├── GetSessionById/
-        │   │   ├── GetSessionByIdQueryHandlerTests.cs
-        │   │   └── GetSessionByIdQueryValidatorTests.cs
-        │   └── GetSessionsPaged/
-        │       ├── GetSessionsPagedQueryHandlerTests.cs
-        │       └── GetSessionsPagedQueryValidatorTests.cs
-        └── Materials/
-            ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
-            └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
-    ├── Bookings/
-    │   ├── Commands/
-    │   │   ├── CancelBooking/
-    │   │   │   ├── CancelBookingCommandHandlerTests.cs
-    │   │   │   └── CancelBookingCommandValidatorTests.cs
-    │   │   ├── ChangeBookingStatus/
-    │   │   │   ├── ChangeBookingStatusCommandHandlerTests.cs
-    │   │   │   └── ChangeBookingStatusCommandValidatorTests.cs
-    │   │   ├── CompleteBooking/
-    │   │   │   ├── CompleteBookingCommandHandlerTests.cs
-    │   │   │   └── CompleteBookingCommandValidatorTests.cs
-    │   │   └── CreateBooking/
-    │   │       ├── CreateBookingCommandHandlerTests.cs
-    │   │       └── CreateBookingCommandValidatorTests.cs
-    │   └── Queries/
-    │       ├── GetBookingById/
-    │       │   └── GetBookingByIdQueryHandlerTests.cs
-    │       ├── GetMyBookings/
-    │       │   └── GetMyBookingsQueryHandlerTests.cs
-    │       └── GetSessionBookings/
-    │           └── GetSessionBookingsQueryHandlerTests.cs
-    ├── Support/
-    │   ├── SupportQuestionTests.cs              ← اختبارات الكيان
-    │   ├── SupportCacheInvalidationTests.cs      ← ثوابت بادئات الكاش لكل Command
-    │   ├── Commands/
-    │   │   ├── AnswerSupportQuestion/
-    │   │   ├── SendFaqAnswerEmail/
-    │   │   ├── SetSupportQuestionPublication/
-    │   │   └── SubmitContactForm/
-    │   └── Queries/
-    │       ├── GetMySupportQuestions/
-    │       └── GetPublishedSupportQuestionsPaged/
+    ├── Instructors/                     ← InstructorProfileTests, InstructorReviewTests,
+    │                                       Commands (Profile/Review/Approval/Availability),
+    │                                       Queries (Paged/ByUserId/FullProfile), EventHandlers
+    ├── Sessions/                        ← SessionTests, SessionMaterialTests, Commands, Queries, Materials
+    ├── SiteSettings/                    ← UpdateSiteSettings (handler + validator) + GetSiteSettings
+    ├── Support/                         ← SupportQuestionTests, SupportCacheInvalidationTests,
+    │                                       Commands (Answer, SendFaqAnswerEmail, SetPublication,
+    │                                       SubmitContactForm) + Queries (GetMySupportQuestions,
+    │                                       GetPublishedSupportQuestionsPaged)
+    └── Wallets/
+        └── EventHandlers/SessionCompleted/
+            └── CreditInstructorWalletOnSessionCompletedEventHandlerTests.cs
 ```
+
+> مفيش `Features/Notifications/` — الإشعارات مغطّاة بشكل غير مباشر عبر `ChatMessageSentEventHandler` (ومفيش اختبار مباشر لها).
 
 **Note**: `BookingTests.cs` (entity-level tests) is also present at the root level of `Features/Bookings/`.
 
@@ -1457,7 +1446,7 @@ public static class Courses
 }
 ```
 
-> الـ Seed يلتقطها تلقائياً عبر Reflection ويضيفها لجدول `TbPermission` ويربطها بـ SuperAdmin.
+> الـ Seed يلتقطها تلقائياً عبر Reflection ويضيفها لجدول `TbPermissions` ويربطها بـ SuperAdmin.
 
 ---
 
@@ -1467,22 +1456,27 @@ public static class Courses
 
 | #   | المشكلة                                      | الملف/المسار                 | التفاصيل                                                                                      |
 | --- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| 2   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
-| 3   | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore`                 | لا يوجد أي استثناء لـ `appsettings.json` في `.gitignore`.                                     |
+| 1   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. الملف نفسه **مُستثنى** في `.gitignore:488`، فالمشكلة هنا القيم في الـ working tree/local commits، لا تتبّع git. |
 
 ### 🟡 Medium
 
 | #   | المشكلة                                                           | الملف/المسار                                                                                                                                                                                |
 | --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
-| 5   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
-| 6   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
-| 7   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
+| 2   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
+| 3   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
+| 4   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 5   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
+| 6   | **`UsersController` و `StaffInvitationsController` بدون حماية**        | `//[Authorize(...)]` **مُعلّق** في `UsersController.cs:15` و `StaffInvitationsController.cs:21` → endpoints إدارة المستخدمين وإرسال الدعوات متاحة لـ anonymous لحد ما الحماية ترجع. |
+| 7   | **`RefreshDriveQuotaJob` مش مجدول**                              | `Infrastructure/BackgroundJobs/RefreshDriveQuotaJob.cs` مسجّل في DI بس مفيش `RecurringJob` بيشغّله (الـ recurring الوحيد هو `ProcessOutboxMessagesJob`) → مراقبة حصة Google Drive مش شغالة أصلاً. |
+| 8   | **`CompleteBookingCommand` مالهوش endpoint**                     | `BookingsController` بيعرض `PATCH /{id}/status` بس — الـ Command والـ Handler والـ Validator موجودين ومختبرين بس غير معرّفين في الـ API. |
 
 ### 🟢 Minor / Convention
 
-| 8   | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
-| 9   | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
+| #   | المشكلة                                                                                                                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------ |
+| 9   | **`RefreshDriveQuotaJobConstants.CronExpression` مش مستخدم** — الـ constant معرّف بس مفيش أي كود بيستهلكه.                        |
+| 10  | **بقايا ملفات merge reject** لازم تتحذف: `src/Skill-Loop.Domain/Entities/Chat/ChatMessage.cs.rej` و `tests/Skill-Loop.UnitTests/Common/InMemoryDbContextHelper.cs.rej`. |
+| 11  | **مجلد `uploads/` غير مُضاف للـ `.gitignore`** — `Logs/` (سطر 486) و `UploadedFiles/` (سطر 485) و `appsettings.json` (سطر 488) و `*.user` (سطر 12) كلهم متغطّيين فعلاً؛ `uploads/` وحده هو الفاتح. |
 
 ---
 
@@ -1509,7 +1503,7 @@ public static class Courses
 | **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`, `InstructorAvailability`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus`, `AddInstructorAvailability`, `RemoveInstructorAvailability` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
 | **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. |
 | **Booking**                    | ✅ مكتمل | Entity (rich aggregate with domain events + lifecycle) + `CreateBooking`, `CancelBooking`, `CompleteBooking`, `ChangeBookingStatus` + `GetBookingById`, `GetMyBookings`, `GetSessionBookings` + `BookingsController` |
-| **Support**                      | ✅ مكتمل | Entity (`SupportQuestion`) + `SubmitContactForm`, `CreateSupportQuestion`, `AnswerSupportQuestion`, `UpdateSupportQuestion`, `SetSupportQuestionPublication`, `DeleteSupportQuestion`, `SendFaqAnswerEmail` + `GetPublishedSupportQuestionsPaged`, `GetSupportQuestionById`, `GetMySupportQuestions`, `GetSupportQuestionsPaged`, `GetSupportQuestionDetails` + `SupportNotificationService` + قالبَي `ContactFormConfirmation`/`SupportNotification`/`AnswerNotification` — تفاصيل في [Support_Subsystem.md](Support_Subsystem.md) |
+| **Support**                      | ✅ مكتمل | Entity (`SupportQuestion`) + `SubmitContactForm`, `CreateSupportQuestion`, `AnswerSupportQuestion`, `UpdateSupportQuestion`, `SetSupportQuestionPublication`, `DeleteSupportQuestion`, `SendFaqAnswerEmail` + `GetPublishedSupportQuestionsPaged`, `GetSupportQuestionById`, `GetMySupportQuestions`, `GetSupportQuestionsPaged`, `GetSupportQuestionDetails` + `SupportNotificationService` — 3 قوالب إيميل: `ContactFormConfirmation`, `SupportNotification`, `AnswerNotification` — تفاصيل في [Support_Subsystem.md](Support_Subsystem.md) |
 | **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
 | **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService` + `SupportNotificationService`                                                                                     |
 | **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
