@@ -12,6 +12,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
@@ -40,8 +41,8 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // الكورسات والمحتوى
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Course> Courses => Set<Course>();
-    public DbSet<Section> Sections => Set<Section>(); // تمت الإضافة
-    public DbSet<Lesson> Lessons => Set<Lesson>();    // تمت الإضافة
+    public DbSet<Section> Sections => Set<Section>();
+    public DbSet<Lesson> Lessons => Set<Lesson>();
     public DbSet<CourseBookmark> CourseBookmarks => Set<CourseBookmark>();
     public DbSet<CourseReview> CourseReviews => Set<CourseReview>();
 
@@ -57,18 +58,23 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
     public DbSet<Notification> Notifications => Set<Notification>();
 
+    // 📞 الدعم الفني
+    public DbSet<SupportQuestion> SupportQuestions => Set<SupportQuestion>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
 
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
         foreach (var entityType in builder.Model.GetEntityTypes()
-    .Where(e => typeof(BaseEntity).IsAssignableFrom(e.ClrType)))
+            .Where(e => typeof(BaseEntity).IsAssignableFrom(e.ClrType)))
         {
             builder.Entity(entityType.ClrType)
                 .Property(nameof(BaseEntity.Id))
                 .ValueGeneratedNever();
         }
+
         builder.ApplySoftDeleteGlobalFilters();
     }
 }

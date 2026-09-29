@@ -12,6 +12,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Collections.Generic;
 using System.Linq;
@@ -55,6 +56,8 @@ public static class InMemoryDbContextHelper
         public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Conversations;
         public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.ChatMessages;
         public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => _dbContext.Notifications;
+
+        public IQueryable<SupportQuestion> SupportQuestions => _dbContext.SupportQuestions;
 
         public IQueryable<InstructorProfile> InstructorProfiles => _dbContext.InstructorProfiles;
 

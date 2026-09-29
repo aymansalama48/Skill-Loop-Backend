@@ -42,7 +42,7 @@ erDiagram
         int Credits "Value Object: CoursePrice"
         int Level "CourseLevel Enum"
         int Status "CourseStatus Enum"
-        decimal AverageRating "Value Object: CourseRating"
+        double AverageRating "Value Object: CourseRating (float(3))"
         int TotalReviews
         Guid InstructorId
         string InstructorName
@@ -60,7 +60,7 @@ erDiagram
         Guid CourseId FK
         int CreditsPaid
         int Status "EnrollmentStatus Enum"
-        decimal ProgressPercentage
+        double ProgressPercentage "float(5), HasPrecision(5,2)"
         Guid LastWatchedLessonId
         datetime EnrolledAt
     }
@@ -89,6 +89,8 @@ erDiagram
 | `POST` | `/api/v1/courses/{id}/reviews` | Submit a course star rating & review | Authorized |
 | `POST` | `/api/v1/courses/{id}/bookmark` | Toggle course bookmark in user list | Authorized |
 
+> **Scope note**: this is not full CRUD. There is no update-course or delete-course endpoint (and no `UpdateCourse`/`DeleteCourse` command), and no add-section endpoint — only `AddLesson` inside an existing section.
+
 ### 3.2 Enrollment Endpoints (`api/v1/enrollments`)
 
 | Method | Endpoint | Description | Auth |
@@ -113,7 +115,7 @@ erDiagram
 - **Categories**: Key format `categories:all` (TTL: 1h sliding, 24h absolute).
 
 ### Event-Driven Invalidation
-The subsystem implements domain event notifications wrapped via `DomainEventNotification<TEvent>` and processed by [`CourseInvalidationHandler`](file:///d:/Skill-Loop-Backend/Skill-Loop-Backend/src/Skill-Loop.Application/Features/Courses/EventHandlers/CourseInvalidationHandler.cs):
+The subsystem implements domain event notifications wrapped via `DomainEventNotification<TEvent>` and processed by [`CourseInvalidationHandler`](../src/Skill-Loop.Application/Features/Courses/EventHandlers/CourseInvalidationHandler.cs):
 1. `CourseCreatedDomainEvent` -> Invalidates `courses:paged:*` & `categories:all`.
 2. `CourseUpdatedDomainEvent` -> Invalidates `courses:detail:{courseId}` & `courses:paged:*`.
 3. `CoursePublishedDomainEvent` -> Invalidates `courses:detail:{courseId}`, `courses:paged:*`, & `categories:all`.

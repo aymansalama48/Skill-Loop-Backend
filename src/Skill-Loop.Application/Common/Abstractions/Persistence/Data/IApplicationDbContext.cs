@@ -10,6 +10,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Linq.Expressions;
 
@@ -44,9 +45,17 @@ public interface IApplicationDbContext
     public IQueryable<Booking> Bookings { get; }
     public IQueryable<SessionMaterial> SessionMaterials { get; }
 
+    // 💬 الشات
     public IQueryable<Conversation> Conversations { get; }
     public IQueryable<ChatMessage> ChatMessages { get; }
+
+    // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Notification> Notifications { get; }
+
+    // 📞 الدعم الفني
+    public IQueryable<SupportQuestion> SupportQuestions { get; }
+
+
 
     // ==============================
     // 2. عمليات الكتابة والإضافة والحذف

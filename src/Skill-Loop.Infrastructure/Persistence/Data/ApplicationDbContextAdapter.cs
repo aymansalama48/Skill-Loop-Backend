@@ -11,6 +11,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Linq.Expressions;
 
@@ -36,8 +37,8 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // الكورسات والمحتوى
     public IQueryable<Category> Categories => context.Categories;
     public IQueryable<Course> Courses => context.Courses;
-    public IQueryable<Section> Sections => context.Sections; // تمت الإضافة
-    public IQueryable<Lesson> Lessons => context.Lessons;    // تمت الإضافة
+    public IQueryable<Section> Sections => context.Sections;
+    public IQueryable<Lesson> Lessons => context.Lessons;
     public IQueryable<CourseBookmark> CourseBookmarks => context.CourseBookmarks;
     public IQueryable<CourseReview> CourseReviews => context.CourseReviews;
 
@@ -49,9 +50,15 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<Booking> Bookings => context.Bookings;
     public IQueryable<SessionMaterial> SessionMaterials => context.SessionMaterials;
 
+    // 💬 الشات
     public IQueryable<Conversation> Conversations => context.Conversations;
     public IQueryable<ChatMessage> ChatMessages => context.ChatMessages;
+
+    // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Notification> Notifications => context.Notifications;
+
+    // 📞 الدعم الفني
+    public IQueryable<SupportQuestion> SupportQuestions => context.SupportQuestions;
 
     // ==============================
     // 2. عمليات الكتابة (عنصر واحد ومجموعة)
