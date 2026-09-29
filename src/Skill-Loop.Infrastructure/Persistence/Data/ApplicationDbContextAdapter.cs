@@ -49,11 +49,13 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => context.Conversations;
     public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => context.ChatMessages;
 
-    public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions;
+    // 🔔 إشعارات جوه التطبيق (In-App)
+    public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => context.Notifications;
+    public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions; 
 
 
     // ==============================
-    // عمليات الكتابة (عنصر واحد)
+    // 2. عمليات الكتابة (عنصر واحد)
     // ==============================
     public void Add<TEntity>(TEntity entity) where TEntity : class
     {
@@ -71,7 +73,7 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     }
 
     // ==============================
-    // 👇 عمليات الكتابة (مجموعة Range)
+    // عمليات الكتابة (مجموعة Range)
     // ==============================
     public void AddRange<TEntity>(IEnumerable<TEntity> entities) where TEntity : class
     {
@@ -88,7 +90,6 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
         context.Set<TEntity>().RemoveRange(entities);
     }
 
-    // هتضيف دول جوه الكلاس (وطبعاً لازم يكون فيه using Microsoft.EntityFrameworkCore;)
     public Task<bool> AnyAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
     {
         return query.AnyAsync(cancellationToken);
@@ -123,6 +124,7 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     {
         return query.AsNoTracking();
     }
+
     // ==============================
     // 3. حفظ التغييرات
     // ==============================
