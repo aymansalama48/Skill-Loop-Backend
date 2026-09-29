@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using Skill_Loop.Infrastructure.Persistence.Data;
 namespace Skill_Loop.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929161728_AddSupportQuestions")]
+    partial class AddSupportQuestions
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1105,9 +1108,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<DateTime?>("AnsweredAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<Guid?>("AskedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
                     b.Property<string>("Category")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -1157,8 +1157,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .HasColumnType("nvarchar(100)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("AskedByUserId");
 
                     b.HasIndex("Category");
 
