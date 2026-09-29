@@ -6,6 +6,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using System.Linq.Expressions;
 
 namespace Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -42,6 +43,9 @@ public interface IApplicationDbContext
 
     // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications { get; }
+
+    // 📞 الدعم الفني
+    public IQueryable<SupportQuestion> SupportQuestions { get; }
 
 
     // 2. عمليات الكتابة والإضافة والحذف (Generic Methods)

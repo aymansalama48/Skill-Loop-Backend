@@ -7,6 +7,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
 using System.Reflection;
@@ -51,6 +52,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
     // 🔔 إشعارات جوه التطبيق (In-App)
     public DbSet<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
+
+    // 📞 الدعم الفني
+    public DbSet<SupportQuestion> SupportQuestions => Set<SupportQuestion>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

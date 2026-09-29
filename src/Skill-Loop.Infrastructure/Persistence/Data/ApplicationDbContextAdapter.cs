@@ -9,6 +9,7 @@ using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Linq.Expressions;
 using System.Numerics;
@@ -52,6 +53,9 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => context.Notifications;
     public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions; 
+
+    // 📞 الدعم الفني
+    public IQueryable<SupportQuestion> SupportQuestions => context.SupportQuestions; 
 
 
     // ==============================
