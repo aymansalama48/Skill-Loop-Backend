@@ -8,6 +8,8 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Api.Controllers;
 
+[Route("api/v1/[controller]")]
+
 public class SiteSettingsController : BaseApiController
 {
     /// <summary>

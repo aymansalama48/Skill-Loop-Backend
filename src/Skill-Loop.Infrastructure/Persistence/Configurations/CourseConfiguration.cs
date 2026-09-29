@@ -28,37 +28,24 @@ public sealed class CourseConfiguration : IEntityTypeConfiguration<Course>
             .IsRequired()
             .HasMaxLength(150);
 
-        // Value Object: Price
-        builder.OwnsOne(c => c.Price, price =>
-        {
-            price.Property(p => p.Credits)
-                .HasColumnName("Credits")
-                .IsRequired();
-        });
+        builder.Property(c => c.Credits)
+            .HasColumnName("Credits")
+            .IsRequired();
 
-        // Value Object: Rating
-        builder.OwnsOne(c => c.Rating, rating =>
-        {
-            rating.Property(r => r.AverageRating)
-                .HasColumnName("AverageRating")
-                .HasPrecision(3, 2)
-                .HasDefaultValue(0.0);
+        builder.Property(c => c.AverageRating)
+            .HasColumnName("AverageRating")
+            .HasPrecision(3, 2)
+            .HasDefaultValue(0.0);
 
-            rating.Property(r => r.TotalReviews)
-                .HasColumnName("TotalReviews")
-                .HasDefaultValue(0);
-        });
+        builder.Property(c => c.TotalReviews)
+            .HasColumnName("TotalReviews")
+            .HasDefaultValue(0);
 
-        // Value Object collection: Attachments (Stored as JSON / owned)
-        builder.OwnsMany(c => c.Attachments, attachment =>
-        {
-            attachment.ToTable("CourseAttachments");
-            attachment.WithOwner().HasForeignKey("CourseId");
-            attachment.Property<Guid>("Id").ValueGeneratedOnAdd();
-            attachment.HasKey("Id");
-            attachment.Property(a => a.FileName).HasMaxLength(256).IsRequired();
-            attachment.Property(a => a.StorageUrl).HasMaxLength(1000).IsRequired();
-        });
+        // CourseMaterials
+        builder.HasMany(c => c.Attachments)
+            .WithOne(m => m.Course)
+            .HasForeignKey(m => m.CourseId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Relationships
         builder.HasOne(c => c.Category)

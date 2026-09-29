@@ -1,14 +1,15 @@
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Application.Features.Bookings.Commands.CompleteBooking;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Sessions;
-using Skill_Loop.Domain.Entities.Wallets;
 using Skill_Loop.Domain.Entities.Sessions.Events;
+using Skill_Loop.Domain.Entities.Wallets;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
@@ -24,12 +25,13 @@ public class CompleteBookingCommandHandlerTests
     private readonly IApplicationDbContext _dbContext;
     private readonly Mock<ICurrentUser> _currentUser;
     private readonly CompleteBookingCommandHandler _handler;
+    private readonly IDateTime _dateTime;
 
     public CompleteBookingCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
         _currentUser = new Mock<ICurrentUser>();
-        _handler = new CompleteBookingCommandHandler(_dbContext, _currentUser.Object);
+        _handler = new CompleteBookingCommandHandler(_dbContext, _currentUser.Object, _dateTime);
     }
 
     private async Task<(Session Session, Booking Booking, Guid InstructorId)> SeedAsync(int credits = 40)

@@ -1,26 +1,8 @@
-using FluentValidation;
-using Skill_Loop.Application.Common.Abstractions.Messaging;
+﻿using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.AddCourseReview;
-
-public sealed record AddCourseReviewCommand(
-    Guid CourseId,
-    Guid UserId,
-    int Stars,
-    string? Comment) : ICommand;
-
-public sealed class AddCourseReviewCommandValidator : AbstractValidator<AddCourseReviewCommand>
-{
-    public AddCourseReviewCommandValidator()
-    {
-        RuleFor(x => x.CourseId).NotEmpty();
-        RuleFor(x => x.UserId).NotEmpty();
-        RuleFor(x => x.Stars).InclusiveBetween(1, 5).WithMessage("Rating must be between 1 and 5 stars.");
-        RuleFor(x => x.Comment).MaximumLength(1000);
-    }
-}
 
 public sealed class AddCourseReviewCommandHandler : ICommandHandler<AddCourseReviewCommand>
 {

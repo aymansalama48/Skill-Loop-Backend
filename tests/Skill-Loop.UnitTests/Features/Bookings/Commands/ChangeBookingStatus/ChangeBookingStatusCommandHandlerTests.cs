@@ -1,6 +1,7 @@
 namespace Skill_Loop.UnitTests.Features.Bookings.Commands.ChangeBookingStatus;
 
 using FluentAssertions;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Commands.ChangeBookingStatus;
 using Skill_Loop.Domain.Entities.Booking;
@@ -8,6 +9,7 @@ using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.Sessions.Events;
 using Skill_Loop.Domain.Entities.Wallets;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Infrastructure.Core;
 using Skill_Loop.UnitTests.Common;
 using System;
 using System.Linq;
@@ -19,11 +21,13 @@ public class ChangeBookingStatusCommandHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ChangeBookingStatusCommandHandler _handler;
+    private readonly IDateTime _dateTime;
 
     public ChangeBookingStatusCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new ChangeBookingStatusCommandHandler(_dbContext);
+        _handler = new ChangeBookingStatusCommandHandler(_dbContext, _dateTime);
+        _dateTime = new DateTimeProvider();
     }
 
     private async Task<(Session Session, Booking Booking, Guid LearnerId, Guid InstructorId)> SeedAsync(int credits = 30)
