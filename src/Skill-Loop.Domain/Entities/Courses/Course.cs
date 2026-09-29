@@ -170,13 +170,24 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
-    public void Publish()
+    public Result Publish()
     {
+        if (string.IsNullOrWhiteSpace(ThumbnailUrl))
+            return Result.Failure(new Error("Course.MissingThumbnail", "Cannot publish a course without a thumbnail.", ErrorType.Validation));
+
+        if (_sections.Count == 0)
+            return Result.Failure(new Error("Course.NoSections", "Cannot publish a course without any sections.", ErrorType.Validation));
+
+        if (_sections.Any(s => s.Lessons.Count == 0))
+            return Result.Failure(new Error("Course.EmptySections", "Cannot publish a course with empty sections.", ErrorType.Validation));
+
         if (Status != CourseStatus.Published)
         {
             Status = CourseStatus.Published;
             AddDomainEvent(new CoursePublishedDomainEvent(Id, Title));
         }
+        
+        return Result.Success();
     }
 
     public void Archive()

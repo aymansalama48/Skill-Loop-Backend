@@ -35,5 +35,12 @@ public sealed record GetCoursesRequest(
     CourseSortOption SortBy = CourseSortOption.Newest);
 
 
-
 public sealed record AddSectionRequest(string Title, int OrderIndex);
+
+public sealed record UpdateCourseDetailsRequest(
+    string Title,
+    string Description,
+    string ThumbnailUrl,
+    int Credits,
+    CourseLevel Level,
+    Guid CategoryId);

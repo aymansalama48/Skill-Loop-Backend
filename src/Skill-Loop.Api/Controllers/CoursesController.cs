@@ -11,6 +11,9 @@ using Skill_Loop.Application.Features.Courses.Commands.PublishCourse;
 using Skill_Loop.Application.Features.Courses.Commands.ToggleCourseBookmark;
 using Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 using Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
+using Skill_Loop.Application.Features.Courses.Commands.DeleteCourse;
+using Skill_Loop.Application.Features.Courses.Commands.ArchiveCourse;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateCourseDetails;
 using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
@@ -188,6 +191,53 @@ public class CoursesController : BaseApiController
     {
         var userId = _currentUser.UserId ?? Guid.Empty;
         var command = new ToggleCourseBookmarkCommand(userId, id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل تفاصيل الكورس
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateCourseDetails(
+        Guid id,
+        [FromBody] UpdateCourseDetailsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateCourseDetailsCommand(
+            id,
+            request.Title,
+            request.Description,
+            request.ThumbnailUrl,
+            request.Credits,
+            request.Level,
+            request.CategoryId);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// أرشفة الكورس (تغيير حالته إلى Archived)
+    /// </summary>
+    [HttpPost("{id:guid}/archive")]
+    [Authorize]
+    public async Task<IResult> ArchiveCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new ArchiveCourseCommand(id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف الكورس (Soft Delete)
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IResult> DeleteCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteCourseCommand(id);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
