@@ -148,6 +148,118 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
+    public Result UpdateSection(Guid sectionId, string title, int orderIndex)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+
+        if (string.IsNullOrWhiteSpace(title))
+            return Result.Failure(new Error("Section.EmptyTitle", "Section title is required.", ErrorType.Validation));
+
+        section.UpdateDetails(title, orderIndex);
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result RemoveSection(Guid sectionId)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+
+        // Decrease totals
+        foreach (var lesson in section.Lessons)
+        {
+            TotalLessonsCount--;
+            TotalDuration -= lesson.Duration;
+        }
+
+        _sections.Remove(section);
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result ReorderSections(Dictionary<Guid, int> sectionOrders)
+    {
+        foreach (var section in _sections)
+        {
+            if (sectionOrders.TryGetValue(section.Id, out int newOrderIndex))
+            {
+                section.UpdateOrder(newOrderIndex);
+            }
+        }
+        
+        _sections.Sort((a, b) => a.OrderIndex.CompareTo(b.OrderIndex));
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result UpdateLesson(Guid sectionId, Guid lessonId, string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+
+        var lesson = section.Lessons.FirstOrDefault(l => l.Id == lessonId);
+        if (lesson is null)
+            return Result.Failure(new Error("Lesson.NotFound", "Lesson does not exist.", ErrorType.NotFound));
+
+        if (string.IsNullOrWhiteSpace(videoUrl))
+            return Result.Failure(new Error("Lesson.EmptyVideoUrl", "Video URL is required.", ErrorType.Validation));
+
+        if (duration <= TimeSpan.Zero)
+            return Result.Failure(new Error("Lesson.InvalidDuration", "Duration must be greater than zero.", ErrorType.Validation));
+
+        // Update totals
+        TotalDuration = TotalDuration - lesson.Duration + duration;
+
+        lesson.UpdateDetails(title, videoUrl, duration, streamingResolution, externalProviderId, orderIndex, isPreviewable);
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result RemoveLesson(Guid sectionId, Guid lessonId)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+
+        var lesson = section.Lessons.FirstOrDefault(l => l.Id == lessonId);
+        if (lesson is null)
+            return Result.Failure(new Error("Lesson.NotFound", "Lesson does not exist.", ErrorType.NotFound));
+
+        section.RemoveLesson(lesson);
+        
+        TotalLessonsCount--;
+        TotalDuration -= lesson.Duration;
+
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result ReorderLessons(Guid sectionId, Dictionary<Guid, int> lessonOrders)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+
+        foreach (var lesson in section.Lessons)
+        {
+            if (lessonOrders.TryGetValue(lesson.Id, out int newOrderIndex))
+            {
+                lesson.UpdateOrder(newOrderIndex);
+            }
+        }
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
     public Result AddAttachment(CourseMaterial attachment)
     {
         _attachments.Add(attachment);

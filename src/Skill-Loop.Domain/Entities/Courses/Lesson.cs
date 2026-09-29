@@ -34,4 +34,20 @@ public sealed class Lesson : BaseEntity
         };
 
     public void AddResource(LessonMaterial attachment) => _resources.Add(attachment);
+
+    internal void UpdateDetails(string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable)
+    {
+        Title = title.Trim();
+        VideoUrl = videoUrl;
+        Duration = duration;
+        StreamingResolution = streamingResolution;
+        ExternalProviderId = externalProviderId;
+        OrderIndex = orderIndex;
+        IsPreviewable = isPreviewable;
+    }
+
+    internal void UpdateOrder(int orderIndex)
+    {
+        OrderIndex = orderIndex;
+    }
 }

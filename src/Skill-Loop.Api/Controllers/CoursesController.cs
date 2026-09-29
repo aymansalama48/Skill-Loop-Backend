@@ -14,6 +14,12 @@ using Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
 using Skill_Loop.Application.Features.Courses.Commands.DeleteCourse;
 using Skill_Loop.Application.Features.Courses.Commands.ArchiveCourse;
 using Skill_Loop.Application.Features.Courses.Commands.UpdateCourseDetails;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateSection;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveSection;
+using Skill_Loop.Application.Features.Courses.Commands.ReorderSections;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateLesson;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveLesson;
+using Skill_Loop.Application.Features.Courses.Commands.ReorderLessons;
 using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
@@ -238,6 +244,112 @@ public class CoursesController : BaseApiController
     public async Task<IResult> DeleteCourse(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeleteCourseCommand(id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل قسم (Section)
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateSection(
+        Guid id, 
+        Guid sectionId, 
+        [FromBody] UpdateSectionRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateSectionCommand(id, sectionId, request.Title, request.OrderIndex);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف قسم (Section)
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveSection(
+        Guid id, 
+        Guid sectionId, 
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveSectionCommand(id, sectionId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إعادة ترتيب الأقسام
+    /// </summary>
+    [HttpPut("{id:guid}/sections/reorder")]
+    [Authorize]
+    public async Task<IResult> ReorderSections(
+        Guid id, 
+        [FromBody] ReorderSectionsRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new ReorderSectionsCommand(id, request.SectionOrders);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل درس (Lesson)
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateLesson(
+        Guid id, 
+        Guid sectionId, 
+        Guid lessonId, 
+        [FromBody] UpdateLessonRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateLessonCommand(
+            id, 
+            sectionId, 
+            lessonId, 
+            request.Title, 
+            request.VideoUrl, 
+            request.Duration, 
+            request.StreamingResolution, 
+            request.ExternalProviderId, 
+            request.OrderIndex, 
+            request.IsPreviewable);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف درس (Lesson)
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveLesson(
+        Guid id, 
+        Guid sectionId, 
+        Guid lessonId, 
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveLessonCommand(id, sectionId, lessonId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إعادة ترتيب الدروس داخل القسم
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}/lessons/reorder")]
+    [Authorize]
+    public async Task<IResult> ReorderLessons(
+        Guid id, 
+        Guid sectionId, 
+        [FromBody] ReorderLessonsRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new ReorderLessonsCommand(id, sectionId, request.LessonOrders);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
