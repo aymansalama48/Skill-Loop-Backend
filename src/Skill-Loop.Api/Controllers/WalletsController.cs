@@ -7,7 +7,7 @@ using Skill_Loop.Application.Features.Wallets.Queries.GetMyWalletTransactionsPag
 
 namespace Skill_Loop.Api.Controllers;
 
-[Route("api/wallets")]
+[Route("api/v1/[controller]")]
 [Authorize] // المحفظة دائماً محمية وتخص المستخدم الحالي
 public class WalletsController : BaseApiController
 {

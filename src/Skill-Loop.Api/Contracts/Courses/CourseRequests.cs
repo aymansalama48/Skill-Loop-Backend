@@ -33,3 +33,7 @@ public sealed record GetCoursesRequest(
     int? MaxCredits = null,
     double? MinRating = null,
     CourseSortOption SortBy = CourseSortOption.Newest);
+
+
+
+public sealed record AddSectionRequest(string Title, int OrderIndex);

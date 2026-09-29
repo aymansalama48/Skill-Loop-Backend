@@ -5,7 +5,7 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Categories.Commands.DeleteCategory;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Courses;
-using Skill_Loop.Domain.Entities.Courses.ValueObjects;
+
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System.Threading;
@@ -40,12 +40,11 @@ public class DeleteCategoryCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCategoryHasCourses_ReturnsConflictFailure()
     {
-        var price = CoursePrice.Create(50).Data!;
         var category = Category.Create("Programming", "programming").Data!;
         _dbContext.Add(category);
 
         var course = Course.Create(
-            "C#", "Desc", "https://img.png", price, CourseLevel.Beginner,
+            "C#", "Desc", "https://img.png", 50, CourseLevel.Beginner,
             Guid.NewGuid(), "Instructor", category.Id).Data!;
         _dbContext.Add(course);
         await _dbContext.SaveChangesAsync(CancellationToken.None);

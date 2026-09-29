@@ -13,7 +13,7 @@ using Skill_Loop.Application.Features.Sessions.Materials.Queries.GetSessionMater
 namespace Skill_Loop.Api.Controllers;
 
 [Authorize]
-[Route("api/sessions")]
+[Route("api/v1/[controller]")]
 public sealed class SessionMaterialsController(
     ICourseContentStorage courseContentStorage) : BaseApiController
 {

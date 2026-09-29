@@ -5,11 +5,13 @@ using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Features.Courses.Commands.AddCourseReview;
 using Skill_Loop.Application.Features.Courses.Commands.AddLesson;
+using Skill_Loop.Application.Features.Courses.Commands.AddSection; // تمت إضافة الـ Namespace هنا
 using Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 using Skill_Loop.Application.Features.Courses.Commands.PublishCourse;
 using Skill_Loop.Application.Features.Courses.Commands.ToggleCourseBookmark;
 using Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 using Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
 
@@ -24,7 +26,7 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// استرجاع الكورسات مع البحث والفلترة والترتيب والصفحات المدعومة بالكاش
+    /// استرجاع الكورسات المنشورة فقط (الكتالوج الخاص بالطلاب)
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
@@ -39,7 +41,8 @@ public class CoursesController : BaseApiController
             Level = request.Level,
             MaxCredits = request.MaxCredits,
             MinRating = request.MinRating,
-            SortBy = request.SortBy
+            SortBy = request.SortBy,
+            Status = Skill_Loop.Domain.Enums.CourseStatus.Published // ثابت: بيجيب المنشور بس
         };
 
         var result = await Mediator.Send(query, cancellationToken);
@@ -47,7 +50,32 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// استرجac تفاصيل الكورس ومحتوى الدروس (Syllabus)
+    /// استرجاع الكورسات المسودة (Drafts) الخاصة بالمدرب الحالي فقط
+    /// </summary>
+    [HttpGet("drafts")]
+    [Authorize]
+    public async Task<IResult> GetMyDraftCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
+    {
+        var query = new GetCoursesPagedQuery
+        {
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            SearchTerm = request.SearchTerm,
+            CategoryId = request.CategoryId,
+            Level = request.Level,
+            MaxCredits = request.MaxCredits,
+            MinRating = request.MinRating,
+            SortBy = request.SortBy,
+            Status = CourseStatus.Draft, // ثابت: بيجيب المسودات بس
+            InstructorId = _currentUser.UserId // أمان: عشان المدرب ميشوفش مسودات غيره
+        };
+
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع تفاصيل الكورس ومحتوى الدروس (Syllabus)
     /// </summary>
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
@@ -83,13 +111,16 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// نشر الكورس ليصبح متاحاً للطلاب في الكتالوج
+    /// إضافة قسم جديد (Section) داخل الكورس
     /// </summary>
-    [HttpPost("{id:guid}/publish")]
+    [HttpPost("{id:guid}/sections")]
     [Authorize]
-    public async Task<IResult> PublishCourse(Guid id, CancellationToken cancellationToken)
+    public async Task<IResult> AddSection(
+        Guid id,
+        [FromBody] AddSectionRequest request,
+        CancellationToken cancellationToken)
     {
-        var command = new PublishCourseCommand(id);
+        var command = new AddSectionCommand(id, request.Title, request.OrderIndex);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
@@ -116,6 +147,18 @@ public class CoursesController : BaseApiController
             request.StreamingResolution,
             request.ExternalProviderId);
 
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// نشر الكورس ليصبح متاحاً للطلاب في الكتالوج
+    /// </summary>
+    [HttpPost("{id:guid}/publish")]
+    [Authorize]
+    public async Task<IResult> PublishCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new PublishCourseCommand(id);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

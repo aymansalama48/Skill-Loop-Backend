@@ -64,6 +64,10 @@ public static class InMemoryDbContextHelper
 
         public IQueryable<InstructorAvailability> InstructorAvailabilities => _dbContext.InstructorAvailabilities;
 
+        public IQueryable<Section> Sections => throw new NotImplementedException();
+
+        public IQueryable<Lesson> Lessons => throw new NotImplementedException();
+
         public void Add<TEntity>(TEntity entity) where TEntity : class => _dbContext.Add(entity);
         public void Update<TEntity>(TEntity entity) where TEntity : class => _dbContext.Update(entity);
         public void Remove<TEntity>(TEntity entity) where TEntity : class => _dbContext.Remove(entity);

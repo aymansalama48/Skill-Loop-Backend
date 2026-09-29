@@ -1,11 +1,13 @@
 namespace Skill_Loop.UnitTests.Features.Bookings.Commands.CreateBooking;
 
 using FluentAssertions;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Commands.CreateBooking;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.Wallets;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Infrastructure.Core;
 using Skill_Loop.UnitTests.Common;
 using System;
 using System.Linq;
@@ -17,11 +19,12 @@ public class CreateBookingCommandHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly CreateBookingCommandHandler _handler;
-
+    private readonly IDateTime _dateTime;
     public CreateBookingCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new CreateBookingCommandHandler(_dbContext);
+        _handler = new CreateBookingCommandHandler(_dbContext, _dateTime);
+        _dateTime = new DateTimeProvider();
     }
 
     private async Task<Session> SeedPublishedSessionAsync(

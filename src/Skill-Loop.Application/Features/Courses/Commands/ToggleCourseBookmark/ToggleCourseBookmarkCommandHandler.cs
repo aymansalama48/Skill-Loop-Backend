@@ -1,11 +1,9 @@
-using Skill_Loop.Application.Common.Abstractions.Messaging;
+﻿using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Courses;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.ToggleCourseBookmark;
-
-public sealed record ToggleCourseBookmarkCommand(Guid UserId, Guid CourseId) : ICommand<bool>;
 
 public sealed class ToggleCourseBookmarkCommandHandler : ICommandHandler<ToggleCourseBookmarkCommand, bool>
 {

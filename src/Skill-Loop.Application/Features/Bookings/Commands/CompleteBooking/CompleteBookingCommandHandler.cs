@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -9,7 +10,8 @@ namespace Skill_Loop.Application.Features.Bookings.Commands.CompleteBooking;
 
 public sealed class CompleteBookingCommandHandler(
     IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : ICommandHandler<CompleteBookingCommand, bool>
+    ICurrentUser _currentUser,
+    IDateTime _dateTime) : ICommandHandler<CompleteBookingCommand, bool>
 {
     public async Task<Result<bool>> Handle(CompleteBookingCommand request, CancellationToken cancellationToken)
     {
@@ -33,7 +35,7 @@ public sealed class CompleteBookingCommandHandler(
 
         // 4. إنهاء الحجز — بيحوّل الحالة لـ Completed ويرفع
         //    SessionCompletedDomainEvent اللي بيزود محفظة المدرب وعدد جلساته
-        var completeResult = booking.Complete(session.InstructorId);
+        var completeResult = booking.Complete(session.InstructorId, _dateTime.Now);
 
         if (completeResult.IsFailure)
             return Result<bool>.Failure(completeResult.Errors.First());

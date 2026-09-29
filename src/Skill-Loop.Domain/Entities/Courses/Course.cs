@@ -1,7 +1,7 @@
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Courses.Events;
-using Skill_Loop.Domain.Entities.Courses.ValueObjects;
+
 using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Domain.Entities.Courses;
@@ -11,10 +11,12 @@ public sealed class Course : SoftDeleteEntity
     public string Title { get; private set; } = string.Empty;
     public string Description { get; private set; } = string.Empty;
     public string ThumbnailUrl { get; private set; } = string.Empty;
-    public CoursePrice Price { get; private set; } = CoursePrice.Free();
+    public int Credits { get; private set; }
+    public bool IsFree => Credits == 0;
     public CourseLevel Level { get; private set; } = CourseLevel.AllLevels;
     public CourseStatus Status { get; private set; } = CourseStatus.Draft;
-    public CourseRating Rating { get; private set; } = CourseRating.Empty();
+    public double AverageRating { get; private set; }
+    public int TotalReviews { get; private set; }
 
     // Instructor Information
     public Guid InstructorId { get; private set; }
@@ -35,8 +37,8 @@ public sealed class Course : SoftDeleteEntity
     private readonly List<CourseReview> _reviews = [];
     public IReadOnlyCollection<CourseReview> Reviews => _reviews.AsReadOnly();
 
-    private readonly List<PdfAttachment> _attachments = [];
-    public IReadOnlyCollection<PdfAttachment> Attachments => _attachments.AsReadOnly();
+    private readonly List<CourseMaterial> _attachments = [];
+    public IReadOnlyCollection<CourseMaterial> Attachments => _attachments.AsReadOnly();
 
     private Course() { }
 
@@ -44,7 +46,7 @@ public sealed class Course : SoftDeleteEntity
         string title,
         string description,
         string thumbnailUrl,
-        CoursePrice price,
+        int credits,
         CourseLevel level,
         Guid instructorId,
         string instructorName,
@@ -62,19 +64,23 @@ public sealed class Course : SoftDeleteEntity
         if (categoryId == Guid.Empty)
             return Result<Course>.Failure(new Error("Course.InvalidCategory", "Category is required.", ErrorType.Validation));
 
+        if (credits < 0)
+            return Result<Course>.Failure(new Error("Course.NegativeCredits", "Course credits cannot be negative.", ErrorType.Validation));
+
         var course = new Course
         {
             Id = Guid.CreateVersion7(),
             Title = title.Trim(),
             Description = description.Trim(),
             ThumbnailUrl = thumbnailUrl.Trim(),
-            Price = price,
+            Credits = credits,
             Level = level,
             Status = CourseStatus.Draft,
             InstructorId = instructorId,
             InstructorName = instructorName.Trim(),
             CategoryId = categoryId,
-            Rating = CourseRating.Empty(),
+            AverageRating = 0.0,
+            TotalReviews = 0,
             TotalDuration = TimeSpan.Zero,
             TotalLessonsCount = 0
         };
@@ -87,17 +93,20 @@ public sealed class Course : SoftDeleteEntity
         string title,
         string description,
         string thumbnailUrl,
-        CoursePrice price,
+        int credits,
         CourseLevel level,
         Guid categoryId)
     {
         if (string.IsNullOrWhiteSpace(title))
             return Result.Failure(new Error("Course.TitleEmpty", "Title is required.", ErrorType.Validation));
 
+        if (credits < 0)
+            return Result.Failure(new Error("Course.NegativeCredits", "Course credits cannot be negative.", ErrorType.Validation));
+
         Title = title.Trim();
         Description = description.Trim();
         ThumbnailUrl = thumbnailUrl.Trim();
-        Price = price;
+        Credits = credits;
         Level = level;
         CategoryId = categoryId;
 
@@ -117,23 +126,29 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
-    public Result AddLessonToSection(Guid sectionId, string title, VideoResource video, int orderIndex, bool isPreviewable = false)
+    public Result AddLessonToSection(Guid sectionId, string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable = false)
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
             return Result.Failure(new Error("Section.NotFound", "Target section does not exist in this course.", ErrorType.NotFound));
 
-        var lesson = Lesson.Create(sectionId, title, video, orderIndex, isPreviewable);
+        if (string.IsNullOrWhiteSpace(videoUrl))
+            return Result.Failure(new Error("Lesson.EmptyVideoUrl", "Video URL is required.", ErrorType.Validation));
+
+        if (duration <= TimeSpan.Zero)
+            return Result.Failure(new Error("Lesson.InvalidDuration", "Duration must be greater than zero.", ErrorType.Validation));
+
+        var lesson = Lesson.Create(sectionId, title, videoUrl, duration, streamingResolution, externalProviderId, orderIndex, isPreviewable);
         section.AddLesson(lesson);
 
         TotalLessonsCount++;
-        TotalDuration += video.Duration;
+        TotalDuration += duration;
 
         AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
         return Result.Success();
     }
 
-    public Result AddAttachment(PdfAttachment attachment)
+    public Result AddAttachment(CourseMaterial attachment)
     {
         _attachments.Add(attachment);
         return Result.Success();
@@ -146,7 +161,10 @@ public sealed class Course : SoftDeleteEntity
 
         var review = CourseReview.Create(Id, userId, stars, comment);
         _reviews.Add(review);
-        Rating = Rating.AddRating(stars);
+        
+        var totalScore = (AverageRating * TotalReviews) + stars;
+        TotalReviews++;
+        AverageRating = Math.Round(totalScore / TotalReviews, 2);
 
         AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
         return Result.Success();
