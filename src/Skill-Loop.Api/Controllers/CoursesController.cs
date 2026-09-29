@@ -20,6 +20,12 @@ using Skill_Loop.Application.Features.Courses.Commands.ReorderSections;
 using Skill_Loop.Application.Features.Courses.Commands.UpdateLesson;
 using Skill_Loop.Application.Features.Courses.Commands.RemoveLesson;
 using Skill_Loop.Application.Features.Courses.Commands.ReorderLessons;
+using Skill_Loop.Application.Features.Courses.Commands.UploadCourseMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveCourseMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.UploadLessonMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveLessonMaterial;
+using Skill_Loop.Application.Features.Courses.Queries.GetCourseReviews;
+using Skill_Loop.Application.Features.Courses.Queries.GetCourseBookmarks;
 using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
@@ -350,6 +356,121 @@ public class CoursesController : BaseApiController
         CancellationToken cancellationToken)
     {
         var command = new ReorderLessonsCommand(id, sectionId, request.LessonOrders);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع تقييمات الكورس
+    /// </summary>
+    [HttpGet("{id:guid}/reviews")]
+    [AllowAnonymous]
+    public async Task<IResult> GetReviews(
+        Guid id,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetCourseReviewsQuery(id, pageNumber, pageSize);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع الكورسات المفضلة للمستخدم الحالي
+    /// </summary>
+    [HttpGet("bookmarks")]
+    [Authorize]
+    public async Task<IResult> GetMyBookmarks(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetCourseBookmarksQuery(pageNumber, pageSize);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إضافة ملف للكورس
+    /// </summary>
+    [HttpPost("{id:guid}/materials")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadCourseMaterial(
+        Guid id,
+        [FromForm] UploadCourseMaterialRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = request.File.OpenReadStream();
+        var command = new UploadCourseMaterialCommand(
+            id,
+            stream,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.MaterialType);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف ملف من الكورس
+    /// </summary>
+    [HttpDelete("{id:guid}/materials/{materialId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveCourseMaterial(
+        Guid id,
+        Guid materialId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveCourseMaterialCommand(id, materialId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إضافة ملف للدرس
+    /// </summary>
+    [HttpPost("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}/materials")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadLessonMaterial(
+        Guid id,
+        Guid sectionId,
+        Guid lessonId,
+        [FromForm] UploadLessonMaterialRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = request.File.OpenReadStream();
+        var command = new UploadLessonMaterialCommand(
+            id,
+            sectionId,
+            lessonId,
+            stream,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.MaterialType);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف ملف من الدرس
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}/materials/{materialId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveLessonMaterial(
+        Guid id,
+        Guid sectionId,
+        Guid lessonId,
+        Guid materialId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveLessonMaterialCommand(id, sectionId, lessonId, materialId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

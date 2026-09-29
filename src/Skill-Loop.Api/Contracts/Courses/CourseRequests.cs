@@ -59,3 +59,7 @@ public sealed record UpdateLessonRequest(
     bool IsPreviewable);
 
 public sealed record ReorderLessonsRequest(Dictionary<Guid, int> LessonOrders);
+
+public sealed record UploadCourseMaterialRequest(Microsoft.AspNetCore.Http.IFormFile File, Skill_Loop.Domain.Enums.MaterialType? MaterialType);
+
+public sealed record UploadLessonMaterialRequest(Microsoft.AspNetCore.Http.IFormFile File, Skill_Loop.Domain.Enums.MaterialType? MaterialType);
