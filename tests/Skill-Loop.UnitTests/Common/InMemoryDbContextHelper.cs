@@ -1,4 +1,4 @@
-
+﻿
 namespace Skill_Loop.UnitTests.Common;
 
 using Microsoft.EntityFrameworkCore;
@@ -9,6 +9,7 @@ using Skill_Loop.Domain.Entities.Enrollments;
 using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
@@ -41,21 +42,26 @@ public static class InMemoryDbContextHelper
             _dbContext = dbContext;
         }
 
-        public IQueryable<SiteSettings> SiteSettings => _dbContext.SiteSettings;
-        public IQueryable<OtpVerification> OtpVerifications => _dbContext.OtpVerifications;
-        public IQueryable<StaffInvitation> StaffInvitations => _dbContext.StaffInvitations;
-        public IQueryable<Course> Courses => _dbContext.Courses;
-        public IQueryable<Category> Categories => _dbContext.Categories;
-        public IQueryable<Enrollment> Enrollments => _dbContext.Enrollments;
-        public IQueryable<UserWallet> UserWallets => _dbContext.UserWallets;
-        public IQueryable<CourseBookmark> CourseBookmarks => _dbContext.CourseBookmarks;
-        public IQueryable<CourseReview> CourseReviews => _dbContext.CourseReviews;
-        public IQueryable<Session> Sessions => _dbContext.Sessions;
-        public IQueryable<Booking> Bookings => _dbContext.Bookings;
-        public IQueryable<SessionMaterial> SessionMaterials => _dbContext.SessionMaterials;
-        public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Conversations;
-        public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.ChatMessages;
-        public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => _dbContext.Notifications;
+        public IQueryable<SiteSettings> SiteSettings => _dbContext.Set<SiteSettings>();
+        public IQueryable<OtpVerification> OtpVerifications => _dbContext.Set<OtpVerification>();
+        public IQueryable<StaffInvitation> StaffInvitations => _dbContext.Set<StaffInvitation>();
+        public IQueryable<Course> Courses => _dbContext.Set<Course>();
+        public IQueryable<Category> Categories => _dbContext.Set<Category>();
+        public IQueryable<Enrollment> Enrollments => _dbContext.Set<Enrollment>();
+        public IQueryable<UserWallet> UserWallets => _dbContext.Set<UserWallet>();
+        public IQueryable<CourseBookmark> CourseBookmarks => _dbContext.Set<CourseBookmark>();
+        public IQueryable<CourseReview> CourseReviews => _dbContext.Set<CourseReview>();
+        public IQueryable<Session> Sessions => _dbContext.Set<Session>();
+        public IQueryable<Booking> Bookings => _dbContext.Bookings; // ✅ تم تعديلها إلى Bookings بصيغة الجمع
+        public IQueryable<SessionMaterial> SessionMaterials => _dbContext.Set<SessionMaterial>();
+        public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Set<Skill_Loop.Domain.Entities.Chat.Conversation>();
+        public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.Set<Skill_Loop.Domain.Entities.Chat.ChatMessage>();
+        public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => _dbContext.Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
+
+        // 🏷️ الـ Promo Codes والـ Credit Purchases
+        public IQueryable<PromoCode> PromoCodes => _dbContext.Set<PromoCode>();
+        public IQueryable<PromoRedemption> PromoRedemptions => _dbContext.Set<PromoRedemption>();
+        public IQueryable<CreditPurchase> CreditPurchases => _dbContext.Set<CreditPurchase>();
 
         public IQueryable<SupportQuestion> SupportQuestions => _dbContext.SupportQuestions;
 

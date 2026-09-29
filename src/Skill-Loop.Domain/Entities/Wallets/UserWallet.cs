@@ -37,6 +37,17 @@ public sealed class UserWallet : AuditableEntity
         return Result.Success();
     }
 
+    public Result PurchaseCredits(int amount, Guid referenceId, string description)
+    {
+        if (amount <= 0)
+            return Result.Failure(new Error("Wallet.InvalidAmount", "Credit purchase amount must be positive.", ErrorType.Validation));
+
+        Balance += amount;
+        _transactions.Add(WalletTransaction.Create(Id, amount, TransactionType.CreditPurchase, referenceId, description));
+
+        return Result.Success();
+    }
+
     public Result DeductCredits(int amount, Guid referenceId, string description)
     {
         if (amount <= 0)
@@ -51,6 +62,7 @@ public sealed class UserWallet : AuditableEntity
         AddDomainEvent(new WalletBalanceDeductedDomainEvent(UserId, amount, Balance));
         return Result.Success();
     }
+}
 
     /// <summary>
     /// استرجاع credits (إلغاء حجز / استرجاع purchase) — بيتسجل كـ CreditRefund

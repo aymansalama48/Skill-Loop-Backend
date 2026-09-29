@@ -61,6 +61,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // 📞 الدعم الفني
     public DbSet<SupportQuestion> SupportQuestions => Set<SupportQuestion>();
 
+    // 🏷️ الـ Promo Codes والـ Credit Purchases (محددة بالـ Fully Qualified Namespace لمنع أي تضارب)
+    public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoCode> PromoCodes => Set<Skill_Loop.Domain.Entities.Promotions.PromoCode>();
+    public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoRedemption> PromoRedemptions => Set<Skill_Loop.Domain.Entities.Promotions.PromoRedemption>();
+    public DbSet<Skill_Loop.Domain.Entities.Wallets.CreditPurchase> CreditPurchases => Set<Skill_Loop.Domain.Entities.Wallets.CreditPurchase>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

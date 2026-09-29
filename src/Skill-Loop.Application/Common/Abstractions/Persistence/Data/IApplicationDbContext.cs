@@ -7,9 +7,13 @@ using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.Notifications;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Wallets;
+using System.Numerics;
+using static System.Net.Mime.MediaTypeNames;
 using Skill_Loop.Domain.Entities.Support;
 using Skill_Loop.Domain.Entities.Wallets;
 using System.Linq.Expressions;
@@ -55,6 +59,11 @@ public interface IApplicationDbContext
     // 📞 الدعم الفني
     public IQueryable<SupportQuestion> SupportQuestions { get; }
 
+
+    // 🏷️ الـ Promo Codes والـ Credit Purchases
+    public IQueryable<PromoCode> PromoCodes { get; }
+    public IQueryable<PromoRedemption> PromoRedemptions { get; }
+    public IQueryable<CreditPurchase> CreditPurchases { get; }
 
 
     // ==============================
