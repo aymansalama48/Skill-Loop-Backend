@@ -1,5 +1,6 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Features.Courses.Common;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.AddLesson;
 
@@ -12,7 +13,7 @@ public sealed record AddLessonCommand(
     int OrderIndex,
     bool IsPreviewable,
     string? StreamingResolution,
-    string? ExternalProviderId) : ICommand<Guid>, ICacheInvalidatorCommand
+    string? ExternalProviderId) : ICommand<Guid>, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [

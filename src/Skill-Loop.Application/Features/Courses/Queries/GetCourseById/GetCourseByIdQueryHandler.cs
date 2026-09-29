@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Features.Courses.DTOs;
 using Skill_Loop.Domain.Common.Results;
 
@@ -9,10 +10,12 @@ namespace Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery, CourseDetailDto>
 {
     private readonly IApplicationDbContext _context;
+    private readonly ICurrentUser _currentUser;
 
-    public GetCourseByIdQueryHandler(IApplicationDbContext context)
+    public GetCourseByIdQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
     {
         _context = context;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CourseDetailDto>> Handle(
@@ -32,6 +35,19 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
                 new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
         }
 
+        bool isAdmin = _currentUser.IsInRole("Admin") || _currentUser.IsInRole("SuperAdmin");
+        bool isInstructor = _currentUser.UserId == course.InstructorId;
+        bool isEnrolled = false;
+
+        if (_currentUser.IsAuthenticated && !isAdmin && !isInstructor)
+        {
+            isEnrolled = await _context.AnyAsync(_context.Enrollments.Where(e => 
+                e.CourseId == course.Id && 
+                e.UserId == _currentUser.UserId), cancellationToken);
+        }
+
+        bool canAccessPremiumContent = isAdmin || isInstructor || isEnrolled;
+
         var sections = course.Sections.Select(s => new SectionDto(
             s.Id,
             s.Title,
@@ -43,7 +59,7 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
                 l.IsPreviewable,
                 l.Duration.TotalMinutes,
                 l.StreamingResolution,
-                l.IsPreviewable ? l.VideoUrl : null,
+                (l.IsPreviewable || canAccessPremiumContent) ? l.VideoUrl : null,
                 l.Resources.Select(r => new AttachmentDto(r.FileName, r.DriveFileId, r.SizeBytes)).ToList()
             )).ToList()
         )).ToList();
