@@ -5,7 +5,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Instructors.EventHandlers.CourseEnrolled;
 using Skill_Loop.Domain.Entities.Courses;
-using Skill_Loop.Domain.Entities.Courses.ValueObjects;
+
 using Skill_Loop.Domain.Entities.Enrollments.Events;
 using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Enums;
@@ -63,9 +63,8 @@ public class CourseEnrolledEventHandlerTests
         var courseId = Guid.NewGuid();
         var categoryId = Guid.NewGuid();
 
-        var price = CoursePrice.Create(50).Data!;
         var course = Course.Create(
-            "Course", "Desc", "https://img.png", price, CourseLevel.Beginner, instructorId, "Instructor", categoryId).Data!;
+            "Course", "Desc", "https://img.png", 50, CourseLevel.Beginner, instructorId, "Instructor", categoryId).Data!;
         course.Id = courseId;
         _dbContext.Add(course);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
@@ -88,9 +87,8 @@ public class CourseEnrolledEventHandlerTests
         var profile = InstructorProfile.Create(instructorId, "H", "B").Data!;
         _dbContext.Add(profile);
 
-        var price = CoursePrice.Create(50).Data!;
         var course = Course.Create(
-            "Course", "Desc", "https://img.png", price, CourseLevel.Beginner, instructorId, "Instructor", categoryId).Data!;
+            "Course", "Desc", "https://img.png", 50, CourseLevel.Beginner, instructorId, "Instructor", categoryId).Data!;
         course.Id = courseId;
         _dbContext.Add(course);
         await _dbContext.SaveChangesAsync(CancellationToken.None);

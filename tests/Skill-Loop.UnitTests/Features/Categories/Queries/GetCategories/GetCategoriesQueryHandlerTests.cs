@@ -2,7 +2,7 @@ using FluentAssertions;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Categories.Queries.GetCategories;
 using Skill_Loop.Domain.Entities.Courses;
-using Skill_Loop.Domain.Entities.Courses.ValueObjects;
+
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System.Linq;
@@ -61,12 +61,11 @@ public class GetCategoriesQueryHandlerTests
         var category = Category.Create("Programming", "programming", null, null, 0).Data!;
         _dbContext.Add(category);
 
-        var price = CoursePrice.Create(50).Data!;
-        var published1 = Course.Create("Pub1", "Desc", "https://img.png", price, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
+        var published1 = Course.Create("Pub1", "Desc", "https://img.png", 50, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
         published1.Publish();
-        var published2 = Course.Create("Pub2", "Desc", "https://img.png", price, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
+        var published2 = Course.Create("Pub2", "Desc", "https://img.png", 50, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
         published2.Publish();
-        var draft = Course.Create("Draft", "Desc", "https://img.png", price, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
+        var draft = Course.Create("Draft", "Desc", "https://img.png", 50, CourseLevel.Beginner, Guid.NewGuid(), "Instructor", category.Id).Data!;
 
         _dbContext.Add(published1);
         _dbContext.Add(published2);

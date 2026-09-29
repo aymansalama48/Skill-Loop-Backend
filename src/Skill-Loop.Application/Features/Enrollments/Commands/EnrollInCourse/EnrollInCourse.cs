@@ -51,7 +51,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
         }
 
         // 3. Virtual Wallet balance validation & atomic deduction
-        if (!course.Price.IsFree)
+        if (!course.IsFree)
         {
             var wallet = await _context.FirstOrDefaultAsync(
                 _context.UserWallets.Where(w => w.UserId == request.UserId),
@@ -63,7 +63,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
             }
 
             var deductionResult = wallet.DeductCredits(
-                course.Price.Credits,
+                course.Credits,
                 course.Id,
                 $"Enrolled in course: {course.Title}");
 
@@ -79,7 +79,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
         var enrollmentResult = Enrollment.Create(
             request.UserId,
             course.Id,
-            course.Price.Credits,
+            course.Credits,
             course.TotalLessonsCount);
 
         if (enrollmentResult.IsFailure)

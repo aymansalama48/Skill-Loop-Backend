@@ -1,21 +1,23 @@
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
-namespace Skill_Loop.Application.Features.Courses.Commands.PublishCourse;
+namespace Skill_Loop.Application.Features.Courses.Commands.ArchiveCourse;
 
-public sealed record PublishCourseCommand(Guid CourseId) : ICommand;
-
-public sealed class PublishCourseCommandHandler : ICommandHandler<PublishCourseCommand>
+public sealed class ArchiveCourseCommandHandler : ICommandHandler<ArchiveCourseCommand>
 {
     private readonly IApplicationDbContext _context;
 
-    public PublishCourseCommandHandler(IApplicationDbContext context)
+    public ArchiveCourseCommandHandler(IApplicationDbContext context)
     {
         _context = context;
     }
 
-    public async Task<Result> Handle(PublishCourseCommand request, CancellationToken cancellationToken)
+    public async Task<Result> Handle(ArchiveCourseCommand request, CancellationToken cancellationToken)
     {
         var course = await _context.FirstOrDefaultAsync(
             _context.Courses.Where(c => c.Id == request.CourseId),
@@ -26,8 +28,8 @@ public sealed class PublishCourseCommandHandler : ICommandHandler<PublishCourseC
             return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
         }
 
-        course.Publish();
-        _context.Update(course);
+        course.Archive();
+
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result.Success();

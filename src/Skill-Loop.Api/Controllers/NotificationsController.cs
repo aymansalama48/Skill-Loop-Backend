@@ -1,5 +1,4 @@
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
+
 using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Api.Contracts.Common;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;

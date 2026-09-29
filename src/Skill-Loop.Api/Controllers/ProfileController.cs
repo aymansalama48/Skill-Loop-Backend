@@ -10,7 +10,7 @@ using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.Update
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.UpdateMyProfilePicture;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetMyProfile;
 
-[Route("api/v1/me")] // مسار نظيف جداً
+[Route("api/v1/[controller]")]
 [Authorize]       // حماية الكنترولر بالكامل
 public class ProfileController : BaseApiController
 {

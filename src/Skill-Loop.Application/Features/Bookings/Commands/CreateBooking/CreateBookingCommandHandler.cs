@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
@@ -9,12 +10,13 @@ using Skill_Loop.Domain.Enums;
 namespace Skill_Loop.Application.Features.Bookings.Commands.CreateBooking;
 
 public sealed class CreateBookingCommandHandler(
-    IApplicationDbContext _dbContext) : ICommandHandler<CreateBookingCommand, Guid>
+    IApplicationDbContext _dbContext,
+    IDateTime _dateTime) : ICommandHandler<CreateBookingCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
-        // كل المواعيد متخزنة UTC، فبنقارن بـ UtcNow مش بـ IDateTime (بتوقيت مصر)
-        var utcNow = DateTime.UtcNow;
+        // استخدام خدمة الوقت الموحدة للمقارنات وعملية الإنشاء
+        var utcNow = _dateTime.Now;
 
         // 1. جلب الجلسة
         var session = await _dbContext.Sessions

@@ -604,6 +604,31 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.ToTable("LessonProgresses", (string)null);
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorAvailability", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<int>("DayOfWeek")
+                        .HasColumnType("int");
+
+                    b.Property<TimeSpan>("EndTime")
+                        .HasColumnType("time");
+
+                    b.Property<Guid>("InstructorProfileId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<TimeSpan>("StartTime")
+                        .HasColumnType("time");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InstructorProfileId");
+
+                    b.ToTable("InstructorAvailabilities", (string)null);
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1674,6 +1699,15 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorAvailability", b =>
+                {
+                    b.HasOne("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", null)
+                        .WithMany("Availabilities")
+                        .HasForeignKey("InstructorProfileId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
                 {
                     b.HasOne("Skill_Loop.Infrastructure.Persistence.IdentityModels.ApplicationUser", null)
@@ -1766,6 +1800,8 @@ namespace Skill_Loop.Infrastructure.Migrations
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Instructors.InstructorProfile", b =>
                 {
+                    b.Navigation("Availabilities");
+
                     b.Navigation("Reviews");
                 });
 

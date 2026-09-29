@@ -5,11 +5,28 @@ using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Features.Courses.Commands.AddCourseReview;
 using Skill_Loop.Application.Features.Courses.Commands.AddLesson;
+using Skill_Loop.Application.Features.Courses.Commands.AddSection; // تمت إضافة الـ Namespace هنا
 using Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 using Skill_Loop.Application.Features.Courses.Commands.PublishCourse;
 using Skill_Loop.Application.Features.Courses.Commands.ToggleCourseBookmark;
 using Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 using Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
+using Skill_Loop.Application.Features.Courses.Commands.DeleteCourse;
+using Skill_Loop.Application.Features.Courses.Commands.ArchiveCourse;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateCourseDetails;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateSection;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveSection;
+using Skill_Loop.Application.Features.Courses.Commands.ReorderSections;
+using Skill_Loop.Application.Features.Courses.Commands.UpdateLesson;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveLesson;
+using Skill_Loop.Application.Features.Courses.Commands.ReorderLessons;
+using Skill_Loop.Application.Features.Courses.Commands.UploadCourseMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveCourseMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.UploadLessonMaterial;
+using Skill_Loop.Application.Features.Courses.Commands.RemoveLessonMaterial;
+using Skill_Loop.Application.Features.Courses.Queries.GetCourseReviews;
+using Skill_Loop.Application.Features.Courses.Queries.GetCourseBookmarks;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Controllers;
 
@@ -24,7 +41,7 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// استرجاع الكورسات مع البحث والفلترة والترتيب والصفحات المدعومة بالكاش
+    /// استرجاع الكورسات المنشورة فقط (الكتالوج الخاص بالطلاب)
     /// </summary>
     [HttpGet]
     [AllowAnonymous]
@@ -39,7 +56,8 @@ public class CoursesController : BaseApiController
             Level = request.Level,
             MaxCredits = request.MaxCredits,
             MinRating = request.MinRating,
-            SortBy = request.SortBy
+            SortBy = request.SortBy,
+            Status = Skill_Loop.Domain.Enums.CourseStatus.Published // ثابت: بيجيب المنشور بس
         };
 
         var result = await Mediator.Send(query, cancellationToken);
@@ -47,7 +65,32 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// استرجac تفاصيل الكورس ومحتوى الدروس (Syllabus)
+    /// استرجاع الكورسات المسودة (Drafts) الخاصة بالمدرب الحالي فقط
+    /// </summary>
+    [HttpGet("drafts")]
+    [Authorize]
+    public async Task<IResult> GetMyDraftCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
+    {
+        var query = new GetCoursesPagedQuery
+        {
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            SearchTerm = request.SearchTerm,
+            CategoryId = request.CategoryId,
+            Level = request.Level,
+            MaxCredits = request.MaxCredits,
+            MinRating = request.MinRating,
+            SortBy = request.SortBy,
+            Status = CourseStatus.Draft, // ثابت: بيجيب المسودات بس
+            InstructorId = _currentUser.UserId // أمان: عشان المدرب ميشوفش مسودات غيره
+        };
+
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع تفاصيل الكورس ومحتوى الدروس (Syllabus)
     /// </summary>
     [HttpGet("{id:guid}")]
     [AllowAnonymous]
@@ -83,13 +126,16 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
-    /// نشر الكورس ليصبح متاحاً للطلاب في الكتالوج
+    /// إضافة قسم جديد (Section) داخل الكورس
     /// </summary>
-    [HttpPost("{id:guid}/publish")]
+    [HttpPost("{id:guid}/sections")]
     [Authorize]
-    public async Task<IResult> PublishCourse(Guid id, CancellationToken cancellationToken)
+    public async Task<IResult> AddSection(
+        Guid id,
+        [FromBody] AddSectionRequest request,
+        CancellationToken cancellationToken)
     {
-        var command = new PublishCourseCommand(id);
+        var command = new AddSectionCommand(id, request.Title, request.OrderIndex);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
@@ -121,6 +167,18 @@ public class CoursesController : BaseApiController
     }
 
     /// <summary>
+    /// نشر الكورس ليصبح متاحاً للطلاب في الكتالوج
+    /// </summary>
+    [HttpPost("{id:guid}/publish")]
+    [Authorize]
+    public async Task<IResult> PublishCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new PublishCourseCommand(id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
     /// إضافة تقييم ومراجعة للكورس
     /// </summary>
     [HttpPost("{id:guid}/reviews")]
@@ -145,6 +203,274 @@ public class CoursesController : BaseApiController
     {
         var userId = _currentUser.UserId ?? Guid.Empty;
         var command = new ToggleCourseBookmarkCommand(userId, id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل تفاصيل الكورس
+    /// </summary>
+    [HttpPut("{id:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateCourseDetails(
+        Guid id,
+        [FromBody] UpdateCourseDetailsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateCourseDetailsCommand(
+            id,
+            request.Title,
+            request.Description,
+            request.ThumbnailUrl,
+            request.Credits,
+            request.Level,
+            request.CategoryId);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// أرشفة الكورس (تغيير حالته إلى Archived)
+    /// </summary>
+    [HttpPost("{id:guid}/archive")]
+    [Authorize]
+    public async Task<IResult> ArchiveCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new ArchiveCourseCommand(id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف الكورس (Soft Delete)
+    /// </summary>
+    [HttpDelete("{id:guid}")]
+    [Authorize]
+    public async Task<IResult> DeleteCourse(Guid id, CancellationToken cancellationToken)
+    {
+        var command = new DeleteCourseCommand(id);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل قسم (Section)
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateSection(
+        Guid id, 
+        Guid sectionId, 
+        [FromBody] UpdateSectionRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateSectionCommand(id, sectionId, request.Title, request.OrderIndex);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف قسم (Section)
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveSection(
+        Guid id, 
+        Guid sectionId, 
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveSectionCommand(id, sectionId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إعادة ترتيب الأقسام
+    /// </summary>
+    [HttpPut("{id:guid}/sections/reorder")]
+    [Authorize]
+    public async Task<IResult> ReorderSections(
+        Guid id, 
+        [FromBody] ReorderSectionsRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new ReorderSectionsCommand(id, request.SectionOrders);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل درس (Lesson)
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}")]
+    [Authorize]
+    public async Task<IResult> UpdateLesson(
+        Guid id, 
+        Guid sectionId, 
+        Guid lessonId, 
+        [FromBody] UpdateLessonRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new UpdateLessonCommand(
+            id, 
+            sectionId, 
+            lessonId, 
+            request.Title, 
+            request.VideoUrl, 
+            request.Duration, 
+            request.StreamingResolution, 
+            request.ExternalProviderId, 
+            request.OrderIndex, 
+            request.IsPreviewable);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف درس (Lesson)
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveLesson(
+        Guid id, 
+        Guid sectionId, 
+        Guid lessonId, 
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveLessonCommand(id, sectionId, lessonId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إعادة ترتيب الدروس داخل القسم
+    /// </summary>
+    [HttpPut("{id:guid}/sections/{sectionId:guid}/lessons/reorder")]
+    [Authorize]
+    public async Task<IResult> ReorderLessons(
+        Guid id, 
+        Guid sectionId, 
+        [FromBody] ReorderLessonsRequest request, 
+        CancellationToken cancellationToken)
+    {
+        var command = new ReorderLessonsCommand(id, sectionId, request.LessonOrders);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع تقييمات الكورس
+    /// </summary>
+    [HttpGet("{id:guid}/reviews")]
+    [AllowAnonymous]
+    public async Task<IResult> GetReviews(
+        Guid id,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetCourseReviewsQuery(id, pageNumber, pageSize);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// استرجاع الكورسات المفضلة للمستخدم الحالي
+    /// </summary>
+    [HttpGet("bookmarks")]
+    [Authorize]
+    public async Task<IResult> GetMyBookmarks(
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new GetCourseBookmarksQuery(pageNumber, pageSize);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إضافة ملف للكورس
+    /// </summary>
+    [HttpPost("{id:guid}/materials")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadCourseMaterial(
+        Guid id,
+        [FromForm] UploadCourseMaterialRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = request.File.OpenReadStream();
+        var command = new UploadCourseMaterialCommand(
+            id,
+            stream,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.MaterialType);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف ملف من الكورس
+    /// </summary>
+    [HttpDelete("{id:guid}/materials/{materialId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveCourseMaterial(
+        Guid id,
+        Guid materialId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveCourseMaterialCommand(id, materialId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// إضافة ملف للدرس
+    /// </summary>
+    [HttpPost("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}/materials")]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadLessonMaterial(
+        Guid id,
+        Guid sectionId,
+        Guid lessonId,
+        [FromForm] UploadLessonMaterialRequest request,
+        CancellationToken cancellationToken)
+    {
+        await using var stream = request.File.OpenReadStream();
+        var command = new UploadLessonMaterialCommand(
+            id,
+            sectionId,
+            lessonId,
+            stream,
+            request.File.FileName,
+            request.File.ContentType,
+            request.File.Length,
+            request.MaterialType);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف ملف من الدرس
+    /// </summary>
+    [HttpDelete("{id:guid}/sections/{sectionId:guid}/lessons/{lessonId:guid}/materials/{materialId:guid}")]
+    [Authorize]
+    public async Task<IResult> RemoveLessonMaterial(
+        Guid id,
+        Guid sectionId,
+        Guid lessonId,
+        Guid materialId,
+        CancellationToken cancellationToken)
+    {
+        var command = new RemoveLessonMaterialCommand(id, sectionId, lessonId, materialId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

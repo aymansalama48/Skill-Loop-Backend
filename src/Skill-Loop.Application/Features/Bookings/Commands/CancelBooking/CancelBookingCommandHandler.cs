@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
@@ -7,11 +8,12 @@ using Skill_Loop.Domain.Common.Results;
 namespace Skill_Loop.Application.Features.Bookings.Commands.CancelBooking;
 
 public sealed class CancelBookingCommandHandler(
-    IApplicationDbContext _dbContext) : ICommandHandler<CancelBookingCommand>
+    IApplicationDbContext _dbContext,
+    IDateTime _dateTime) : ICommandHandler<CancelBookingCommand>
 {
     public async Task<Result> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
     {
-        var utcNow = DateTime.UtcNow;
+        var utcNow = _dateTime.Now;
 
         var booking = await _dbContext.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);
