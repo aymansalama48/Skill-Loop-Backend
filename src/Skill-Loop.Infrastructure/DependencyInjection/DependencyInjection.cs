@@ -82,6 +82,10 @@ public static partial class DependencyInjection
         // خدمات الإشعارات الوظيفية
         services.AddTransient<IIdentityNotificationService, IdentityNotificationService>();
 
+        // إشعارات الدعم مقسومة بحسب الاستهلاك (ISP): كل عملية بتاخد اللي محتاجاه بس.
+        services.AddTransient<ISupportRequestNotifier, SupportNotificationService>();
+        services.AddTransient<ISupportAnswerNotifier, SupportNotificationService>();
+
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ISiteSettingsService, SiteSettingsService>();
 
