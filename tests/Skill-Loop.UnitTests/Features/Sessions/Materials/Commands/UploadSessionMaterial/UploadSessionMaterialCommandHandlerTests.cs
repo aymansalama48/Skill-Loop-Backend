@@ -1,9 +1,5 @@
 namespace Skill_Loop.UnitTests.Features.Sessions.Materials.Commands.UploadSessionMaterial;
 
-using System.IO;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using FluentAssertions;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
@@ -19,10 +15,15 @@ using Skill_Loop.Application.Common.Errors.Sessions;
 using Skill_Loop.Application.Common.Models.Storage;
 using Skill_Loop.Application.Features.Sessions.Materials.Commands.UploadSessionMaterial;
 using Skill_Loop.Domain.Common.Results;
-using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
+// مسار الجلسات الجديد (بصيغة الجمع) ولاحظ اننا شيلنا الـ Session القديم
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
+using System;
+using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Xunit;
 
 public class UploadSessionMaterialCommandHandlerTests
@@ -82,7 +83,10 @@ public class UploadSessionMaterialCommandHandlerTests
         var currentUserId = Guid.NewGuid();
         _currentUser.Setup(c => c.UserId).Returns(currentUserId);
 
-        var session = new Session { Id = sessionId, InstructorId = Guid.NewGuid(), OwnerId = Guid.NewGuid(), Status = SessionStatus.Draft };
+        // التعديل هنا: استخدام دالة Create 
+        var session = Session.Create(Guid.NewGuid(), Guid.NewGuid(), "Test Session");
+        session.Id = sessionId; // تعيين المعرف بعد الإنشاء
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -97,7 +101,11 @@ public class UploadSessionMaterialCommandHandlerTests
     {
         var sessionId = Guid.NewGuid();
         var currentUserId = Guid.NewGuid();
-        var session = new Session { Id = sessionId, InstructorId = currentUserId, OwnerId = currentUserId, Status = SessionStatus.Draft };
+
+        // التعديل هنا: استخدام دالة Create وإعطاء المحاضر صلاحية الملكية
+        var session = Session.Create(currentUserId, currentUserId, "Test Session");
+        session.Id = sessionId;
+
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -115,6 +123,7 @@ public class UploadSessionMaterialCommandHandlerTests
         var result = await _handler.Handle(new UploadSessionMaterialCommand(sessionId, new MemoryStream(), "test.txt", "text/plain", 100, MaterialType.Document), CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Data.FileName.Should().Be("test.txt");
+        result.Data.Should().NotBeNull();
+        result.Data!.FileName.Should().Be("test.txt");
     }
 }

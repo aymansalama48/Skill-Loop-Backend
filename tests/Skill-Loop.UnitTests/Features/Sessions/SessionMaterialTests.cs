@@ -1,12 +1,12 @@
 namespace Skill_Loop.UnitTests.Features.Sessions;
 
+using FluentAssertions;
+using Skill_Loop.Domain.Common.Events;
+using Skill_Loop.Domain.Entities.Session;
+using Skill_Loop.Domain.Entities.Session.Events;
+using Skill_Loop.Domain.Enums;
 using System;
 using System.Linq;
-using FluentAssertions;
-using Skill_Loop.Domain.Entities.SessionMaterial;
-using Skill_Loop.Domain.Entities.SessionMaterial.Events;
-using Skill_Loop.Domain.Enums;
-using Skill_Loop.Domain.Common.Events;
 using Xunit;
 
 public class SessionMaterialTests

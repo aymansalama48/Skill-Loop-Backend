@@ -2,6 +2,8 @@
 
 > **Purpose**: دليل شامل لأي مطوّر جديد يشرح كيف يبني Feature كاملة في هذا الـ Codebase.
 > كل قاعدة مكتوبة هنا مأخوذة من الكود الفعلي، والمسارات مرفقة.
+>
+> **آخر تحديث**: 2026-09-26
 
 ---
 
@@ -11,8 +13,10 @@
 2. [Domain Layer](#2-domain-layer)
    - 2.1 [Result Pattern](#21-result-pattern)
    - 2.2 [Entity Hierarchy](#22-entity-hierarchy)
-   - 2.3 [Domain Events](#23-domain-events)
-   - 2.4 [Constants (Roles & Permissions)](#24-constants-roles--permissions)
+   - 2.3 [Value Objects](#23-value-objects)
+   - 2.4 [Enums](#24-enums)
+   - 2.5 [Domain Events](#25-domain-events)
+   - 2.6 [Constants (Roles & Permissions)](#26-constants-roles--permissions)
 3. [Application Layer](#3-application-layer)
    - 3.1 [CQRS Messaging Abstractions](#31-cqrs-messaging-abstractions)
    - 3.2 [Pipeline Behaviors (MediatR)](#32-pipeline-behaviors-mediatr)
@@ -20,6 +24,7 @@
    - 3.4 [Pagination](#34-pagination)
    - 3.5 [Caching Interfaces](#35-caching-interfaces)
    - 3.6 [Feature Folder Structure](#36-feature-folder-structure)
+   - 3.7 [External Service Abstractions](#37-external-service-abstractions)
 4. [Infrastructure Layer](#4-infrastructure-layer)
    - 4.1 [Persistence (EF Core + SQL Server)](#41-persistence-ef-core--sql-server)
    - 4.2 [Interceptors](#42-interceptors)
@@ -32,6 +37,7 @@
    - 5.4 [Controller Pattern](#54-controller-pattern)
    - 5.5 [Global Exception Handler](#55-global-exception-handler)
    - 5.6 [Pipeline & Routing](#56-pipeline--routing)
+   - 5.7 [SignalR (Real-time Chat)](#57-signalr-real-time-chat)
 6. [Unit Tests](#6-unit-tests)
 7. [End-to-End Checklist — Building a New Feature](#7-end-to-end-checklist--building-a-new-feature)
    - 7.1 [New Command](#71-new-command)
@@ -51,10 +57,10 @@
 ```
 Skill-Loop/
 ├── src/
-│   ├── Skill-Loop.Domain/           ← الطبقة الداخلية: الكيانات، القيم، الأحداث
-│   ├── Skill-Loop.Application/      ← منطق الأعمال: Commands, Queries, Behaviors
-│   ├── Skill-Loop.Infrastructure/   ← التطبيقات الخارجية: EF Core, Hangfire, Email, Cache
-│   └── Skill-Loop.Api/              ← نقطة الدخول: Controllers, Contracts, Middleware
+│   ├── Skill-Loop.Domain/           ← الطبقة الداخلية: الكيانات، القيم، الأحداث، الثوابت
+│   ├── Skill-Loop.Application/      ← منطق الأعمال: Commands, Queries, Behaviors, DTOs
+│   ├── Skill-Loop.Infrastructure/   ← التطبيقات الخارجية: EF Core, Hangfire, Email, Cache, Google Drive
+│   └── Skill-Loop.Api/              ← نقطة الدخول: Controllers, Contracts, Middleware, SignalR Hubs
 ├── tests/
 │   └── Skill-Loop.UnitTests/        ← اختبارات الوحدة
 ├── docs/                            ← هذا الملف
@@ -72,11 +78,13 @@ Skill-Loop/
 ### 2.1 Result Pattern
 
 **Files**:
+
 - `src/Skill-Loop.Domain/Common/Results/Result.cs`
 - `src/Skill-Loop.Domain/Common/Results/Error.cs`
 - `src/Skill-Loop.Domain/Common/Results/ErrorType.cs`
 
 #### Error Record
+
 ```csharp
 // Error.cs
 public record Error(string Code, string Description, ErrorType Type)
@@ -86,6 +94,7 @@ public record Error(string Code, string Description, ErrorType Type)
 ```
 
 #### ErrorType Enum → HTTP Status Code Mapping
+
 ```csharp
 // ErrorType.cs
 public enum ErrorType
@@ -104,14 +113,14 @@ public enum ErrorType
 
 #### Result Class — Factory Methods
 
-| Method | Return Type | Usage |
-|--------|-------------|-------|
-| `Result.Success(message?)` | `Result` | نجاح بدون بيانات |
-| `Result.Failure(Error error)` | `Result` | فشل بخطأ واحد |
-| `Result.Failure(IEnumerable<Error>)` | `Result` | فشل بعدة أخطاء |
-| `Result.Failure(string)` | `Result` | فشل برسالة (يُحوّل لـ Error مع `ErrorType.Failure`) |
-| `Result<T>.Success(T data, message?)` | `Result<T>` | نجاح مع بيانات |
-| `Result<T>.Failure(Error error)` | `Result<T>` | فشل بخطأ واحد |
+| Method                                | Return Type | Usage                                               |
+| ------------------------------------- | ----------- | --------------------------------------------------- |
+| `Result.Success(message?)`            | `Result`    | نجاح بدون بيانات                                    |
+| `Result.Failure(Error error)`         | `Result`    | فشل بخطأ واحد                                       |
+| `Result.Failure(IEnumerable<Error>)`  | `Result`    | فشل بعدة أخطاء                                      |
+| `Result.Failure(string)`              | `Result`    | فشل برسالة (يُحوّل لـ Error مع `ErrorType.Failure`) |
+| `Result<T>.Success(T data, message?)` | `Result<T>` | نجاح مع بيانات                                      |
+| `Result<T>.Failure(Error error)`      | `Result<T>` | فشل بخطأ واحد                                       |
 
 **Properties**: `Succeeded`, `IsSuccess`, `IsFailure`, `Message`, `Errors`, `Data` (في `Result<T>`).
 
@@ -128,12 +137,12 @@ Entity (abstract)                   ← يدعم Domain Events فقط
             └── SoftDeleteEntity (abstract) ← يضيف IsDeleted, DeletedAt, DeletedBy
 ```
 
-| Base Class | متى تستخدمه | Id | Audit | Soft Delete |
-|-----------|-------------|-----|-------|-------------|
-| `Entity` | كيان بدون Id خاص (نادر) | ❌ | ❌ | ❌ |
-| `BaseEntity` | كيان بسيط بـ Guid V7 | ✅ | ❌ | ❌ |
-| `AuditableEntity` | كيان يحتاج تتبع الإنشاء والتعديل | ✅ | ✅ | ❌ |
-| `SoftDeleteEntity` | كيان يحتاج حذف منطقي (soft delete) | ✅ | ✅ | ✅ |
+| Base Class         | متى تستخدمه                        | Id  | Audit | Soft Delete |
+| ------------------ | ---------------------------------- | --- | ----- | ----------- |
+| `Entity`           | كيان بدون Id خاص (نادر)            | ❌  | ❌    | ❌          |
+| `BaseEntity`       | كيان بسيط بـ Guid V7               | ✅  | ❌    | ❌          |
+| `AuditableEntity`  | كيان يحتاج تتبع الإنشاء والتعديل   | ✅  | ✅    | ❌          |
+| `SoftDeleteEntity` | كيان يحتاج حذف منطقي (soft delete) | ✅  | ✅    | ✅          |
 
 **ملاحظة**: الـ `Id` يستخدم `Guid.CreateVersion7()` — وهو GUID مرتب زمنياً.
 
@@ -145,84 +154,289 @@ public abstract class BaseEntity : Entity
 }
 ```
 
-**مثال حقيقي**: `StaffInvitation` يرث من `AuditableEntity`:
-```csharp
-// src/Skill-Loop.Domain/Entities/Invitation/StaffInvitation.cs
-public class StaffInvitation : AuditableEntity { ... }
+#### الكيانات الحالية في المشروع
+
+```
+Domain/Entities/
+├── Booking/
+│   └── Booking.cs                    ← BaseEntity (حجز جلسة)
+├── Chat/
+│   ├── Conversation.cs               ← AuditableEntity (محادثة 1-لـ-1)
+│   └── ChatMessage.cs                ← BaseEntity (رسالة واحدة)
+├── Courses/
+│   ├── Course.cs                     ← SoftDeleteEntity (الكورس الرئيسي — Aggregate Root)
+│   ├── Category.cs                   ← AuditableEntity (التصنيف)
+│   ├── Section.cs                    ← BaseEntity (قسم داخل الكورس)
+│   ├── Lesson.cs                     ← BaseEntity (درس داخل القسم)
+│   ├── CourseReview.cs               ← AuditableEntity (تقييم الكورس)
+│   ├── CourseBookmark.cs             ← SoftDeleteEntity (إشارة مرجعية)
+│   ├── Events/
+│   │   └── CourseDomainEvents.cs
+│   └── ValueObjects/
+│       ├── CoursePrice.cs            ← Value Object (سعر بالكريديت)
+│       ├── CourseRating.cs           ← Value Object (متوسط التقييم)
+│       ├── VideoResource.cs          ← Value Object (رابط فيديو + مدة)
+│       └── PdfAttachment.cs          ← Value Object (مرفق PDF)
+├── Enrollments/
+│   ├── Enrollment.cs                 ← AuditableEntity (تسجيل في كورس)
+│   ├── LessonProgress.cs             ← BaseEntity (تقدم الطالب في درس)
+│   └── Events/
+│       └── EnrollmentDomainEvents.cs
+├── Instructors/
+│   ├── InstructorProfile.cs          ← AuditableEntity (بروفايل المدرب — Aggregate Root)
+│   └── InstructorReview.cs           ← SoftDeleteEntity (تقييم المدرب من الطلاب)
+├── Invitation/
+│   └── StaffInvitation.cs            ← AuditableEntity (دعوة موظف)
+├── OtpVerification/
+│   └── OtpVerification.cs            ← BaseEntity (كود التحقق)
+├── Session/
+│   ├── Session.cs                    ← AuditableEntity (جلسة تعليمية 1-لـ-1)
+│   ├── SessionMaterial.cs            ← AuditableEntity (ملف مرفق بالجلسة)
+│   └── Events/
+│       ├── SessionMaterialUploadedEvent.cs
+│       └── SessionCompletedDomainEvent.cs
+├── SiteSettings/
+│   └── SiteSettings.cs              ← BaseEntity (إعدادات الموقع)
+└── Wallets/
+    ├── UserWallet.cs                 ← AuditableEntity (محفظة المستخدم)
+    ├── WalletTransaction.cs          ← BaseEntity (حركة مالية)
+    └── Events/
+        └── WalletDomainEvents.cs
 ```
 
-`OtpVerification` يرث من `BaseEntity`:
+#### InstructorProfile — بروفايل المدرب (Aggregate Root)
+
+**Files**: `src/Skill-Loop.Domain/Entities/Instructors/`
+
+`InstructorProfile` هو Aggregate Root يمثل الملف الشخصي للمدرب ويتضمن:
+- علاقة 1-to-1 مع `ApplicationUser` عبر `UserId`
+- بيانات العرض: `Headline`, `Bio`
+- حالة الاعتماد: `IsApproved` (يبدأ `false` — يحتاج موافقة الإدارة)
+- إحصائيات: `Rating`, `SessionsCompleted`, `CreditsEarned`
+- مجموعة المراجعات: `Reviews` (1-لـ-متعدد مع `InstructorReview`)
+
 ```csharp
-// src/Skill-Loop.Domain/Entities/OtpVerification/OtpVerification.cs
-public class OtpVerification : BaseEntity { ... }
+public sealed class InstructorProfile : AuditableEntity
+{
+    public Guid UserId { get; private set; }
+    public string Headline { get; private set; } = string.Empty;
+    public string Bio { get; private set; } = string.Empty;
+    public bool IsApproved { get; private set; }
+    public double Rating { get; private set; }
+    public int SessionsCompleted { get; private set; }
+    public int CreditsEarned { get; private set; }
+    public IReadOnlyCollection<InstructorReview> Reviews => _reviews.AsReadOnly();
+
+    private InstructorProfile() { }
+
+    public static Result<InstructorProfile> Create(Guid userId, string headline, string bio) { ... }
+    public Result UpdateDetails(string headline, string bio) { ... }
+    public void Approve() => IsApproved = true;
+    public void Suspend() => IsApproved = false;
+    public void IncrementSessionsCompleted() => SessionsCompleted++;
+    public void AddCreditsEarned(int amount) => CreditsEarned += amount;
+    public Result AddReview(Guid learnerUserId, int rating, string? comment) { ... }
+    public Result UpdateReview(Guid reviewId, Guid learnerUserId, int rating, string? comment) { ... }
+    public Result RemoveReview(Guid reviewId, Guid learnerUserId) { ... }
+    private void RecalculateRating() { ... } // حساب متوسط التقييم تلقائياً
+}
+```
+
+#### InstructorReview — تقييم المدرب
+
+```csharp
+public sealed class InstructorReview : SoftDeleteEntity
+{
+    public Guid InstructorProfileId { get; private set; }
+    public Guid LearnerUserId { get; private set; }
+    public int Rating { get; private set; } // 1 إلى 5
+    public string Comment { get; private set; } = string.Empty;
+
+    public static Result<InstructorReview> Create(Guid instructorProfileId, Guid learnerUserId, int rating, string? comment) { ... }
+    public void Update(int rating, string? comment) { ... }
+}
 ```
 
 ---
 
-### 2.3 Domain Events
+### 2.3 Value Objects
+
+**Files**: `src/Skill-Loop.Domain/Entities/Courses/ValueObjects/`
+
+| Value Object    | الوصف                                                              | Factory Method                                    |
+| --------------- | ------------------------------------------------------------------ | ------------------------------------------------- |
+| `CoursePrice`   | سعر الكورس بالكريديت. `IsFree` = true لو `Credits == 0`            | `Create(int credits)` مع validation + `Free()`    |
+| `CourseRating`  | متوسط التقييم وعدد المراجعات. `AddRating(int)` يحسب المتوسط الجديد | `Empty()` + `Create(double, int)`                 |
+| `VideoResource` | رابط الفيديو + المدة + الجودة + معرّف المزوّد الخارجي              | `Create(url, duration, resolution?, providerId?)` |
+| `PdfAttachment` | اسم الملف + رابط التخزين + الحجم                                   | `Create(fileName, storageUrl, fileSizeBytes)`     |
+
+**مثال — CoursePrice**:
+
+```csharp
+public sealed record CoursePrice
+{
+    public int Credits { get; private init; }
+    public bool IsFree => Credits == 0;
+
+    public static Result<CoursePrice> Create(int credits)
+    {
+        if (credits < 0)
+            return Result<CoursePrice>.Failure(new Error("CoursePrice.Negative", "Course credits cannot be negative.", ErrorType.Validation));
+        return Result<CoursePrice>.Success(new CoursePrice(credits));
+    }
+
+    public static CoursePrice Free() => new(0);
+}
+```
+
+---
+
+### 2.4 Enums
+
+**Files**: `src/Skill-Loop.Domain/Enums/`
+
+| Enum               | القيم                                               | الاستخدام                     |
+| ------------------ | --------------------------------------------------- | ----------------------------- |
+| `CourseLevel`      | `Beginner`, `Intermediate`, `Advanced`, `AllLevels` | مستوى الكورس                  |
+| `CourseStatus`     | `Draft`, `Published`, `Archived`                    | حالة نشر الكورس               |
+| `EnrollmentStatus` | `Active`, `Completed`, `Cancelled`                  | حالة التسجيل في الكورس        |
+| `TransactionType`  | `CreditDeduction`, `CreditRefund`, `CreditReward`   | نوع الحركة المالية في المحفظة |
+| `SessionStatus`    | `Draft`, `Published`                                | حالة الجلسة                   |
+| `BookingStatus`    | `Confirmed`, `InProgress`, `Completed`              | حالة حجز الجلسة               |
+| `MaterialType`     | `PDF`, `Video`, `Image`, `Document`, `Other`        | نوع الملف المرفق بالجلسة      |
+| `OtpPurpose`       | `VerifyPhone`, `EmailVerification`, `PasswordReset` | الغرض من كود التحقق           |
+
+---
+
+### 2.5 Domain Events
 
 **Files**:
+
 - `src/Skill-Loop.Domain/Common/Events/IDomainEvent.cs` — واجهة فارغة (marker)
 - `src/Skill-Loop.Domain/Common/Events/IHasDomainEvents.cs` — عقد للكيانات التي ترفع أحداث
 
 **الآلية**:
+
 1. الكيان يرفع حدث عبر `AddDomainEvent()` (متاحة من `Entity`)
 2. يتم جمع الأحداث عبر `InsertOutboxMessagesInterceptor` قبل `SaveChanges` ← تُخزّن في جدول `OutboxMessages`
 3. `ProcessOutboxMessagesJob` (Hangfire) يقرأ الـ Outbox ← يغلّف الحدث في `DomainEventNotification<T>` ← ينشره عبر `IPublisher.Publish()`
 
-**مثال كامل — StaffInvitation يرفع حدث**:
+#### الأحداث الموجودة حالياً
+
+| Module         | Event                                                                                               | ملف المصدر                                                   |
+| -------------- | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
+| **Course**     | `CourseCreatedDomainEvent(Guid CourseId, string Title)`                                             | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Course**     | `CourseUpdatedDomainEvent(Guid CourseId, string Title)`                                             | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Course**     | `CoursePublishedDomainEvent(Guid CourseId, string Title)`                                           | `Entities/Courses/Events/CourseDomainEvents.cs`              |
+| **Enrollment** | `CourseEnrolledDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, int CreditsPaid)`         | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Enrollment** | `LessonCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId, Guid LessonId)`          | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Enrollment** | `CourseCompletedDomainEvent(Guid EnrollmentId, Guid UserId, Guid CourseId)`                         | `Entities/Enrollments/Events/EnrollmentDomainEvents.cs`      |
+| **Wallet**     | `WalletBalanceDeductedDomainEvent(Guid UserId, int AmountDeducted, int RemainingBalance)`           | `Entities/Wallets/Events/WalletDomainEvents.cs`              |
+| **Session**    | `SessionMaterialUploadedEvent(SessionMaterial Material)`                                            | `Entities/Session/Events/SessionMaterialUploadedEvent.cs`    |
+| **Session**    | `SessionCompletedDomainEvent(Guid SessionId, Guid InstructorId, Guid LearnerUserId, int PriceInCredits)` | `Entities/Session/Events/SessionCompletedDomainEvent.cs` |
+| **Invitation** | `StaffInvitationCreatedEvent(StaffInvitation Invitation)`                                           | `Entities/Invitation/Events/StaffInvitationCreatedEvent.cs`  |
+
+**مثال كامل — Course يرفع حدث**:
 
 ```csharp
-// src/Skill-Loop.Domain/Entities/Invitation/Events/StaffInvitationCreatedEvent.cs
-public sealed record StaffInvitationCreatedEvent(StaffInvitation Invitation) : IDomainEvent;
+// src/Skill-Loop.Domain/Entities/Courses/Events/CourseDomainEvents.cs
+public sealed record CourseCreatedDomainEvent(Guid CourseId, string Title) : IDomainEvent;
 
-// src/Skill-Loop.Domain/Entities/Invitation/StaffInvitation.cs
-public static StaffInvitation Create(...)
+// src/Skill-Loop.Domain/Entities/Courses/Course.cs
+public static Result<Course> Create(...)
 {
-    var invitation = new StaffInvitation { ... };
-    invitation.AddDomainEvent(new StaffInvitationCreatedEvent(invitation));
-    return invitation;
-}
-```
-
-**الـ Handler في Application**:
-```csharp
-// src/Skill-Loop.Application/Features/Accounts/StaffInvitations/EventHandlers/
-//   StaffInvitationCreated/StaffInvitationCreatedEventHandler.cs
-public sealed class StaffInvitationCreatedEventHandler(IJobScheduler jobScheduler)
-    : INotificationHandler<DomainEventNotification<StaffInvitationCreatedEvent>>
-{
-    public Task Handle(DomainEventNotification<StaffInvitationCreatedEvent> notification, ...)
-    {
-        var invitation = notification.DomainEvent.Invitation;
-        // ... يجدول إرسال بريد عبر Hangfire
-    }
+    // ... validation ...
+    var course = new Course { ... };
+    course.AddDomainEvent(new CourseCreatedDomainEvent(course.Id, course.Title));
+    return Result<Course>.Success(course);
 }
 ```
 
 ---
 
-### 2.4 Constants (Roles & Permissions)
+### 2.6 Constants (Roles & Permissions)
 
 **Files**:
+
 - `src/Skill-Loop.Domain/Constants/Roles.cs`
 - `src/Skill-Loop.Domain/Constants/Permissions.cs`
 
+#### Roles
+
 ```csharp
-// Roles.cs — الأدوار المتاحة
 public static class Roles
 {
-    public const string Admin = "Admin";
-    public static readonly IReadOnlyList<string> All = new[] { Admin };
+    public const string SuperAdmin = "SuperAdmin";       // المدير العام
+    public const string Admin = "Admin";                 // مدير المحتوى
+    public const string FinanceManager = "FinanceManager"; // المسؤول المالي
+    public const string Support = "Support";             // الدعم
+    public const string User = "User";                   // المستخدم العادي (Learner)
+    public const string Instructor = "Instructor";       // المعلم
+
+    public static readonly IReadOnlyList<string> All = new[]
+    { SuperAdmin, Admin, FinanceManager, Support, User, Instructor };
+
+    // أدوار لوحة التحكم (Staff)
+    public static readonly IReadOnlyList<string> StaffRoles = new[]
+    { SuperAdmin, Admin, FinanceManager, Support };
+
+    // أدوار مستخدمي الموبايل
+    public static readonly IReadOnlyList<string> MobileRoles = new[]
+    { User, Instructor };
 }
 ```
 
+#### Permissions
+
 ```csharp
-// Permissions.cs — صلاحيات حسب الوحدات (Nested Classes)
 public class Permissions
 {
-    // الآن فارغة — لا يوجد nested classes بعد!
-    // لكن الدالة السحرية تجلب كل الصلاحيات عبر Reflection:
+    public static class Catalog
+    {
+        public const string CategoriesManage = "Categories.Manage";
+        public const string SkillsManage = "Skills.Manage";
+        public const string TagsManage = "Tags.Manage";
+        public const string SessionsModerate = "Sessions.Moderate";
+    }
+
+    public static class Users
+    {
+        public const string View = "Users.View";
+        public const string Activate = "Users.Activate";
+        public const string Deactivate = "Users.Deactivate";
+        public const string AssignRole = "Users.AssignRole";
+    }
+
+    public static class Finance
+    {
+        public const string PackagesManage = "Packages.Manage";
+        public const string PromoCodesManage = "PromoCodes.Manage";
+        public const string WalletAdjust = "Wallet.Adjust";
+        public const string PaymentsView = "Payments.View";
+    }
+
+    public static class Bookings
+    {
+        public const string View = "Bookings.View";
+    }
+
+    public static class Access
+    {
+        public const string RolesManage = "Roles.Manage";
+        public const string PermissionsManage = "Permissions.Manage";
+        public const string InvitationsSend = "Invitations.Send";
+    }
+
+    public static class Sessions
+    {
+        public const string Moderate = "Sessions.Moderate";
+        public const string ViewMaterials = "Sessions.ViewMaterials";
+        public const string UploadMaterials = "Sessions.UploadMaterials";
+        public const string DeleteMaterials = "Sessions.DeleteMaterials";
+        public const string ReorderMaterials = "Sessions.ReorderMaterials";
+    }
+
+    // دالة Reflection لجلب جميع الصلاحيات تلقائياً
     public static IReadOnlyList<string> GetAllPermissions() { ... }
 }
 ```
@@ -230,9 +444,10 @@ public class Permissions
 > **طريقة إضافة صلاحية جديدة**: أضف `nested static class` بداخل `Permissions` وأضف `const string` بداخلها. الـ Seed يلتقطها تلقائياً عبر Reflection.
 
 **Seeding** (`src/Skill-Loop.Infrastructure/Persistence/Seed/ContextSeed.cs`):
+
 1. ينشئ الأدوار من `Roles.All`
 2. يجلب كل الصلاحيات من `Permissions.GetAllPermissions()` ويضيف الجديد لجدول `TbPermission`
-3. يربط كل الصلاحيات بدور `Admin` عبر جدول `TbRolePermission`
+3. يربط كل الصلاحيات بدور `SuperAdmin` عبر جدول `TbRolePermission`
 
 ---
 
@@ -254,6 +469,7 @@ public interface IQuery<TResponse> : IRequest<Result<TResponse>> { }
 ```
 
 **Handlers**:
+
 ```csharp
 // ICommandHandler.cs
 public interface ICommandHandler<in TCommand> : IRequestHandler<TCommand, Result>
@@ -277,15 +493,15 @@ public interface IQueryHandler<in TQuery, TResponse>
 
 الترتيب المسجّل (مهم! يُنفّذ من الأول للآخر):
 
-| # | Behavior | مهمته | يُفعّل على |
-|---|----------|-------|-----------|
-| 1 | `LoggingBehavior` | يسجل بداية/نهاية كل Request مع CorrelationId | كل Request |
-| 2 | `PerformanceBehavior` | يحذر إذا تجاوز الطلب 800ms | كل Request |
-| 3 | `AuthorizationBehavior` | يفحص `[Permission]` attribute ← يتحقق من `ICurrentUser` | فقط إذا وُجد `[PermissionAttribute]` |
-| 4 | `ValidationBehavior` | يجمع أخطاء FluentValidation ← يرجع `Result.Failure` | إذا وُجد `IValidator<TRequest>` |
-| 5 | `CachingBehavior` | يقرأ من الكاش (GetOrCreateAsync) | فقط `ICacheableQuery` |
-| 6 | `CacheInvalidationBehavior` | يمسح الكاش بالـ prefix بعد النجاح | فقط `ICacheInvalidatorCommand` |
-| 7 | `TransactionBehavior` | يلف الـ Handler في DB transaction | فقط `ICommand<TResponse> where TResponse : Result` |
+| #   | Behavior                    | مهمته                                                   | يُفعّل على                                         |
+| --- | --------------------------- | ------------------------------------------------------- | -------------------------------------------------- |
+| 1   | `LoggingBehavior`           | يسجل بداية/نهاية كل Request مع CorrelationId            | كل Request                                         |
+| 2   | `PerformanceBehavior`       | يحذر إذا تجاوز الطلب 800ms                              | كل Request                                         |
+| 3   | `AuthorizationBehavior`     | يفحص `[Permission]` attribute ← يتحقق من `ICurrentUser` | فقط إذا وُجد `[PermissionAttribute]`               |
+| 4   | `ValidationBehavior`        | يجمع أخطاء FluentValidation ← يرجع `Result.Failure`     | إذا وُجد `IValidator<TRequest>`                    |
+| 5   | `CachingBehavior`           | يقرأ من الكاش (GetOrCreateAsync)                        | فقط `ICacheableQuery`                              |
+| 6   | `CacheInvalidationBehavior` | يمسح الكاش بالـ prefix بعد النجاح                       | فقط `ICacheInvalidatorCommand`                     |
+| 7   | `TransactionBehavior`       | يلف الـ Handler في DB transaction                       | فقط `ICommand<TResponse> where TResponse : Result` |
 
 > **ملاحظة هامة**: `TransactionBehavior` عنده constraint: `where TRequest : ICommand<TResponse>` و `where TResponse : Result`. هذا يعني إنه **لا يُفعّل** على `ICommand` (بدون TResponse) ولا على الـ Queries!
 
@@ -302,9 +518,10 @@ public sealed class PermissionAttribute : Attribute
 ```
 
 **الاستخدام**: تزيّن الـ Command/Query class:
+
 ```csharp
-[Permission("Skills.Create")]
-public sealed record CreateSkillCommand(...) : ICommand<Guid>;
+[Permission("Categories.Manage")]
+public sealed record CreateCategoryCommand(...) : ICommand<Guid>;
 ```
 
 #### ResultFactory Helper
@@ -327,6 +544,8 @@ public static class ResultFactory
 
 ```
 Errors/
+├── Chat/
+│   └── ChatErrors.cs
 ├── Files/
 │   └── FileErrors.cs
 ├── Identity/
@@ -335,12 +554,34 @@ Errors/
 │   ├── PasswordErrors.cs
 │   ├── TokenErrors.cs
 │   └── UserErrors.cs
-└── Invitations/
-    └── InvitationErrors.cs
+├── Instructors/
+│   └── InstructorProfileErrors.cs
+├── Invitations/
+│   └── InvitationErrors.cs
+└── Sessions/
+    └── SessionMaterialErrors.cs
+```
+
+**InstructorProfileErrors**:
+
+```csharp
+public static class InstructorProfileErrors
+{
+    public static readonly Error NotFound = new(
+        "INSTRUCTOR_PROFILE_NOT_FOUND",
+        "لم يتم العثور على الملف الشخصي للمدرب.",
+        ErrorType.NotFound);
+
+    public static readonly Error AlreadyExists = new(
+        "INSTRUCTOR_PROFILE_ALREADY_EXISTS",
+        "يوجد ملف شخصي لهذا المدرب بالفعل.",
+        ErrorType.Conflict);
+}
 ```
 
 **Convention**:
-- اسم الكلاس: `{Domain}Errors` (مثل `UserErrors`, `FileErrors`)
+
+- اسم الكلاس: `{Domain}Errors` (مثل `UserErrors`, `ChatErrors`, `SessionMaterialErrors`)
 - الكلاس `static class`
 - الأخطاء الثابتة: `public static readonly Error`
 - الأخطاء الديناميكية: `public static Error MethodName(string details) => new(...)`
@@ -372,6 +613,7 @@ public static class UserErrors
 ### 3.4 Pagination
 
 **Files**:
+
 - `src/Skill-Loop.Application/Common/Pagination/PaginationParameters.cs`
 - `src/Skill-Loop.Application/Common/Pagination/PaginationMetadata.cs`
 - `src/Skill-Loop.Application/Common/Pagination/PagedResult.cs`
@@ -400,31 +642,6 @@ public record PaginationRequest
 {
     public int PageNumber { get; init; } = 1;
     public int PageSize { get; init; } = 10;
-}
-```
-
-**مثال حقيقي — GetAllUsersQuery**:
-```csharp
-// الـ Query يرث PaginationRequest (مباشرة) أو يأخذ الخصائص:
-public sealed record GetAllUsersQuery(
-    int PageNumber, int PageSize, string? Role, string? SearchTerm
-) : ICacheableQuery<PagedResult<UserDto>> { ... }
-
-// الـ Handler:
-public async Task<Result<PagedResult<UserDto>>> Handle(...)
-{
-    var pagedResult = await _userService.GetAllUsersAsync(...);
-    return Result<PagedResult<UserDto>>.Success(pagedResult);
-}
-```
-
-**الـ Contract في Api**:
-```csharp
-// src/Skill-Loop.Api/Contracts/Accounts/GetUsersRequest.cs
-public record GetUsersRequest : PaginationRequest
-{
-    public string? Role { get; init; }
-    public string? SearchTerm { get; init; }
 }
 ```
 
@@ -474,8 +691,67 @@ Features/
     ├── EventHandlers/
     │   └── {EventName}/
     │       └── {EventName}EventHandler.cs
+    ├── DTOs/
+    │   └── {Feature}Dto.cs  (DTOs مشتركة)
     └── Shared/
-        └── {Feature}Response.cs  (DTOs مشتركة)
+        └── {Feature}Response.cs  (اختياري)
+```
+
+#### Features الموجودة حالياً
+
+| Feature                | Commands                                                                                                                                                                                                                                                                                                                  | Queries                                                                                                          | EventHandlers                                   | DTOs |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- | ---- |
+| **Accounts**           | ChangePassword, ForgotPassword, ResetPassword, StaffLogin, StaffGoogleLogin, RefreshToken, Logout, SendInvitation, AcceptInvitation, AcceptInvitationWithGoogle, ActivateUser, DeactivateUser, AssignRole, RemoveRole, UpdateMyProfile, UpdateMyProfilePicture, AssignPermission, RemovePermission, UpdateRolePermissions | GetAllUsers, GetMyProfile, GetAllPermissions, GetRolePermissions, GetAllRolesWithPermissions, ValidateInvitation | StaffInvitationCreated                          | ✅   |
+| **Categories**         | CreateCategory, UpdateCategory, DeleteCategory                                                                                                                                                                                                                                                                            | GetCategories                                                                                                    | —                                               | —    |
+| **Courses**            | CreateCourse, AddLesson, AddCourseReview, PublishCourse, ToggleCourseBookmark                                                                                                                                                                                                                                             | GetCourseById, GetCoursesPaged                                                                                   | ✅ (EventHandlers dir)                          | ✅   |
+| **Enrollments**        | EnrollInCourse, UpdateLessonProgress                                                                                                                                                                                                                                                                                      | GetUserEnrolledCourses                                                                                           | —                                               | ✅   |
+| **Instructors**        | CreateMyInstructorProfile, UpdateMyInstructorProfile, ChangeInstructorApprovalStatus, AddInstructorReview, UpdateInstructorReview, RemoveInstructorReview                                                                                                                                                                  | GetInstructorsPaged, GetInstructorProfileByUserId, GetInstructorFullProfileByUserId                               | SessionCompleted, CourseEnrolled                | ✅   |
+| **Wallets**            | — (no buy/promo commands yet)                                                                                                                                                                                                                                                                                             | GetMyWallet, GetMyWalletTransactionsPaged                                                                        | CourseEnrolled (CreditInstructorWallet)          | ✅   |
+| **Sessions**           | CreateSession, UpdateSession, DeleteSession, ChangeSessionStatus                                                                                                                                                                                                                                                          | GetSessionById, GetSessionsPaged                                                                                 | —                                               | —    |
+| **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
+| **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | —                                               | ✅   |
+| **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                                               | —    |
+
+---
+
+### 3.7 External Service Abstractions
+
+**Files**: `src/Skill-Loop.Application/Common/Abstractions/External/`
+
+| Category        | Interface                  | الوصف                                |
+| --------------- | -------------------------- | ------------------------------------ |
+| **Cache**       | `ICacheService`            | قراءة/كتابة الكاش                    |
+| **Cache**       | `ICacheableQuery<T>`       | Query مع caching                     |
+| **Cache**       | `ICacheInvalidatorCommand` | Command يمسح الكاش                   |
+| **Client**      | `IClientContext`           | بيانات العميل (IP, User-Agent, etc.) |
+| **Email**       | `IEmailSender`             | إرسال البريد الإلكتروني              |
+| **FileStorage** | `IFileStorage`             | رفع/حذف ملفات محلياً                 |
+| **Jobs**        | `IJobScheduler`            | جدولة Hangfire jobs                  |
+| **Realtime**    | `IChatNotifier`            | إشعارات الشات اللحظي (SignalR)       |
+| **Routing**     | `IApplicationUrlService`   | توليد الروابط الأساسية               |
+| **Storage**     | `ICourseContentStorage`    | تخزين ملفات الكورسات (Google Drive)  |
+
+#### IChatNotifier — واجهة الشات اللحظي
+
+```csharp
+public interface IChatNotifier
+{
+    Task NotifyMessageReceivedAsync(Guid recipientUserId, MessageDto message, CancellationToken ct = default);
+    Task NotifyMessagesReadAsync(Guid recipientUserId, MessagesReadDto payload, CancellationToken ct = default);
+}
+```
+
+#### ICourseContentStorage — واجهة تخزين المحتوى
+
+```csharp
+public interface ICourseContentStorage
+{
+    Task<Result<CourseContentUploadResult>> UploadAsync(Stream fileStream, string fileName, string folderName, CancellationToken ct = default);
+    Task<Result<CourseContentDownloadResult>> DownloadAsync(string fileId, CancellationToken ct = default);
+    Task<Result> DeleteAsync(string fileId, CancellationToken ct = default);
+    Task<Result<DriveQuotaUsage>> GetQuotaUsageAsync(CancellationToken ct = default);
+    Task<Result<string>> EnsureSessionFolderAsync(Guid sessionId, CancellationToken ct = default);
+}
 ```
 
 ---
@@ -489,16 +765,42 @@ Features/
 ```csharp
 public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, Guid>
 {
+    // Instructor Profiles
+    public DbSet<InstructorProfile> InstructorProfiles => Set<InstructorProfile>();
+    public DbSet<InstructorReview> InstructorReviews => Set<InstructorReview>();
+
+    // Core
+    public DbSet<SiteSettings> SiteSettings => Set<SiteSettings>();
     public DbSet<OtpVerification> OtpVerifications => Set<OtpVerification>();
     public DbSet<RefreshToken> RefreshTokens => Set<RefreshToken>();
     public DbSet<OutboxMessage> OutboxMessages => Set<OutboxMessage>();
     public DbSet<StaffInvitation> StaffInvitations => Set<StaffInvitation>();
 
+    // Courses & Categories
+    public DbSet<Course> Courses => Set<Course>();
+    public DbSet<Category> Categories => Set<Category>();
+    public DbSet<CourseBookmark> CourseBookmarks => Set<CourseBookmark>();
+    public DbSet<CourseReview> CourseReviews => Set<CourseReview>();
+
+    // Enrollments & Wallets
+    public DbSet<Enrollment> Enrollments => Set<Enrollment>();
+    public DbSet<UserWallet> UserWallets => Set<UserWallet>();
+    public DbSet<WalletTransaction> WalletTransactions => Set<WalletTransaction>();
+
+    // Sessions & Bookings
+    public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Booking> Bookings => Set<Booking>();
+    public DbSet<SessionMaterial> SessionMaterials => Set<SessionMaterial>();
+
+    // Chat
+    public DbSet<Conversation> Conversations => Set<Conversation>();
+    public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);
         builder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-        builder.ApplySoftDeleteGlobalFilters(); // فلتر عام للحذف المنطقي
+        builder.ApplySoftDeleteGlobalFilters();
     }
 }
 ```
@@ -506,22 +808,27 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 > **لإضافة كيان جديد**: أضف `DbSet<T>` هنا، وأنشئ Configuration في `Persistence/Configurations/`.
 
 **Configurations**: `src/Skill-Loop.Infrastructure/Persistence/Configurations/`
-- كل Configuration تطبق `IEntityTypeConfiguration<T>`
-- مثال: `StaffInvitationConfiguration.cs` يحدد اسم الجدول، الأطوال، الفهارس
 
-```csharp
-public sealed class StaffInvitationConfiguration : IEntityTypeConfiguration<StaffInvitation>
-{
-    public void Configure(EntityTypeBuilder<StaffInvitation> builder)
-    {
-        builder.ToTable("StaffInvitations");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Email).IsRequired().HasMaxLength(256);
-        // ...
-        builder.HasIndex(x => x.Token).IsUnique();
-    }
-}
-```
+| Configuration File                      | الكيان/الكيانات                                           |
+| --------------------------------------- | --------------------------------------------------------- |
+| `ApplicationUserConfiguration.cs`       | ApplicationUser                                           |
+| `ApplicationRoleConfiguration.cs`       | ApplicationRole                                           |
+| `BookingConfiguration.cs`               | Booking                                                   |
+| `CategorySectionLessonConfiguration.cs` | Category, Section, Lesson                                 |
+| `ChatConfigurations.cs`                 | Conversation, ChatMessage                                 |
+| `CourseConfiguration.cs`                | Course (Aggregate + Value Objects)                        |
+| `EnrollmentAndWalletConfigurations.cs`  | Enrollment, LessonProgress, UserWallet, WalletTransaction |
+| `InstructorProfileConfiguration.cs`     | InstructorProfile (1-to-1 مع ApplicationUser)             |
+| `InstructorReviewConfiguration.cs`      | InstructorReview (1-لـ-متعدد مع InstructorProfile)        |
+| `OtpVerificationConfiguration.cs`       | OtpVerification                                           |
+| `OutboxMessageConfiguration.cs`         | OutboxMessage                                             |
+| `RefreshTokenConfiguration.cs`          | RefreshToken                                              |
+| `SessionConfiguration.cs`               | Session                                                   |
+| `SessionMaterialConfiguration.cs`       | SessionMaterial                                           |
+| `SiteSettingsConfiguration.cs`          | SiteSettings                                              |
+| `StaffInvitationConfiguration.cs`       | StaffInvitation                                           |
+| `TbPermissionConfiguration.cs`          | TbPermission                                              |
+| `TbRolePermissionConfiguration.cs`      | TbRolePermission                                          |
 
 ---
 
@@ -529,13 +836,14 @@ public sealed class StaffInvitationConfiguration : IEntityTypeConfiguration<Staf
 
 **Files**: `src/Skill-Loop.Infrastructure/Persistence/Interceptors/`
 
-| Interceptor | مهمته |
-|-------------|-------|
-| `AuditableEntityInterceptor` | يملأ `CreatedAt/CreatedBy` عند الإضافة و `UpdatedAt/UpdatedBy` عند التعديل لأي `AuditableEntity` |
-| `SoftDeleteInterceptor` | يحوّل `EntityState.Deleted` إلى `Modified` ويضع `IsDeleted=true` لأي `SoftDeleteEntity` |
-| `InsertOutboxMessagesInterceptor` | يجمع الـ `DomainEvents` من الكيانات ← يحولها لـ `OutboxMessage` ← يضيفها للـ Context قبل الحفظ |
+| Interceptor                       | مهمته                                                                                            |
+| --------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `AuditableEntityInterceptor`      | يملأ `CreatedAt/CreatedBy` عند الإضافة و `UpdatedAt/UpdatedBy` عند التعديل لأي `AuditableEntity` |
+| `SoftDeleteInterceptor`           | يحوّل `EntityState.Deleted` إلى `Modified` ويضع `IsDeleted=true` لأي `SoftDeleteEntity`          |
+| `InsertOutboxMessagesInterceptor` | يجمع الـ `DomainEvents` من الكيانات ← يحولها لـ `OutboxMessage` ← يضيفها للـ Context قبل الحفظ   |
 
 **ترتيب التسجيل** في `AddPersistence.cs`:
+
 ```csharp
 options.UseSqlServer(...)
        .AddInterceptors(
@@ -549,6 +857,7 @@ options.UseSqlServer(...)
 ### 4.3 Outbox Pattern & Hangfire
 
 **Flow**:
+
 ```
 Entity.AddDomainEvent() → SaveChanges → InsertOutboxMessagesInterceptor
     → OutboxMessage in DB → ProcessOutboxMessagesJob (كل 5 ثوانٍ)
@@ -556,6 +865,7 @@ Entity.AddDomainEvent() → SaveChanges → InsertOutboxMessagesInterceptor
 ```
 
 **OutboxMessage** (`src/Skill-Loop.Infrastructure/Persistence/Outbox/OutboxMessage.cs`):
+
 ```csharp
 public sealed class OutboxMessage
 {
@@ -570,6 +880,7 @@ public sealed class OutboxMessage
 ```
 
 **ProcessOutboxMessagesJob** — مجدول كل 5 ثوانٍ:
+
 ```csharp
 // src/Skill-Loop.Api/Extensions/PipelineExtensions.cs
 RecurringJob.AddOrUpdate<ProcessOutboxMessagesJob>(
@@ -579,13 +890,13 @@ RecurringJob.AddOrUpdate<ProcessOutboxMessagesJob>(
 ```
 
 **IJobScheduler** — واجهة Hangfire:
+
 ```csharp
 // src/Skill-Loop.Infrastructure/External/Jobs/HangfireJobScheduler.cs
 public class HangfireJobScheduler : IJobScheduler
 {
     public void Enqueue<T>(Expression<Action<T>> methodCall)
         => BackgroundJob.Enqueue(methodCall);
-    // ... overloads for Task
 }
 ```
 
@@ -596,17 +907,20 @@ public class HangfireJobScheduler : IJobScheduler
 **Main file**: `src/Skill-Loop.Infrastructure/DependencyInjection/DependencyInjection.cs`
 
 يستدعي partial methods:
+
 ```
 AddInfrastructure()
-  ├── AddCoreServices()         ← IDateTime, ICurrentUser, ICorrelationContext, etc.
-  ├── AddCaching()              ← MemoryCacheService
+  ├── AddCoreServices()         ← IDateTime, ICurrentUser, ICorrelationContext, IGeoLocationService,
+  │                                IIdentityNotificationService, IInvitationService, ISiteSettingsService
+  ├── AddCaching()              ← RedisCacheService (with MemoryCacheService fallback if Redis unavailable)
   ├── AddPersistence()          ← AppDbContext + Interceptors
   ├── AddHangfireJobs()         ← Hangfire + JobScheduler
-  ├── AddIdentityServices()     ← ASP.NET Identity
+  ├── AddIdentityServices()     ← ASP.NET Identity + Database Seeder
   ├── AddJwtAuthentication()    ← JWT Bearer
   ├── AddExternalAuth()         ← Google Auth
   ├── AddMail()                 ← SMTP
   ├── AddFileStorage()          ← Local File Storage
+  ├── AddGoogleDriveStorage()   ← Google Drive Storage (ICourseContentStorage)
   ├── AddBaseUrl()              ← Backend/Frontend URLs
   └── AddOtpService()           ← OTP Settings
 ```
@@ -641,17 +955,18 @@ public abstract class BaseApiController : ControllerBase
 
 **File**: `src/Skill-Loop.Api/Extensions/ResultExtensions.cs`
 
-| ErrorType | HTTP Status | Title |
-|-----------|-------------|-------|
-| `Validation` | 400 | Validation Error |
-| `Unauthorized` | 401 | Unauthorized |
-| `Forbidden` | 403 | Forbidden |
-| `NotFound` | 404 | Not Found |
-| `Conflict` | 409 | Conflict |
-| `Unexpected` | 500 | Server Error |
-| `Failure` (default) | 400 | Bad Request |
+| ErrorType           | HTTP Status | Title            |
+| ------------------- | ----------- | ---------------- |
+| `Validation`        | 400         | Validation Error |
+| `Unauthorized`      | 401         | Unauthorized     |
+| `Forbidden`         | 403         | Forbidden        |
+| `NotFound`          | 404         | Not Found        |
+| `Conflict`          | 409         | Conflict         |
+| `Unexpected`        | 500         | Server Error     |
+| `Failure` (default) | 400         | Bad Request      |
 
 **Responses**:
+
 - **Success without data** → `204 NoContent` (أو `200 OK` مع message)
 - **Success with data** → `200 OK` مع `{ data: ... }`
 - **Failure** → `application/problem+json` مع `ProblemDetails` يشمل `errors[]`, `traceId`, `correlationId`
@@ -665,19 +980,38 @@ public abstract class BaseApiController : ControllerBase
 ```
 Contracts/
 ├── Common/
-│   └── PaginationRequest.cs      ← base record للـ paginated requests
-├── Accounts/
-│   ├── ChangePasswordRequest.cs
-│   ├── GetUsersRequest.cs        ← يرث PaginationRequest
+│   └── PaginationRequest.cs
+├── Auth/
+│   └── ...
+├── Categories/
+│   └── ...
+├── Chat/
+│   └── ...
+├── Courses/
+│   └── ...
+├── Enrollments/
+│   └── ...
+├── Instructors/
+│   ├── AddInstructorReviewRequest.cs
+│   ├── ChangeInstructorApprovalStatusRequest.cs
+│   ├── CreateInstructorProfileRequest.cs
+│   ├── GetInstructorsRequest.cs
+│   ├── UpdateInstructorProfileRequest.cs
+│   └── UpdateInstructorReviewRequest.cs
+├── Profile/
+│   └── ...
+├── Sessions/
 │   └── ...
 ├── Skills/
-│   ├── CreateSkillRequest.cs     ← (فارغ حالياً)
 │   └── ...
-└── StaffInvitations/
+├── StaffInvitations/
+│   └── ...
+└── Users/
     └── ...
 ```
 
 **Convention**:
+
 - اسم الكلاس: `{Action}Request`
 - يكون `sealed record` (positional أو init-only)
 - يُستخدم فقط في الـ Controller، ولا يخترق طبقة Application
@@ -686,24 +1020,41 @@ Contracts/
 
 ### 5.4 Controller Pattern
 
-**مثال كامل — من AccountsController**:
+**Controllers الموجودة حالياً**:
+
+| Controller                       | Route                       | الوصف                                               |
+| -------------------------------- | --------------------------- | --------------------------------------------------- |
+| `AuthController`                 | `api/v1/auth`               | تسجيل الدخول، التوكن، OTP                           |
+| `ProfileController`              | `api/v1/me`                 | إدارة الملف الشخصي للمستخدم الحالي                  |
+| `UsersController`                | `api/v1/users`              | إدارة المستخدمين (Admin)                            |
+| `PermissionManagementController` | `api/v1/permission-management` | إدارة الصلاحيات والأدوار                            |
+| `StaffInvitationsController`     | `api/v1/staff-invitations`  | دعوات الموظفين                                      |
+| `CategoriesController`           | `api/v1/categories`         | CRUD التصنيفات                                      |
+| `CoursesController`              | `api/v1/courses`            | CRUD الكورسات                                       |
+| `EnrollmentsController`          | `api/v1/enrollments`        | التسجيل في الكورسات + تقدم الدروس                   |
+| `InstructorProfilesController`   | `api/instructor-profiles`   | بروفايل المدرب + التقييمات + اعتماد الإدارة          |
+| `WalletsController`              | `api/wallets`               | رصيد المحفظة + سجل الحركات المالية                   |
+| `SessionsController`             | `api/v1/sessions`           | CRUD الجلسات التعليمية                              |
+| `SessionMaterialsController`     | `api/v1/sessions/{id}/materials` | رفع/حذف/ترتيب ملفات الجلسات                         |
+| `BookingsController`             | `api/v1/bookings`           | حجز الجلسات لايف                                     |
+| `ChatController`                 | `api/v1/chat`               | المحادثات والرسائل                                  |
+| `SiteSettingsController`         | `api/v1/site-settings`      | إعدادات الموقع                                      |
+| `DevController`                  | `api/v1/dev`                | تطوير فقط — quick-login (محمي بـ `IsDevelopment()`) |
+
+**مثال كامل — Controller Pattern**:
 
 ```csharp
-// src/Skill-Loop.Api/Controllers/AccountsController.cs
-[Route("api/[controller]")]
-public class AccountsController : BaseApiController
+[Route("api/v1/[controller]")]
+public class CoursesController : BaseApiController
 {
-    [HttpPost("change-password")]
+    [HttpPost]
     [Authorize]
-    public async Task<IResult> ChangePassword(
-        [FromBody] ChangePasswordRequest request,
+    public async Task<IResult> Create(
+        [FromBody] CreateCourseRequest request,
         CancellationToken cancellationToken)
     {
         // 1. Map Contract → Command
-        var command = new ChangePasswordCommand(
-            request.CurrentPassword,
-            request.NewPassword,
-            request.ConfirmNewPassword);
+        var command = new CreateCourseCommand(...);
 
         // 2. Send via MediatR
         var result = await Mediator.Send(command, cancellationToken);
@@ -715,11 +1066,10 @@ public class AccountsController : BaseApiController
 ```
 
 **القواعد**:
-- الـ Controller **لا يحتوي على منطق أعمال** — فقط mapping ثم `Mediator.Send()` ثم `HandleResult()`
-- Route: `[Route("api/[controller]")]` على الكلاس (أو على `BaseApiController`)
-- كل action ترجع `Task<IResult>` (Minimal API result type)
 
-> **ملاحظة**: لا يوجد API Versioning مُفعّل حالياً. الـ routes تستخدم `api/[controller]` فقط.
+- الـ Controller **لا يحتوي على منطق أعمال** — فقط mapping ثم `Mediator.Send()` ثم `HandleResult()`
+- Route: `[Route("api/v1/[controller]")]` على الكلاس (أو على `BaseApiController`) — **ملاحظة**: `InstructorProfilesController` و `WalletsController` حالياً يستخدمان `[Route("api/[controller]")]` بدون `/v1`، وهذا inconsistence سيتم معالجته
+- كل action ترجع `Task<IResult>` (Minimal API result type)
 
 ---
 
@@ -728,6 +1078,7 @@ public class AccountsController : BaseApiController
 **File**: `src/Skill-Loop.Api/Middlewares/GlobalExceptionHandler.cs`
 
 يُعالج:
+
 1. `DbUpdateConcurrencyException` → 409 Conflict
 2. أي استثناء آخر → 500 Internal Server Error
 
@@ -753,7 +1104,21 @@ Pipeline Order:
 10. Hangfire Dashboard (/hangfire)
 11. ProcessOutboxMessagesJob (recurring)
 12. MapControllers
+13. MapChatHub (/hubs/chat)  ← SignalR
 ```
+
+---
+
+### 5.7 SignalR (Real-time Chat)
+
+الشات اللحظي يعمل عبر SignalR Hub:
+
+- **Hub Path**: `/hubs/chat`
+- **Interface**: `IChatNotifier` (في Application layer)
+- **التسجيل**: `app.MapChatHub()` في `PipelineExtensions.cs`
+- **الأحداث**:
+  - `NotifyMessageReceivedAsync` — إشعار بالرسالة الجديدة للمستقبِل
+  - `NotifyMessagesReadAsync` — إشعار بقراءة الرسائل
 
 ---
 
@@ -761,31 +1126,123 @@ Pipeline Order:
 
 **File**: `tests/Skill-Loop.UnitTests/`
 
-**الهيكل يطابق Application Layer**:
+**الهيكل**:
+
 ```
 UnitTests/
 ├── Common/
-│   └── MockDbContextHelper.cs   ← (فارغ حالياً — stub)
+│   ├── InMemoryDbContextHelper.cs       ← Helper لـ InMemory DbContext
+│   └── MockCourseContentStorage.cs      ← Mock للـ Google Drive
+├── External/
+│   ├── Cache/
+│   │   └── CacheServiceTests.cs
+│   └── Notifications/
+│       └── NotificationServiceTests.cs
 └── Features/
     ├── Accounts/
     │   ├── AccountManagement/
     │   │   ├── Commands/
-    │   │   │   ├── ChangePassword/ChangePasswordCommandHandlerTests.cs  ← (stub)
-    │   │   │   └── ...
+    │   │   │   ├── ActivateUser/ActivateUserCommandHandlerTests.cs
+    │   │   │   ├── ChangePassword/ChangePasswordCommandHandlerTests.cs
+    │   │   │   ├── ForgotPassword/ForgotPasswordCommandHandlerTests.cs
+    │   │   │   ├── ResetPassword/ResetPasswordCommandHandlerTests.cs
+    │   │   │   └── UpdateMyProfile/UpdateMyAccountProfileCommandHandlerTests.cs
     │   │   └── Queries/
-    │   │       └── GetAllUsers/GetAllUsersQueryHandlerTests.cs  ← (stub)
-    │   └── ...
-    └── Skills/
-        ├── Commands/CreateSkill/CreateSkillCommandHandlerTests.cs  ← (stub)
-        └── Queries/GetSkills/GetSkillsQueryHandlerTests.cs  ← (stub)
+    │   │       ├── GetAllUsers/
+    │   │       │   ├── GetAllUsersQueryHandlerTests.cs
+    │   │       │   └── GetAllUsersQueryValidatorTests.cs
+    │   │       ├── GetMyProfile/GetMyAccountProfileQueryHandlerTests.cs
+    │   │       └── GetUserById/
+    │   │           ├── GetUserByIdQueryHandlerTests.cs
+    │   │           └── GetUserByIdQueryValidatorTests.cs
+    │   ├── Authentication/
+    │   │   └── Commands/
+    │   │       ├── Logout/LogoutCommandHandlerTests.cs
+    │   │       └── RefreshToken/RefreshTokenCommandHandlerTests.cs
+    │   ├── PermissionManagement/
+    │   │   └── Commands/
+    │   │       └── AssignPermissionToRole/AssignPermissionToRoleCommandHandlerTests.cs
+    │   ├── StaffAuth/
+    │   │   └── Commands/
+    │   │       └── StaffLogin/StaffLoginCommandHandlerTests.cs
+    │   └── StaffInvitations/
+    │       └── Commands/
+    │           ├── AcceptInvitation/AcceptInvitationCommandHandlerTests.cs
+    │           └── SendInvitation/SendStaffInvitationCommandHandlerTests.cs
+    ├── Courses/
+    │   └── CourseAggregateTests.cs
+    ├── Enrollments/
+    │   └── EnrollmentAndWalletTests.cs
+    ├── Instructors/
+    │   └── Commands/
+    │       ├── AddInstructorAvailability/
+    │       │   └── AddInstructorAvailabilityCommandHandlerTests.cs
+    │       ├── ChangeInstructorApprovalStatus/
+    │       │   ├── ChangeInstructorApprovalStatusCommandHandlerTests.cs
+    │       │   └── ChangeInstructorApprovalStatusCommandValidatorTests.cs
+    │       ├── CreateMyInstructorProfile/
+    │       │   └── CreateMyInstructorProfileCommandHandlerTests.cs
+    │       ├── RemoveInstructorAvailability/
+    │       │   └── RemoveInstructorAvailabilityCommandHandlerTests.cs
+    │       └── UpdateMyInstructorProfile/
+    │           └── UpdateMyInstructorProfileCommandHandlerTests.cs
+    └── Sessions/
+        ├── SessionTests.cs
+        ├── SessionMaterialTests.cs
+        ├── Commands/
+        │   ├── ChangeSessionStatus/
+        │   │   ├── ChangeSessionStatusCommandHandlerTests.cs
+        │   │   └── ChangeSessionStatusCommandValidatorTests.cs
+        │   ├── CreateSession/
+        │   │   ├── CreateSessionCommandHandlerTests.cs
+        │   │   └── CreateSessionCommandValidatorTests.cs
+        │   ├── DeleteSession/
+        │   │   ├── DeleteSessionCommandHandlerTests.cs
+        │   │   └── DeleteSessionCommandValidatorTests.cs
+        │   └── UpdateSession/
+        │       ├── UpdateSessionCommandHandlerTests.cs
+        │       └── UpdateSessionCommandValidatorTests.cs
+        ├── Queries/
+        │   ├── GetSessionById/
+        │   │   ├── GetSessionByIdQueryHandlerTests.cs
+        │   │   └── GetSessionByIdQueryValidatorTests.cs
+        │   └── GetSessionsPaged/
+        │       ├── GetSessionsPagedQueryHandlerTests.cs
+        │       └── GetSessionsPagedQueryValidatorTests.cs
+        └── Materials/
+            ├── Commands/UploadSessionMaterial/UploadSessionMaterialCommandHandlerTests.cs
+            └── EventHandlers/SessionMaterialUploaded/SessionMaterialUploadedEventHandlerTests.cs
+    ├── Bookings/
+    │   ├── Commands/
+    │   │   ├── CancelBooking/
+    │   │   │   ├── CancelBookingCommandHandlerTests.cs
+    │   │   │   └── CancelBookingCommandValidatorTests.cs
+    │   │   ├── ChangeBookingStatus/
+    │   │   │   ├── ChangeBookingStatusCommandHandlerTests.cs
+    │   │   │   └── ChangeBookingStatusCommandValidatorTests.cs
+    │   │   ├── CompleteBooking/
+    │   │   │   ├── CompleteBookingCommandHandlerTests.cs
+    │   │   │   └── CompleteBookingCommandValidatorTests.cs
+    │   │   └── CreateBooking/
+    │   │       ├── CreateBookingCommandHandlerTests.cs
+    │   │       └── CreateBookingCommandValidatorTests.cs
+    │   └── Queries/
+    │       ├── GetBookingById/
+    │       │   └── GetBookingByIdQueryHandlerTests.cs
+    │       ├── GetMyBookings/
+    │       │   └── GetMyBookingsQueryHandlerTests.cs
+    │       └── GetSessionBookings/
+    │           └── GetSessionBookingsQueryHandlerTests.cs
 ```
 
-> **⚠️ NOTICE**: جميع ملفات الاختبارات حالياً **stubs فارغة** (كلاسات فارغة بدون أي test methods). وكذلك `MockDbContextHelper` فارغ. يجب تعبئتها لاحقاً.
+**Note**: `BookingTests.cs` (entity-level tests) is also present at the root level of `Features/Bookings/`.
 
-**Convention المتوقع** (بناءً على هيكل الملفات):
+**Convention**:
+
 - اسم الكلاس: `{HandlerName}Tests`
 - مسار مطابق للـ Handler في Application
-- يستخدم `MockDbContextHelper` لإنشاء InMemory DbContext
+- يستخدم `InMemoryDbContextHelper` لإنشاء DbContext
+- يستخدم `MockCourseContentStorage` لمحاكاة Google Drive
 
 ---
 
@@ -793,19 +1250,20 @@ UnitTests/
 
 ### 7.1 New Command
 
-**مثال مرجعي**: ChangePassword
+**مثال مرجعي**: ChangePassword, CreateCourse
 
-| # | الملف | المسار | ملاحظات |
-|---|-------|--------|---------|
-| 1 | **Command** | `Application/Features/{Feature}/Commands/{Action}/{Action}Command.cs` | `sealed record ... : ICommand` أو `ICommand<TResponse>` |
-| 2 | **Handler** | `Application/Features/{Feature}/Commands/{Action}/{Action}CommandHandler.cs` | `class ... : ICommandHandler<TCommand>` |
-| 3 | **Validator** | `Application/Features/{Feature}/Commands/{Action}/{Action}CommandValidator.cs` | `class ... : AbstractValidator<TCommand>` |
-| 4 | **Contract** | `Api/Contracts/{Feature}/{Action}Request.cs` | `sealed record` |
-| 5 | **Controller Action** | `Api/Controllers/{Feature}Controller.cs` | Map Contract → Command → HandleResult |
-| 6 | **Errors** (اختياري) | `Application/Common/Errors/{Feature}/{Feature}Errors.cs` | `static class` |
-| 7 | **Test** | `tests/.../Commands/{Action}/{Action}CommandHandlerTests.cs` | |
+| #   | الملف                 | المسار                                                                         | ملاحظات                                                 |
+| --- | --------------------- | ------------------------------------------------------------------------------ | ------------------------------------------------------- |
+| 1   | **Command**           | `Application/Features/{Feature}/Commands/{Action}/{Action}Command.cs`          | `sealed record ... : ICommand` أو `ICommand<TResponse>` |
+| 2   | **Handler**           | `Application/Features/{Feature}/Commands/{Action}/{Action}CommandHandler.cs`   | `class ... : ICommandHandler<TCommand>`                 |
+| 3   | **Validator**         | `Application/Features/{Feature}/Commands/{Action}/{Action}CommandValidator.cs` | `class ... : AbstractValidator<TCommand>`               |
+| 4   | **Contract**          | `Api/Contracts/{Feature}/{Action}Request.cs`                                   | `sealed record`                                         |
+| 5   | **Controller Action** | `Api/Controllers/{Feature}Controller.cs`                                       | Map Contract → Command → HandleResult                   |
+| 6   | **Errors** (اختياري)  | `Application/Common/Errors/{Feature}/{Feature}Errors.cs`                       | `static class`                                          |
+| 7   | **Test**              | `tests/.../Commands/{Action}/{Action}CommandHandlerTests.cs`                   |                                                         |
 
 **مثال Command code**:
+
 ```csharp
 // 1. Command
 public sealed record ChangePasswordCommand(
@@ -845,18 +1303,19 @@ public sealed class ChangePasswordCommandValidator : AbstractValidator<ChangePas
 
 ### 7.2 New Query
 
-**مثال مرجعي**: GetAllUsers (مع Pagination + Caching)
+**مثال مرجعي**: GetAllUsers (مع Pagination + Caching), GetCoursesPaged
 
-| # | الملف | ملاحظات |
-|---|-------|---------|
-| 1 | **Query** | `sealed record ... : IQuery<TResponse>` أو `ICacheableQuery<TResponse>` |
-| 2 | **Handler** | `class ... : IQueryHandler<TQuery, TResponse>` |
-| 3 | **Validator** (اختياري) | |
-| 4 | **Response DTO** | في `Shared/` أو مكان مناسب |
-| 5 | **Contract** | `Api/Contracts/{Feature}/Get{Feature}sRequest.cs` |
-| 6 | **Controller Action** | `[HttpGet]` |
+| #   | الملف                   | ملاحظات                                                                 |
+| --- | ----------------------- | ----------------------------------------------------------------------- |
+| 1   | **Query**               | `sealed record ... : IQuery<TResponse>` أو `ICacheableQuery<TResponse>` |
+| 2   | **Handler**             | `class ... : IQueryHandler<TQuery, TResponse>`                          |
+| 3   | **Validator** (اختياري) |                                                                         |
+| 4   | **Response DTO**        | في `DTOs/` أو `Shared/`                                                 |
+| 5   | **Contract**            | `Api/Contracts/{Feature}/Get{Feature}sRequest.cs`                       |
+| 6   | **Controller Action**   | `[HttpGet]`                                                             |
 
 **مثال Query مع caching**:
+
 ```csharp
 // Query
 public sealed record GetAllUsersQuery(
@@ -868,43 +1327,40 @@ public sealed record GetAllUsersQuery(
     public TimeSpan? SlidingExpiration => TimeSpan.FromMinutes(2);
     public TimeSpan? AbsoluteExpiration => TimeSpan.FromMinutes(10);
 }
-
-// Handler
-public sealed class GetAllUsersQueryHandler
-    : IQueryHandler<GetAllUsersQuery, PagedResult<UserDto>>
-{
-    public async Task<Result<PagedResult<UserDto>>> Handle(...)
-    {
-        var pagedResult = await _userService.GetAllUsersAsync(...);
-        return Result<PagedResult<UserDto>>.Success(pagedResult);
-    }
-}
 ```
 
 ---
 
 ### 7.3 New Entity
 
-| # | الخطوة | المسار |
-|---|--------|--------|
-| 1 | أنشئ مجلد الكيان | `Domain/Entities/{EntityName}/` |
-| 2 | اختر Base class مناسب | `BaseEntity`, `AuditableEntity`, أو `SoftDeleteEntity` |
-| 3 | أنشئ Factory Method (إذا يرفع events) | داخل الكيان |
-| 4 | أضف `DbSet<T>` | في `AppDbContext.cs` |
-| 5 | أنشئ Configuration | `Infrastructure/Persistence/Configurations/{Entity}Configuration.cs` |
-| 6 | أنشئ Migration | `dotnet ef migrations add Add{Entity} -p src/Skill-Loop.Infrastructure -s src/Skill-Loop.Api` |
+| #   | الخطوة                                | المسار                                                                                        |
+| --- | ------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 1   | أنشئ مجلد الكيان                      | `Domain/Entities/{EntityName}/`                                                               |
+| 2   | اختر Base class مناسب                 | `BaseEntity`, `AuditableEntity`, أو `SoftDeleteEntity`                                        |
+| 3   | أنشئ Factory Method (إذا يرفع events) | داخل الكيان — `Create(...)` يرجع `Result<T>`                                                  |
+| 4   | أضف Enums (إذا لزم)                   | `Domain/Enums/{EnumName}.cs`                                                                  |
+| 5   | أضف Value Objects (إذا لزم)           | `Domain/Entities/{EntityName}/ValueObjects/`                                                  |
+| 6   | أضف `DbSet<T>`                        | في `AppDbContext.cs`                                                                          |
+| 7   | أنشئ Configuration                    | `Infrastructure/Persistence/Configurations/{Entity}Configuration.cs`                          |
+| 8   | أنشئ Migration                        | `dotnet ef migrations add Add{Entity} -p src/Skill-Loop.Infrastructure -s src/Skill-Loop.Api` |
 
-**مثال Configuration**:
+**مثال — Course (Aggregate Root مع Rich Domain Model)**:
+
 ```csharp
-public sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
+public sealed class Course : SoftDeleteEntity
 {
-    public void Configure(EntityTypeBuilder<Skill> builder)
-    {
-        builder.ToTable("Skills");
-        builder.HasKey(x => x.Id);
-        builder.Property(x => x.Name).IsRequired().HasMaxLength(200);
-        // indexes, relationships...
-    }
+    public string Title { get; private set; } = string.Empty;
+    public CoursePrice Price { get; private set; } = CoursePrice.Free();
+    public CourseStatus Status { get; private set; } = CourseStatus.Draft;
+    public CourseRating Rating { get; private set; } = CourseRating.Empty();
+    // ... navigation collections with backing fields ...
+
+    private Course() { }
+
+    public static Result<Course> Create(string title, ...) { ... }
+    public Result UpdateDetails(string title, ...) { ... }
+    public Result AddSection(string title, int orderIndex) { ... }
+    public void Publish() { ... }
 }
 ```
 
@@ -912,33 +1368,32 @@ public sealed class SkillConfiguration : IEntityTypeConfiguration<Skill>
 
 ### 7.4 New Domain Event + Handler
 
-| # | الخطوة | المسار |
-|---|--------|--------|
-| 1 | أنشئ Event record | `Domain/Entities/{Entity}/Events/{EventName}Event.cs` |
-| 2 | ارفع الحدث في Factory Method | `entity.AddDomainEvent(new XyzEvent(...))` |
-| 3 | أنشئ EventHandler | `Application/Features/{Feature}/EventHandlers/{EventName}/{EventName}EventHandler.cs` |
+| #   | الخطوة                       | المسار                                                                                |
+| --- | ---------------------------- | ------------------------------------------------------------------------------------- |
+| 1   | أنشئ Event record            | `Domain/Entities/{Entity}/Events/{EventName}Event.cs`                                 |
+| 2   | ارفع الحدث في Factory Method | `entity.AddDomainEvent(new XyzEvent(...))`                                            |
+| 3   | أنشئ EventHandler            | `Application/Features/{Feature}/EventHandlers/{EventName}/{EventName}EventHandler.cs` |
 
 ```csharp
 // 1. Event
-public sealed record SkillCreatedEvent(Skill Skill) : IDomainEvent;
+public sealed record CourseEnrolledDomainEvent(
+    Guid EnrollmentId, Guid UserId, Guid CourseId, int CreditsPaid) : IDomainEvent;
 
 // 2. في الكيان
-public static Skill Create(string name)
+public static Result<Enrollment> Create(Guid userId, Guid courseId, int creditsPaid, int totalCourseLessons)
 {
-    var skill = new Skill { Name = name };
-    skill.AddDomainEvent(new SkillCreatedEvent(skill));
-    return skill;
+    var enrollment = new Enrollment { ... };
+    enrollment.AddDomainEvent(new CourseEnrolledDomainEvent(enrollment.Id, userId, courseId, creditsPaid));
+    return Result<Enrollment>.Success(enrollment);
 }
 
 // 3. Handler
-public sealed class SkillCreatedEventHandler(IJobScheduler jobScheduler)
-    : INotificationHandler<DomainEventNotification<SkillCreatedEvent>>
+public sealed class CourseEnrolledEventHandler(IJobScheduler jobScheduler)
+    : INotificationHandler<DomainEventNotification<CourseEnrolledDomainEvent>>
 {
-    public Task Handle(
-        DomainEventNotification<SkillCreatedEvent> notification,
-        CancellationToken cancellationToken)
+    public Task Handle(DomainEventNotification<CourseEnrolledDomainEvent> notification, CancellationToken ct)
     {
-        // Send notification, update cache, etc.
+        // Send notification, update stats, etc.
         return Task.CompletedTask;
     }
 }
@@ -948,47 +1403,47 @@ public sealed class SkillCreatedEventHandler(IJobScheduler jobScheduler)
 
 ### 7.5 New External Service
 
-| # | الخطوة | المسار |
-|---|--------|--------|
-| 1 | أنشئ Interface | `Application/Common/Abstractions/External/{Category}/I{Service}.cs` |
-| 2 | أنشئ Implementation | `Infrastructure/External/{Category}/{Service}.cs` |
-| 3 | سجّل في DI | `Infrastructure/DependencyInjection/Add{Category}.cs` أو `DependencyInjection.cs` |
+| #   | الخطوة              | المسار                                                                            |
+| --- | ------------------- | --------------------------------------------------------------------------------- |
+| 1   | أنشئ Interface      | `Application/Common/Abstractions/External/{Category}/I{Service}.cs`               |
+| 2   | أنشئ Implementation | `Infrastructure/External/{Category}/{Service}.cs`                                 |
+| 3   | سجّل في DI          | `Infrastructure/DependencyInjection/Add{Category}.cs` أو `DependencyInjection.cs` |
 
-**Categories الموجودة**: `Cache`, `Client`, `Email`, `FileStorage`, `Jobs`, `Routing`
+**Categories الموجودة**: `Cache`, `Client`, `Email`, `FileStorage`, `Jobs`, `Realtime`, `Routing`, `Storage`
 
 ---
 
 ### 7.6 New Hangfire Job
 
-| # | الخطوة | المسار |
-|---|--------|--------|
-| 1 | أنشئ Job class | `Infrastructure/BackgroundJobs/{JobName}Job.cs` |
-| 2 | سجّل كـ Scoped | في `AddPersistence.cs` أو `AddHangfireJobs.cs` |
-| 3 | جدوله (اختياري) | في `PipelineExtensions.cs` عبر `RecurringJob.AddOrUpdate<T>(...)` |
-| 4 | أو استخدمه مباشرة | عبر `IJobScheduler.Enqueue<T>(...)` |
+| #   | الخطوة            | المسار                                                            |
+| --- | ----------------- | ----------------------------------------------------------------- |
+| 1   | أنشئ Job class    | `Infrastructure/BackgroundJobs/{JobName}Job.cs`                   |
+| 2   | سجّل كـ Scoped    | في `AddPersistence.cs` أو `AddHangfireJobs.cs`                    |
+| 3   | جدوله (اختياري)   | في `PipelineExtensions.cs` عبر `RecurringJob.AddOrUpdate<T>(...)` |
+| 4   | أو استخدمه مباشرة | عبر `IJobScheduler.Enqueue<T>(...)`                               |
 
 ---
 
 ### 7.7 New Permission
 
-| # | الخطوة | المسار |
-|---|--------|--------|
-| 1 | أضف nested class في Permissions | `Domain/Constants/Permissions.cs` |
-| 2 | أضف const strings | |
-| 3 | استخدم `[Permission("Module.Action")]` | على الـ Command/Query |
+| #   | الخطوة                                 | المسار                            |
+| --- | -------------------------------------- | --------------------------------- |
+| 1   | أضف nested class في Permissions        | `Domain/Constants/Permissions.cs` |
+| 2   | أضف const strings                      |                                   |
+| 3   | استخدم `[Permission("Module.Action")]` | على الـ Command/Query             |
 
 ```csharp
 // في Permissions.cs
-public static class Skills
+public static class Courses
 {
-    public const string Create = "Skills.Create";
-    public const string Update = "Skills.Update";
-    public const string Delete = "Skills.Delete";
-    public const string View = "Skills.View";
+    public const string Create = "Courses.Create";
+    public const string Update = "Courses.Update";
+    public const string Delete = "Courses.Delete";
+    public const string Publish = "Courses.Publish";
 }
 ```
 
-> الـ Seed يلتقطها تلقائياً عبر Reflection ويضيفها لجدول `TbPermission` ويربطها بـ Admin.
+> الـ Seed يلتقطها تلقائياً عبر Reflection ويضيفها لجدول `TbPermission` ويربطها بـ SuperAdmin.
 
 ---
 
@@ -996,35 +1451,24 @@ public static class Skills
 
 ### 🔴 Critical
 
-| # | المشكلة | الملف/المسار | التفاصيل |
-|---|---------|-------------|---------|
-| 1 | **Skills feature — كل الملفات stubs فارغة** | `Application/Features/Skills/**` | كل الـ Commands, Queries, Handlers, Validators, Response — كلها كلاسات فارغة بدون أي كود. كذلك `Api/Controllers/SkillsController.cs` و `Api/Contracts/Skills/*` فارغة. |
-| 2 | **لا يوجد Skill Entity في Domain** | `Domain/Entities/` | يوجد مجلد `Invitation` و `OtpVerification` فقط. لا يوجد كيان `Skill` رغم وجود Feature folder كامل في Application. |
-| 3 | **Migrations folder فارغ** | `Infrastructure/Migrations/` | لا توجد أي migration files — يعني القاعدة لم تُنشأ عبر EF migrations أو تم حذفها. |
-| 4 | **appsettings.json يحتوي أسرار (secrets)** | `Api/appsettings.json` | JWT Key, SMTP Password (مخفية بنجمات لكن الـ key موجود)، OTP Hashing Secret، Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
-| 5 | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore` | لا يوجد أي استثناء لـ `appsettings.json` أو `appsettings.*.json` في `.gitignore`. |
+| #   | المشكلة                                      | الملف/المسار                 | التفاصيل                                                                                      |
+| --- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
+| 2   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. |
+| 3   | **appsettings.json غير مُضاف لـ .gitignore** | `.gitignore`                 | لا يوجد أي استثناء لـ `appsettings.json` في `.gitignore`.                                     |
 
 ### 🟡 Medium
 
-| # | المشكلة | الملف/المسار |
-|---|---------|-------------|
-| 6 | **FileName.cs — ملف مُتبقي (leftover)** | `Application/Features/Accounts/StaffAuth/Commands/StaffGoogleLogin/FileName.cs` — كلاس `internal class FileName` فارغ ومُتبقي من IDE auto-creation. يجب حذفه. |
-| 7 | **TestFilesController — كنترولر اختبار في production** | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development. |
-| 8 | **Unit Tests — كلها stubs فارغة** | `tests/Skill-Loop.UnitTests/**` — كل ملفات الاختبار وكذلك `MockDbContextHelper` كلاسات فارغة. |
-| 9 | **Logs/ و uploads/ في المشروع** | `Api/Logs/` و `Api/uploads/` — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب log files أو uploaded files للمستودع. |
-| 10 | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)** | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
+| #   | المشكلة                                                           | الملف/المسار                                                                                                                                                                                |
+| --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
+| 5   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
+| 6   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 7   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
 
 ### 🟢 Minor / Convention
 
-| # | المشكلة |
-|---|---------|
-| 11 | **Connection String تشير لـ "ClinicOS"** — اسم Database من مشروع سابق، يجب تغييره لـ "SkillLoop". |
-| 12 | **MailSettings.ClinicName = "Skill-Loop"** — بقايا naming من مشروع clinic. |
-| 13 | **OtpPurpose enum** يحتوي `AppointmentBooking`, `ViewAppointments` — قيم من مشروع clinic لا تناسب SkillLoop. |
-| 14 | **StaffInvitation.Role comment** — يذكر "Admin, Doctor, Receptionist" — أدوار من مشروع clinic. |
-| 15 | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`. |
-| 16 | **`using System.Numerics` في AppDbContext و Roles.cs** — using غير مستخدم. |
-| 17 | **الـ Skills Controller** لا يرث من `BaseApiController` — كلاس فارغ بدون وراثة. |
+| 8   | **Logs/ و uploads/ في المشروع** — غير مُضافة للـ `.gitignore`، يمكن أن تتسرب للمستودع.                                   |
+| 9   | **`Skill-Loop.Api.csproj.user`** — ملف user-specific يجب أن يكون في `.gitignore`.                                        |
 
 ---
 
@@ -1034,58 +1478,71 @@ public static class Skills
 
 ### ✅ Exists (موجود ومُطبّق)
 
-| Module | الحالة | التفاصيل |
-|--------|--------|---------|
-| **Auth — Staff Login** | ✅ مكتمل | `StaffLoginCommand`, `StaffGoogleLoginCommand`, `RefreshTokenCommand`, `LogoutCommand` |
-| **Auth — Password Management** | ✅ مكتمل | `ChangePassword`, `ForgotPassword`, `ResetPassword` |
-| **Users — Account Management** | ✅ مكتمل | `GetAllUsers`, `GetMyProfile`, `UpdateMyProfile`, `UpdateMyProfilePicture`, `ActivateUser`, `DeactivateUser`, `AssignRoleToUser`, `RemoveRoleFromUser` |
-| **Auth — Staff Invitations** | ✅ مكتمل | `SendInvitation`, `AcceptInvitation`, `AcceptInvitationWithGoogle`, `ValidateInvitation`, `StaffInvitationCreatedEventHandler` |
-| **Permission Management** | ✅ مكتمل | `AssignPermissionToRole`, `RemovePermissionFromRole`, `UpdateRolePermissions`, `GetAllPermissions`, `GetRolePermissions`, `GetAllRolesWithPermissions` |
-| **OTP Verification** | ✅ جزئي | كيان `OtpVerification` موجود + `OtpService` في Infrastructure. الـ Features في `Application/Features/Otps/` — **UNCLEAR** (لم يتم فحصها بالتفصيل). |
-| **File Storage** | ✅ مكتمل | `LocalFileStorage` + `TestFilesController` |
-| **Email Notifications** | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService` |
-| **Infrastructure Core** | ✅ مكتمل | Caching, Logging, CorrelationId, JWT, Hangfire, Outbox Pattern |
+| Module                         | الحالة   | التفاصيل                                                                                                                                                                              |
+| ------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Auth — Staff Login**         | ✅ مكتمل | `StaffLoginCommand`, `StaffGoogleLoginCommand`, `RefreshTokenCommand`, `LogoutCommand`                                                                                                |
+| **Auth — Password Management** | ✅ مكتمل | `ChangePassword`, `ForgotPassword`, `ResetPassword`                                                                                                                                   |
+| **Users — Account Management** | ✅ مكتمل | `GetAllUsers`, `GetMyProfile`, `UpdateMyProfile`, `UpdateMyProfilePicture`, `ActivateUser`, `DeactivateUser`, `AssignRoleToUser`, `RemoveRoleFromUser`                                |
+| **Auth — Staff Invitations**   | ✅ مكتمل | `SendInvitation`, `AcceptInvitation`, `AcceptInvitationWithGoogle`, `ValidateInvitation`, `StaffInvitationCreatedEventHandler`                                                        |
+| **Permission Management**      | ✅ مكتمل | `AssignPermissionToRole`, `RemovePermissionFromRole`, `UpdateRolePermissions`, `GetAllPermissions`, `GetRolePermissions`, `GetAllRolesWithPermissions`                                |
+| **OTP Verification**           | ✅ مكتمل | كيان `OtpVerification` + `OtpService` في Infrastructure                                                                                                                               |
+| **Categories**                 | ✅ مكتمل | `CreateCategory`, `UpdateCategory`, `DeleteCategory`, `GetCategories` + Entity + Controller                                                                                           |
+| **Courses**                    | ✅ مكتمل | Entity (Aggregate Root) + Value Objects + `CreateCourse`, `AddLesson`, `AddCourseReview`, `PublishCourse`, `ToggleCourseBookmark`, `GetCourseById`, `GetCoursesPaged` + Domain Events |
+| **Enrollments**                | ✅ مكتمل | Entity + `EnrollInCourse`, `UpdateLessonProgress`, `GetUserEnrolledCourses` + Domain Events + Wallet Integration                                                                      |
+| **Sessions**                   | ✅ مكتمل | Entity + `CreateSession`, `UpdateSession`, `DeleteSession`, `ChangeSessionStatus`, `GetSessionById`, `GetSessionsPaged`, `GetMySessionsPaged` + `SessionLocationType` enum, `SessionCompletedDomainEvent`                              |
+| **Session Materials**          | ✅ مكتمل | Entity + `UploadSessionMaterial`, `DeleteSessionMaterial`, `ReorderSessionMaterials`, `GetSessionMaterials`, `GetSessionMaterialDownloadInfo` + Google Drive + Domain Event           |
+| **Chat**                       | ✅ مكتمل | Entities (`Conversation`, `ChatMessage`) + `StartConversation`, `SendMessage`, `MarkConversationRead`, `GetMyConversations`, `GetConversationMessages` + SignalR Hub                  |
+| **Instructor Profile**         | ✅ مكتمل | Entities (`InstructorProfile`, `InstructorReview`, `InstructorAvailability`) + `CreateMyInstructorProfile`, `UpdateMyInstructorProfile`, `ChangeInstructorApprovalStatus`, `AddInstructorAvailability`, `RemoveInstructorAvailability` + Reviews CRUD + `GetInstructorsPaged`, `GetInstructorProfileByUserId`, `GetInstructorFullProfileByUserId` + EventHandlers (`SessionCompleted`, `CourseEnrolled`) + Controller |
+| **Wallet**                     | ⚠️ جزئي   | Entity (`UserWallet`, `WalletTransaction`) + `GetMyWallet`, `GetMyWalletTransactionsPaged` + `CreditInstructorWalletEventHandler` + `CreditInstructorWalletOnSessionCompletedEventHandler` + `WalletsController` + Optimistic Concurrency + Domain Events. **Missing**: `BuyCreditsCommand`, `ApplyPromoCodeCommand`, payment gateway integration. |
+| **Booking**                    | ✅ مكتمل | Entity (rich aggregate with domain events + lifecycle) + `CreateBooking`, `CancelBooking`, `CompleteBooking`, `ChangeBookingStatus` + `GetBookingById`, `GetMyBookings`, `GetSessionBookings` + `BookingsController` |
+| **File Storage**               | ✅ مكتمل | `LocalFileStorage` + `GoogleDriveStorage` (ICourseContentStorage)                                                                                                                     |
+| **Email Notifications**        | ✅ مكتمل | `SmtpEmailSender` + HTML Templates + `IdentityNotificationService`                                                                                                                    |
+| **SiteSettings**               | ✅ مكتمل | Entity + `UpdateSiteSettings`, `GetSiteSettings` + Controller                                                                                                                         |
+| **Infrastructure Core**        | ✅ مكتمل | Caching, Logging, CorrelationId, JWT, Hangfire, Outbox Pattern, GeoLocation, UserAgent Parsing                                                                                        |
 
 ### ❌ Missing (غير موجود — مطلوب بناؤه)
 
-| Module | الأولوية | ما يجب بناؤه |
-|--------|---------|-------------|
-| **Auth — Mobile Users (OTP-based)** | 🔴 عالية | Mobile registration/login عبر OTP + Phone. الأساس موجود (OtpVerification entity) لكن لا يوجد mobile auth flow. |
-| **Catalog (Skills)** | 🔴 عالية | كيان `Skill` في Domain. تعبئة الـ stubs الفارغة: `CreateSkill`, `UpdateSkill`, `GetSkillById`, `GetSkills`. إضافة `DeleteSkill`. |
-| **Instructor Profile** | 🔴 عالية | كيان `InstructorProfile` مرتبط بالمستخدم. CRUD operations + verification. |
-| **Teach (Courses/Sessions)** | 🔴 عالية | كيانات `Course`, `Session`, `Curriculum`. CRUD + حالة النشر + الجدولة. |
-| **Booking** | 🟡 متوسطة | كيان `Booking` + حالات الحجز + تأكيد OTP. |
-| **Wallet** | 🟡 متوسطة | كيان `Wallet` + `Transaction` + رصيد المعلم والطالب. |
-| **Payments** | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment`. |
-| **Chat** | 🟡 متوسطة | SignalR أو مكتبة chat + كيانات `Conversation`, `Message`. |
-| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد موجودة لكن push غير موجود. |
-| **Reviews** | 🟢 منخفضة | كيان `Review` + CRUD + حساب التقييم. |
+| Module                   | الأولوية  | ما يجب بناؤه                                                                                                                                      |
+| ------------------------ | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Payments**             | 🟡 متوسطة | تكامل مع بوابة دفع + كيان `Payment` + ربط مع Wallet.                                                                                              |
+| **Notifications (Push)** | 🟡 متوسطة | Push notifications للموبايل (Firebase FCM). البنية التحتية للبريد وSignalR موجودة لكن push غير موجود.                                             |
+| **Reviews (standalone)** | 🟢 منخفضة | `CourseReview` موجود كجزء من Course aggregate. قد يحتاج endpoints مستقلة للتعديل/الحذف.                                                           |
 
 ### 📋 Summary Table
 
 ```
 Module                  | Domain | Application | Infrastructure | API | Tests
-------------------------|--------|-------------|----------------|-----|------
-Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Auth (Mobile)           |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-Instructor Profile      |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Catalog (Skills)        |   ⬜   |     ⬜*     |       ⬜       |  ⬜* |  ⬜
-Teach (Courses)         |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Booking                 |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Wallet                  |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
+------------------------|--------|-------------|----------------|-----|-----
+Auth (Staff)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Auth (Users)            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Users/Profile           |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Instructor Profile      |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Categories              |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Courses                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Enrollments             |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Sessions                |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Session Materials       |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Booking                 |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+Wallet                  |   ✅   |     ⚠️      |       ✅       |  ✅  |  ⚠️
 Payments                |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Chat                    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
+Chat                    |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
 Notifications (Push)    |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Reviews                 |   ⬜   |     ⬜      |       ⬜       |  ⬜  |  ⬜
-Permission Management   |   ✅   |     ✅      |       ✅       |  ✅  |  ⬜
-OTP                     |   ✅   |     ⬜      |       ✅       |  ⬜  |  ⬜
-File Storage            |   —    |     —       |       ✅       |  ✅  |  ⬜
-Email                   |   —    |     —       |       ✅       |  —   |  ⬜
+Permission Management   |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+OTP                     |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+SiteSettings            |   ✅   |     ✅      |       ✅       |  ✅  |  ✅
+File Storage            |   —    |     —       |       ✅       |  ✅  |  ✅
+Google Drive Storage    |   —    |     ✅      |       ✅       |  —   |  ✅
+Email             |   —    |     —       |       ✅       |  —   |  ✅
 
-✅ = Implemented   ⬜ = Missing   ⬜* = Stub exists (empty files)
+✅ = Implemented   ⚠️ = Partial/Needs Work   ⬜ = Missing
 ```
 
 ---
 
-> **عند طلب بناء feature جديدة**: سأتبع هذا الدليل خطوة بخطوة، مع استخدام الـ patterns الموجودة كمرجع (ChangePassword للـ Commands، GetAllUsers للـ Queries مع Caching + Pagination، StaffInvitation للـ Domain Events).
+> **عند طلب بناء feature جديدة**: سأتبع هذا الدليل خطوة بخطوة، مع استخدام الـ patterns الموجودة كمرجع:
+>
+> - **Commands**: ChangePassword (بسيط) أو CreateCourse (مع Aggregate Root)
+> - **Queries**: GetCoursesPaged (مع Pagination) أو GetAllUsers (مع Caching + Pagination)
+> - **Domain Events**: CourseEnrolledDomainEvent (مع خصم كريديت) أو SessionMaterialUploadedEvent
+> - **Aggregate Root**: Course (Rich Domain Model مع Value Objects)
+> - **Real-time**: Chat pattern (SignalR + IChatNotifier)

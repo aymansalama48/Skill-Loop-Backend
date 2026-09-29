@@ -3,12 +3,14 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Courses;
 using Skill_Loop.Domain.Entities.Enrollments;
+using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
 using Skill_Loop.Domain.Entities.Session;
-using Skill_Loop.Domain.Entities.SessionMaterial;
+using Skill_Loop.Domain.Entities.Sessions;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Domain.Entities.Wallets;
+using System.Linq.Expressions;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -23,6 +25,11 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // ==============================
     // 1. القراءة (IQueryable Mapping)
     // ==============================
+
+    public IQueryable<InstructorProfile> InstructorProfiles => context.InstructorProfiles;
+    public IQueryable<InstructorAvailability> InstructorAvailabilities => context.InstructorAvailabilities;
+    public IQueryable<InstructorReview> InstructorReviews => context.InstructorReviews;
+
 
     public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
@@ -44,6 +51,8 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
 
     // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => context.Notifications;
+    public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions; 
+
 
     // ==============================
     // 2. عمليات الكتابة (عنصر واحد)
@@ -96,9 +105,19 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
         return query.ToListAsync(cancellationToken);
     }
 
+    public Task<List<T>> ToListAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return query.Where(predicate).ToListAsync(cancellationToken);
+    }
+
     public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, CancellationToken cancellationToken = default)
     {
         return query.FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> query, Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return query.FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
     public IQueryable<T> AsNoTracking<T>(IQueryable<T> query) where T : class

@@ -7,6 +7,12 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>Skill-Loop.UnitTests</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+
 	<!-- تضمين ملفات القوالب -->
 	<ItemGroup>
 		<EmbeddedResource Include="External\Email\EmailTemplates\**\*.html" />
