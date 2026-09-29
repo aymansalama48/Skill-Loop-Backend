@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Domain.Entities.Booking;
 using Skill_Loop.Domain.Entities.Invitation;
 using Skill_Loop.Domain.Entities.OtpVerification;
+using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Entities.Session;
 using Skill_Loop.Domain.Entities.SessionMaterial;
 using Skill_Loop.Domain.Entities.SiteSettings;
+using Skill_Loop.Domain.Entities.Wallets;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 
@@ -33,6 +35,11 @@ public interface IApplicationDbContext
 
     // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications { get; }
+
+    // 🏷️ الـ Promo Codes والـ Credit Purchases
+    public IQueryable<PromoCode> PromoCodes { get; }
+    public IQueryable<PromoRedemption> PromoRedemptions { get; }
+    public IQueryable<CreditPurchase> CreditPurchases { get; }
 
 
     // 2. عمليات الكتابة والإضافة والحذف (Generic Methods)

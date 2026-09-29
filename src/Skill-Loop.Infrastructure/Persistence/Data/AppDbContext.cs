@@ -8,9 +8,7 @@ using Skill_Loop.Domain.Entities.SessionMaterial;
 using Skill_Loop.Domain.Entities.SiteSettings;
 using Skill_Loop.Infrastructure.Persistence.IdentityModels;
 using Skill_Loop.Infrastructure.Persistence.Outbox;
-using System.Numerics;
 using System.Reflection;
-using static System.Net.Mime.MediaTypeNames;
 
 namespace Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -45,6 +43,11 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
 
     // 🔔 إشعارات جوه التطبيق (In-App)
     public DbSet<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
+
+    // 🏷️ الـ Promo Codes والـ Credit Purchases (محددة بالـ Fully Qualified Namespace لمنع أي تضارب)
+    public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoCode> PromoCodes => Set<Skill_Loop.Domain.Entities.Promotions.PromoCode>();
+    public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoRedemption> PromoRedemptions => Set<Skill_Loop.Domain.Entities.Promotions.PromoRedemption>();
+    public DbSet<Skill_Loop.Domain.Entities.Wallets.CreditPurchase> CreditPurchases => Set<Skill_Loop.Domain.Entities.Wallets.CreditPurchase>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
