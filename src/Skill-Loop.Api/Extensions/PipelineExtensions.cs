@@ -29,7 +29,10 @@ public static class PipelineExtensions
         app.UseCors("AllowFrontend");
 
         // 4. إدارة الملفات المرفوعة المباشرة (Static Files)
-        var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
+        // بنقرا اسم الفولدر من الإعدادات عشان يفضل متطابق مع FileStorage:RootFolder
+        var rootFolder = app.Configuration["FileStorage:RootFolder"] ?? "UploadedFiles";
+        var uploadsPath = Path.Combine(app.Environment.ContentRootPath, rootFolder);
+
         if (!Directory.Exists(uploadsPath))
         {
             Directory.CreateDirectory(uploadsPath);
@@ -38,7 +41,7 @@ public static class PipelineExtensions
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(uploadsPath),
-            RequestPath = "/uploads"
+            RequestPath = "/uploads"  // الـ URL ثابت، مش بتغير
         });
 
         // 5. توثيق OpenAPI/Scalar
