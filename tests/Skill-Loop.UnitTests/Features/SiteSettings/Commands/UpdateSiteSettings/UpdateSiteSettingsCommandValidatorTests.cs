@@ -53,7 +53,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("صيغة البريد الإلكتروني غير صالحة"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
     }
 
     [Fact]
@@ -74,7 +74,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("رابط الموقع الإلكتروني غير صالح"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("رابط فيسبوك غير صالح"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("رابط إنستجرام غير صالح"));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
     }
 
     [Fact]

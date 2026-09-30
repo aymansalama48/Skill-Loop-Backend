@@ -28,7 +28,12 @@ public static partial class DependencyInjection
 
             options.UseSqlServer(
                        configuration.GetConnectionString("DefaultConnection"),
-                       b => b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName))
+                       b =>
+                       {
+                           b.MigrationsAssembly(typeof(AppDbContext).Assembly.FullName);
+                           // 👇 السطر ده هو اللي هيحل مشكلة الـ Docker Migrations
+                           b.EnableRetryOnFailure(maxRetryCount: 5, maxRetryDelay: TimeSpan.FromSeconds(10), errorNumbersToAdd: null);
+                       })
                    .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning))
                    .AddInterceptors(
                        softDeleteInterceptor,
@@ -36,15 +41,11 @@ public static partial class DependencyInjection
                        insertOutboxInterceptor);
         });
 
-
-
-        // 👇 تسجيل الـ Adapter ليربط الواجهة بالكلاس الجديد
+        // تسجيل الـ Adapter ليربط الواجهة بالكلاس الجديد
         services.AddScoped<IApplicationDbContext, ApplicationDbContextAdapter>();
 
-
-        // ✅ واكتب مكانه تسجيل الكلاس كـ Scoped:
+        // تسجيل الكلاس كـ Scoped:
         services.AddScoped<ProcessOutboxMessagesJob>();
-
 
         return services;
     }

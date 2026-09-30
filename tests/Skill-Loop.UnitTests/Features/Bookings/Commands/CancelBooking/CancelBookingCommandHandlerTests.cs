@@ -25,8 +25,8 @@ public class CancelBookingCommandHandlerTests
     public CancelBookingCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new CancelBookingCommandHandler(_dbContext, _dateTime);
         _dateTime = new DateTimeProvider();
+        _handler = new CancelBookingCommandHandler(_dbContext, _dateTime);
     }
 
     private async Task<(Session Session, Booking Booking, Guid LearnerId, Guid InstructorId)> SeedAsync(int credits = 40)
