@@ -19,4 +19,9 @@ public static class SessionErrors
         "Session has active bookings.",
         ErrorType.Conflict);
 
+    public static readonly Error Forbidden = new Error(
+        "Session.Forbidden",
+        "You do not have permission to access or modify this session.",
+        ErrorType.Forbidden);
+
 }

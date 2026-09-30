@@ -2,9 +2,12 @@ using MediatR;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Entities.Emails;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Emails.Commands.TestEmail;
 
+[AuthenticatedOnly]
 public record TestEmailCommand(string To, string Subject) : IRequest<Result<string>>;
 
 public class TestEmailCommandHandler : IRequestHandler<TestEmailCommand, Result<string>>

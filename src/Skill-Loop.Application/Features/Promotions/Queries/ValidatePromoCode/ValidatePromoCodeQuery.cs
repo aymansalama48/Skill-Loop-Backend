@@ -4,9 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Application.Features.Promotions.DTOs;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Promotions.Queries.ValidatePromoCode;
 
+[AuthenticatedOnly]
 public record ValidatePromoCodeQuery(string Code) : IRequest<Result<PromoCodeDto>>;
 
 public class ValidatePromoCodeQueryHandler : IRequestHandler<ValidatePromoCodeQuery, Result<PromoCodeDto>>

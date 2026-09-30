@@ -9,8 +9,7 @@ namespace Skill_Loop.Api.Controllers;
 /// <summary>
 /// إدارة إعدادات الموقع العامة والتكوينات
 /// </summary>
-[Route("api/v1
-[controller]")]
+[Route("api/v1/[controller]")]
 public class SiteSettingsController : BaseApiController
 {
     [HttpGet]
@@ -21,7 +20,7 @@ public class SiteSettingsController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut]
-    [Authorize(Roles = Roles.SuperAdmin)]
+    [Authorize]
     public async Task<IResult> UpdateSettings(
         [FromBody] UpdateSiteSettingsCommand command,
         CancellationToken cancellationToken)

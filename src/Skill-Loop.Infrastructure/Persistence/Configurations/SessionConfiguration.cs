@@ -46,7 +46,8 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
             .HasConversion<string>()
             .HasMaxLength(20)
             .IsRequired()
-            .HasDefaultValue(SessionLocationType.Online);
+            .HasDefaultValue(SessionLocationType.Online)
+            .HasSentinel((SessionLocationType)0);
 
         builder.Property(x => x.LocationDetails)
             .HasMaxLength(500);

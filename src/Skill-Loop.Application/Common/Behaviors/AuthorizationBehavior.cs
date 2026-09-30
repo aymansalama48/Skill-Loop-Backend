@@ -21,31 +21,38 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        var permissionAttribute = request.GetType()
-            .GetCustomAttributes(typeof(PermissionAttribute), true)
-            .FirstOrDefault() as PermissionAttribute;
+        var requestType = request.GetType();
 
-        if (permissionAttribute is null)
+        var allowAnonymous = requestType.GetCustomAttributes(typeof(AllowAnonymousAttribute), true).Any();
+        if (allowAnonymous)
             return await next();
+
+        var permissionAttribute = requestType.GetCustomAttributes(typeof(PermissionAttribute), true).FirstOrDefault() as PermissionAttribute;
+        var authenticatedOnly = requestType.GetCustomAttributes(typeof(AuthenticatedOnlyAttribute), true).Any();
+
+        if (permissionAttribute is null && !authenticatedOnly)
+        {
+            throw new InvalidOperationException($"Security marker missing for {requestType.Name}. You must specify [Permission(...)], [AuthenticatedOnly], or [AllowAnonymous].");
+        }
 
         if (!currentUser.IsAuthenticated)
         {
-            var error = AuthErrors.Unauthorized;
-            return ResultFactory.CreateFailure<TResponse>(error);
+            return ResultFactory.CreateFailure<TResponse>(AuthErrors.Unauthorized);
         }
 
-        var userId = currentUser.UserId.ToString();
+        var userId = currentUser.UserId?.ToString();
         if (string.IsNullOrEmpty(userId))
         {
-            var error = AuthErrors.MissingIdentifier;
-            return ResultFactory.CreateFailure<TResponse>(error);
+            return ResultFactory.CreateFailure<TResponse>(AuthErrors.MissingIdentifier);
         }
 
-        var hasPermission = currentUser.HasPermission(permissionAttribute.Name);
-        if (!hasPermission)
+        if (permissionAttribute is not null)
         {
-            var error = AuthErrors.Forbidden;
-            return ResultFactory.CreateFailure<TResponse>(error);
+            var hasPermission = currentUser.HasPermission(permissionAttribute.Name);
+            if (!hasPermission)
+            {
+                return ResultFactory.CreateFailure<TResponse>(AuthErrors.Forbidden);
+            }
         }
 
         return await next();

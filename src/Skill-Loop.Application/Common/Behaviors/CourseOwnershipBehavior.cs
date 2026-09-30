@@ -6,6 +6,7 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Application.Features.Courses.Common;
 using Skill_Loop.Application.Common.Helpers;
+using Skill_Loop.Domain.Constants;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -22,7 +23,7 @@ public sealed class CourseOwnershipBehavior<TRequest, TResponse>(
         RequestHandlerDelegate<TResponse> next,
         CancellationToken cancellationToken)
     {
-        if (currentUser.IsInRole("Admin") || currentUser.IsInRole("SuperAdmin"))
+        if (currentUser.HasPermission(Permissions.Courses.ManageAll))
         {
             return await next();
         }

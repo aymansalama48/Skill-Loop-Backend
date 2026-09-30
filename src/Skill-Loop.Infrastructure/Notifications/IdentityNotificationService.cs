@@ -10,7 +10,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models.Templates.SessionsTemplates;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
 using Skill_Loop.Application.Common.Abstractions.Settings;
-using Skill_Loop.Infrastructure.External.Email;
+
 using Skill_Loop.Infrastructure.Options;
 using System.Reflection;
 
@@ -19,7 +19,7 @@ namespace Skill_Loop.Infrastructure.Notifications;
 public sealed class IdentityNotificationService : IIdentityNotificationService
 {
     private readonly IEmailSender _emailSender;
-    private readonly EmailTemplateEngine _templateEngine;
+    private readonly IEmailTemplateEngine _templateEngine;
     private readonly BaseUrlOptions _baseUrlOptions;
     private readonly IDateTime _dateTimeProvider;
     private readonly IUserAgentParser _userAgentParser;
@@ -30,7 +30,7 @@ public sealed class IdentityNotificationService : IIdentityNotificationService
 
     public IdentityNotificationService(
         IEmailSender emailSender,
-        EmailTemplateEngine templateEngine,
+        IEmailTemplateEngine templateEngine,
         IOptions<BaseUrlOptions> baseUrlOptions,
         IDateTime dateTimeProvider,
         IUserAgentParser userAgentParser,

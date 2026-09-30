@@ -17,7 +17,7 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/support/manage")]
 [ApiController]
-[Authorize(Roles = "Admin,Staff")]
+[Authorize]
 public class SupportManagementController : BaseApiController
 {
     private readonly IMediator _mediator;

@@ -5,9 +5,12 @@ using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.PromoCodes.Commands.CreatePromoCode;
 
+[AuthenticatedOnly]
 public record CreatePromoCodeCommand(
     string Code,
     DiscountType DiscountType,

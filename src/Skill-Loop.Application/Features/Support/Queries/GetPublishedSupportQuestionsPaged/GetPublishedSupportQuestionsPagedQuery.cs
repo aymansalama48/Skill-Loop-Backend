@@ -2,6 +2,8 @@ using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Support.Share;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Support.Queries.GetPublishedSupportQuestionsPaged;
 
@@ -9,6 +11,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetPublishedSupportQue
 /// الـ FAQ العام. بيرجّع الأسئلة المنشورة فقط وبشكل مبسّط
 /// من غير بريد المستخدم ولا اسمه.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetPublishedSupportQuestionsPagedQuery(
     PaginationParameters Pagination,
     string? SearchTerm = null,

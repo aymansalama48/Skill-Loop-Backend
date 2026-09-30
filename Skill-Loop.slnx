@@ -8,4 +8,7 @@
   <Folder Name="/tests/">
     <Project Path="tests/Skill-Loop.UnitTests/Skill-Loop.UnitTests.csproj" />
   </Folder>
+  <Project Path="docker-compose.dcproj">
+    <Build />
+  </Project>
 </Solution>

@@ -12,8 +12,7 @@ using Skill_Loop.Application.Features.Accounts.PermissionManagement.Queries.GetR
 /// إدارة الصلاحيات والأدوار (Roles) في النظام
 /// </summary>
 [Authorize] 
-[Route("api/v1
-[controller]")]
+[Route("api/v1/[controller]")]
 public class PermissionManagementController : BaseApiController
 {
     [HttpGet("permissions")]

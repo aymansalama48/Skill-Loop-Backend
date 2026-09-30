@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # 1. خدمة قاعدة البيانات SQL Server
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: skill-loop-sql
+    environment:
+      - ACCEPT_EULA=Y
+      - SA_PASSWORD=YourStrong@Passw0rd123 # الباسورد لازم يكون معقد
+    ports:
+      - "1433:1433"
+    volumes:
+      - sql_data:/var/opt/mssql # عشان البيانات متتمسحش لو الكونتينر اتقفل
+
+  # 2. خدمة Redis للكاش
+  redis:
+    image: redis:latest
+    container_name: skill-loop-redis
+    ports:
+      - "6379:6379"
+
+  # 3. خدمة الـ API بتاعتك
+  skill-loop.api:
+    image: ${DOCKER_REGISTRY-}skillloopapi
+    container_name: skill-loop-api
+    build:
+      context: .
+      dockerfile: src/Skill-Loop.Api/Dockerfile
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:8080
+      # الـ Connection Strings اللي بتعمل Override لملف الـ appsettings
+      - ConnectionStrings__DefaultConnection=Server=sqlserver;Database=Skill-Loop;User Id=sa;Password=YourStrong@Passw0rd123;TrustServerCertificate=True;MultipleActiveResultSets=true
+      - ConnectionStrings__Redis=redis:6379
+    depends_on:
+      - sqlserver
+      - redis
+
+volumes:
+  sql_data:

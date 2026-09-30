@@ -8,7 +8,7 @@ namespace Skill_Loop.Api.Controllers.v1.Admin;
 /// إدارة البريد الإلكتروني للمسؤولين (إرسال ومتابعة)
 /// </summary>
 [Route("api/v1/Admin/Emails")]
-[Authorize(Roles = Roles.SuperAdmin)]
+[Authorize]
 public class AdminEmailsController : BaseApiController
 {
     [HttpPost("test")]

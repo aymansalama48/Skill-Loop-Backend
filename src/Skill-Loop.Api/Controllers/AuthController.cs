@@ -19,8 +19,7 @@ using Skill_Loop.Api.Contracts.Auth;
 /// <summary>
 /// إدارة المصادقة وتسجيل الدخول للمستخدمين
 /// </summary>
-[Route("api/v1
-[controller]")]
+[Route("api/v1/[controller]")]
 public class AuthController : BaseApiController
 {
     // =========================================================================

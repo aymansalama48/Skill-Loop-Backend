@@ -3,9 +3,12 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Sessions.Queries.Share;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Sessions.Queries.GetSessionsPaged;
 
+[AuthenticatedOnly]
 public sealed record GetSessionsPagedQuery(
     PaginationParameters Pagination,
     Guid? InstructorId = null,

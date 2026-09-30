@@ -28,6 +28,7 @@ public static class DependencyInjection
             // 3. Authorization للتحقق من الصلاحيات قبل أي شيء آخر
             cfg.AddOpenBehavior(typeof(AuthorizationBehavior<,>));
             cfg.AddOpenBehavior(typeof(CourseOwnershipBehavior<,>));
+            cfg.AddOpenBehavior(typeof(SessionOwnershipBehavior<,>));
 
             // 4. Validation للتأكد من صحة المدخلات
             cfg.AddOpenBehavior(typeof(ValidationBehavior<,>));

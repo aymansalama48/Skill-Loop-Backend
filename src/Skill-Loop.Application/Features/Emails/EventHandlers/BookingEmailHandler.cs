@@ -9,6 +9,7 @@ using Skill_Loop.Domain.Entities.Emails;
 using Skill_Loop.Domain.Common.Events;
 
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using Skill_Loop.Application.Common.Abstractions.Core;
 
 namespace Skill_Loop.Application.Features.Emails.EventHandlers;
 

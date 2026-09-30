@@ -1,0 +1,36 @@
+name: Skill-Loop CI
+
+# الكود ده هيشتغل أوتوماتيك لما تعمل Push أو Pull Request على برانش الـ main
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest # الروبوت هيشتغل على سيرفر لينكس سريع
+
+    steps:
+      # 1. سحب الكود بتاعك
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. تسطيب بيئة دوت نت 10
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # 3. تحميل المكتبات (Dependencies)
+      - name: Restore dependencies
+        run: dotnet restore
+
+      # 4. عمل بيلد للمشروع (Build)
+      - name: Build
+        run: dotnet build --configuration Release --no-restore
+
+      # 5. تشغيل التستس (لو عندك Unit Tests)
+      - name: Test
+        run: dotnet test --configuration Release --no-build --verbosity normal

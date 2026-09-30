@@ -60,20 +60,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Bookings",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    LearnerUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Bookings", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Categories",
                 columns: table => new
                 {
@@ -91,6 +77,71 @@ namespace Skill_Loop.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Categories", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Conversations",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParticipantOneId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ParticipantTwoId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LastMessageAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    LastMessagePreview = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Conversations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CreditPurchases",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Credits = table.Column<int>(type: "int", nullable: false),
+                    Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    SubtotalMinor = table.Column<int>(type: "int", nullable: false),
+                    DiscountMinor = table.Column<int>(type: "int", nullable: false),
+                    TotalMinor = table.Column<int>(type: "int", nullable: false),
+                    PromoCodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    GatewayReference = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    CompletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CreditPurchases", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "EmailLogs",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    RecipientEmail = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    ReferenceId = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    Subject = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Body = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    Attempts = table.Column<int>(type: "int", nullable: false),
+                    LastError = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: true),
+                    CreatedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SentAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EmailLogs", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -113,6 +164,28 @@ namespace Skill_Loop.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Enrollments", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Body = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Data = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false),
+                    ReadAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -153,6 +226,45 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PromoCodes",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Code = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    DiscountType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    DiscountValue = table.Column<int>(type: "int", nullable: false),
+                    MaxRedemptions = table.Column<int>(type: "int", nullable: true),
+                    RedemptionsCount = table.Column<int>(type: "int", nullable: false),
+                    ExpiresAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PromoCodes", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "PromoRedemptions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PromoCodeId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    PurchaseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DiscountMinor = table.Column<int>(type: "int", nullable: false),
+                    RedeemedAt = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PromoRedemptions", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Sessions",
                 columns: table => new
                 {
@@ -160,7 +272,16 @@ namespace Skill_Loop.Infrastructure.Migrations
                     InstructorId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     OwnerId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
-                    Title = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    ScheduledAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DurationMinutes = table.Column<int>(type: "int", nullable: false, defaultValue: 60),
+                    CreditsPrice = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    LocationType = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false, defaultValue: "Online"),
+                    LocationDetails = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    MaxParticipants = table.Column<int>(type: "int", nullable: false, defaultValue: 1),
+                    AverageRating = table.Column<double>(type: "float", nullable: false, defaultValue: 0.0),
+                    TotalReviews = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
                     CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
@@ -212,6 +333,32 @@ namespace Skill_Loop.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_StaffInvitations", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SupportQuestions",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Question = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    Answer = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: true),
+                    Category = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    IsPublished = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    UserEmail = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: true),
+                    UserName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    AskedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsAnswered = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    AnsweredAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    EmailSent = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    EmailSentAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SupportQuestions", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -355,6 +502,34 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "InstructorProfiles",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Headline = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Bio = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    IsApproved = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    Rating = table.Column<double>(type: "float(3)", precision: 3, scale: 2, nullable: false, defaultValue: 0.0),
+                    SessionsCompleted = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    CreditsEarned = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InstructorProfiles", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InstructorProfiles_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "RefreshTokens",
                 columns: table => new
                 {
@@ -415,6 +590,28 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "ChatMessages",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    ConversationId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SenderId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Content = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    SentAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ReadAt = table.Column<DateTime>(type: "datetime2", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ChatMessages", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ChatMessages_Conversations_ConversationId",
+                        column: x => x.ConversationId,
+                        principalTable: "Conversations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "LessonProgresses",
                 columns: table => new
                 {
@@ -431,6 +628,37 @@ namespace Skill_Loop.Infrastructure.Migrations
                         name: "FK_LessonProgresses_Enrollments_EnrollmentId",
                         column: x => x.EnrollmentId,
                         principalTable: "Enrollments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Bookings",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LearnerUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    PriceInCredits = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    ScheduledAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    BookedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    StartedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CompletedAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancelledAtUtc = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancellationReason = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Bookings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Bookings_Sessions_SessionId",
+                        column: x => x.SessionId,
+                        principalTable: "Sessions",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -459,6 +687,31 @@ namespace Skill_Loop.Infrastructure.Migrations
                     table.PrimaryKey("PK_SessionMaterials", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SessionMaterials_Sessions_SessionId",
+                        column: x => x.SessionId,
+                        principalTable: "Sessions",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "SessionReviews",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    SessionId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    UserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Stars = table.Column<int>(type: "int", nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SessionReviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SessionReviews_Sessions_SessionId",
                         column: x => x.SessionId,
                         principalTable: "Sessions",
                         principalColumn: "Id",
@@ -514,22 +767,50 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "CourseAttachments",
+                name: "InstructorAvailabilities",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    FileName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
-                    StorageUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
-                    CourseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    InstructorProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    DayOfWeek = table.Column<int>(type: "int", nullable: false),
+                    StartTime = table.Column<TimeSpan>(type: "time", nullable: false),
+                    EndTime = table.Column<TimeSpan>(type: "time", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CourseAttachments", x => x.Id);
+                    table.PrimaryKey("PK_InstructorAvailabilities", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_CourseAttachments_Courses_CourseId",
-                        column: x => x.CourseId,
-                        principalTable: "Courses",
+                        name: "FK_InstructorAvailabilities_InstructorProfiles_InstructorProfileId",
+                        column: x => x.InstructorProfileId,
+                        principalTable: "InstructorProfiles",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InstructorReviews",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    InstructorProfileId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    LearnerUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    Rating = table.Column<int>(type: "int", nullable: false),
+                    Comment = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    DeletedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InstructorReviews", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InstructorReviews_InstructorProfiles_InstructorProfileId",
+                        column: x => x.InstructorProfileId,
+                        principalTable: "InstructorProfiles",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -554,6 +835,36 @@ namespace Skill_Loop.Infrastructure.Migrations
                     table.PrimaryKey("PK_CourseBookmarks", x => x.Id);
                     table.ForeignKey(
                         name: "FK_CourseBookmarks_Courses_CourseId",
+                        column: x => x.CourseId,
+                        principalTable: "Courses",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "CourseMaterial",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    CourseId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MimeType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SizeBytes = table.Column<long>(type: "bigint", nullable: false),
+                    DriveFileId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DriveFolderId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SortOrder = table.Column<int>(type: "int", nullable: false),
+                    UploadedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MaterialType = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CourseMaterial", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_CourseMaterial_Courses_CourseId",
                         column: x => x.CourseId,
                         principalTable: "Courses",
                         principalColumn: "Id",
@@ -631,20 +942,29 @@ namespace Skill_Loop.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "LessonResources",
+                name: "LessonMaterial",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
-                    FileName = table.Column<string>(type: "nvarchar(256)", maxLength: 256, nullable: false),
-                    StorageUrl = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
-                    FileSizeBytes = table.Column<long>(type: "bigint", nullable: false),
-                    LessonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false)
+                    LessonId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    MimeType = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    SizeBytes = table.Column<long>(type: "bigint", nullable: false),
+                    DriveFileId = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    DriveFolderId = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    SortOrder = table.Column<int>(type: "int", nullable: false),
+                    UploadedByUserId = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
+                    MaterialType = table.Column<int>(type: "int", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CreatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true),
+                    UpdatedBy = table.Column<Guid>(type: "uniqueidentifier", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_LessonResources", x => x.Id);
+                    table.PrimaryKey("PK_LessonMaterial", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_LessonResources_CourseLessons_LessonId",
+                        name: "FK_LessonMaterial_CourseLessons_LessonId",
                         column: x => x.LessonId,
                         principalTable: "CourseLessons",
                         principalColumn: "Id",
@@ -701,6 +1021,18 @@ namespace Skill_Loop.Infrastructure.Migrations
                 column: "SessionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Bookings_SessionId_LearnerUserId",
+                table: "Bookings",
+                columns: new[] { "SessionId", "LearnerUserId" },
+                unique: true,
+                filter: "[Status] IN ('Pending', 'Confirmed', 'InProgress', 'Completed')");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Bookings_SessionId_LearnerUserId_Status",
+                table: "Bookings",
+                columns: new[] { "SessionId", "LearnerUserId", "Status" });
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Categories_DisplayOrder",
                 table: "Categories",
                 column: "DisplayOrder");
@@ -712,9 +1044,20 @@ namespace Skill_Loop.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_CourseAttachments_CourseId",
-                table: "CourseAttachments",
-                column: "CourseId");
+                name: "IX_ChatMessages_ConversationId_SentAt",
+                table: "ChatMessages",
+                columns: new[] { "ConversationId", "SentAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conversations_ParticipantOneId_ParticipantTwoId",
+                table: "Conversations",
+                columns: new[] { "ParticipantOneId", "ParticipantTwoId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Conversations_ParticipantTwoId",
+                table: "Conversations",
+                column: "ParticipantTwoId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CourseBookmarks_CourseId",
@@ -731,6 +1074,11 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "IX_CourseLessons_SectionId_OrderIndex",
                 table: "CourseLessons",
                 columns: new[] { "SectionId", "OrderIndex" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CourseMaterial_CourseId",
+                table: "CourseMaterial",
+                column: "CourseId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_CourseReviews_CourseId_UserId",
@@ -769,6 +1117,23 @@ namespace Skill_Loop.Infrastructure.Migrations
                 columns: new[] { "CourseId", "OrderIndex" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_CreditPurchases_GatewayReference",
+                table: "CreditPurchases",
+                column: "GatewayReference");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_CreditPurchases_UserId_CreatedAt",
+                table: "CreditPurchases",
+                columns: new[] { "UserId", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EmailLogs_Type_ReferenceId_RecipientEmail",
+                table: "EmailLogs",
+                columns: new[] { "Type", "ReferenceId", "RecipientEmail" },
+                unique: true,
+                filter: "[ReferenceId] IS NOT NULL");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Enrollments_UserId_CourseId",
                 table: "Enrollments",
                 columns: new[] { "UserId", "CourseId" },
@@ -780,15 +1145,41 @@ namespace Skill_Loop.Infrastructure.Migrations
                 columns: new[] { "UserId", "Status" });
 
             migrationBuilder.CreateIndex(
+                name: "IX_InstructorAvailabilities_InstructorProfileId",
+                table: "InstructorAvailabilities",
+                column: "InstructorProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InstructorProfiles_UserId",
+                table: "InstructorProfiles",
+                column: "UserId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InstructorReviews_InstructorProfileId",
+                table: "InstructorReviews",
+                column: "InstructorProfileId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LessonMaterial_LessonId",
+                table: "LessonMaterial",
+                column: "LessonId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_LessonProgresses_EnrollmentId_LessonId",
                 table: "LessonProgresses",
                 columns: new[] { "EnrollmentId", "LessonId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_LessonResources_LessonId",
-                table: "LessonResources",
-                column: "LessonId");
+                name: "IX_Notifications_UserId_CreatedAt",
+                table: "Notifications",
+                columns: new[] { "UserId", "CreatedAt" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId_IsRead",
+                table: "Notifications",
+                columns: new[] { "UserId", "IsRead" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OtpVerifications_Expiry",
@@ -804,6 +1195,18 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "IX_OutboxMessages_ProcessedOnUtc_RetryCount",
                 table: "OutboxMessages",
                 columns: new[] { "ProcessedOnUtc", "RetryCount" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PromoCodes_Code",
+                table: "PromoCodes",
+                column: "Code",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_PromoRedemptions_PromoCodeId_UserId",
+                table: "PromoRedemptions",
+                columns: new[] { "PromoCodeId", "UserId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_Token",
@@ -828,6 +1231,12 @@ namespace Skill_Loop.Infrastructure.Migrations
                 column: "SessionId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_SessionReviews_SessionId_UserId",
+                table: "SessionReviews",
+                columns: new[] { "SessionId", "UserId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Sessions_InstructorId",
                 table: "Sessions",
                 column: "InstructorId");
@@ -836,6 +1245,16 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "IX_Sessions_OwnerId",
                 table: "Sessions",
                 column: "OwnerId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sessions_ScheduledAtUtc",
+                table: "Sessions",
+                column: "ScheduledAtUtc");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Sessions_Status_ScheduledAtUtc",
+                table: "Sessions",
+                columns: new[] { "Status", "ScheduledAtUtc" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_StaffInvitations_Email",
@@ -847,6 +1266,31 @@ namespace Skill_Loop.Infrastructure.Migrations
                 table: "StaffInvitations",
                 column: "Token",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportQuestions_AskedByUserId",
+                table: "SupportQuestions",
+                column: "AskedByUserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportQuestions_Category",
+                table: "SupportQuestions",
+                column: "Category");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportQuestions_CreatedAt",
+                table: "SupportQuestions",
+                column: "CreatedAt");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportQuestions_IsAnswered",
+                table: "SupportQuestions",
+                column: "IsAnswered");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_SupportQuestions_IsPublished",
+                table: "SupportQuestions",
+                column: "IsPublished");
 
             migrationBuilder.CreateIndex(
                 name: "IX_TbPermissions_Module",
@@ -898,19 +1342,37 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "Bookings");
 
             migrationBuilder.DropTable(
-                name: "CourseAttachments");
+                name: "ChatMessages");
 
             migrationBuilder.DropTable(
                 name: "CourseBookmarks");
 
             migrationBuilder.DropTable(
+                name: "CourseMaterial");
+
+            migrationBuilder.DropTable(
                 name: "CourseReviews");
+
+            migrationBuilder.DropTable(
+                name: "CreditPurchases");
+
+            migrationBuilder.DropTable(
+                name: "EmailLogs");
+
+            migrationBuilder.DropTable(
+                name: "InstructorAvailabilities");
+
+            migrationBuilder.DropTable(
+                name: "InstructorReviews");
+
+            migrationBuilder.DropTable(
+                name: "LessonMaterial");
 
             migrationBuilder.DropTable(
                 name: "LessonProgresses");
 
             migrationBuilder.DropTable(
-                name: "LessonResources");
+                name: "Notifications");
 
             migrationBuilder.DropTable(
                 name: "OtpVerifications");
@@ -919,10 +1381,19 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "OutboxMessages");
 
             migrationBuilder.DropTable(
+                name: "PromoCodes");
+
+            migrationBuilder.DropTable(
+                name: "PromoRedemptions");
+
+            migrationBuilder.DropTable(
                 name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "SessionMaterials");
+
+            migrationBuilder.DropTable(
+                name: "SessionReviews");
 
             migrationBuilder.DropTable(
                 name: "SiteSettings");
@@ -931,19 +1402,25 @@ namespace Skill_Loop.Infrastructure.Migrations
                 name: "StaffInvitations");
 
             migrationBuilder.DropTable(
+                name: "SupportQuestions");
+
+            migrationBuilder.DropTable(
                 name: "TbRolePermissions");
 
             migrationBuilder.DropTable(
                 name: "WalletTransactions");
 
             migrationBuilder.DropTable(
-                name: "Enrollments");
+                name: "Conversations");
+
+            migrationBuilder.DropTable(
+                name: "InstructorProfiles");
 
             migrationBuilder.DropTable(
                 name: "CourseLessons");
 
             migrationBuilder.DropTable(
-                name: "AspNetUsers");
+                name: "Enrollments");
 
             migrationBuilder.DropTable(
                 name: "Sessions");
@@ -956,6 +1433,9 @@ namespace Skill_Loop.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "UserWallets");
+
+            migrationBuilder.DropTable(
+                name: "AspNetUsers");
 
             migrationBuilder.DropTable(
                 name: "CourseSections");

@@ -4,9 +4,12 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Wallets.Commands.BuyCredits;
 
+[AuthenticatedOnly]
 public record BuyCreditsCommand(int Amount, string? PromoCode) : IRequest<Result<bool>>;
 
 public class BuyCreditsCommandValidator : AbstractValidator<BuyCreditsCommand>

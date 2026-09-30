@@ -11,12 +11,11 @@ using Skill_Loop.Application.Features.Accounts.StaffInvitations.Queries.Validate
 /// <summary>
 /// إدارة دعوات انضمام فريق العمل (Staff/Admins)
 /// </summary>
-[Route("api/v1
-[controller]")]
+[Route("api/v1/[controller]")]
 public class StaffInvitationsController : BaseApiController
 {
     [HttpPost("send")]
-    //[Authorize(Roles = "Admin")]
+    //[Authorize]
     public async Task<IResult> SendInvitation(
         [FromBody] SendStaffInvitationRequest request,
         CancellationToken cancellationToken)

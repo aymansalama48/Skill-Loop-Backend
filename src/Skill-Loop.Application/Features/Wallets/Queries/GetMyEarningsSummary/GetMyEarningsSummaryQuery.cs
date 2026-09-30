@@ -1,7 +1,10 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Wallets.Queries.GetMyEarningsSummary;
 
+[AuthenticatedOnly]
 public sealed record GetMyEarningsSummaryQuery(int? Year, int? Month) : IQuery<EarningsSummaryDto>;
 
 public sealed record EarningsSummaryDto(

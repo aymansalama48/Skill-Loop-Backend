@@ -11,8 +11,7 @@ namespace Skill_Loop.Api.Controllers;
 /// <summary>
 /// إدارة التصنيفات الخاصة بالكورسات والمجالات
 /// </summary>
-[Route("api/v1
-[controller]")]
+[Route("api/v1/[controller]")]
 public class CategoriesController : BaseApiController
 {
     [HttpGet]
@@ -24,7 +23,7 @@ public class CategoriesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost]
-    [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
+    [Authorize]
     [Consumes("multipart/form-data")]                       // ✅ 1
     public async Task<IResult> CreateCategory(
         [FromForm] CreateCategoryRequest request,           // ✅ 2
@@ -47,7 +46,7 @@ public class CategoriesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut("{id:guid}")]
-    [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
+    [Authorize]
     [Consumes("multipart/form-data")]                       // ✅
     public async Task<IResult> UpdateCategory(
         Guid id,
@@ -71,7 +70,7 @@ public class CategoriesController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("{id:guid}")]
-    [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
+    [Authorize]
     public async Task<IResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeleteCategoryCommand(id);

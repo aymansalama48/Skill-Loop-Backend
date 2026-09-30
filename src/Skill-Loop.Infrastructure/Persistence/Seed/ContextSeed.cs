@@ -69,7 +69,8 @@ public static class ContextSeed
     // =================================================================================
     public static async Task SeedRolesAndPermissionsAsync(
         RoleManager<ApplicationRole> roleManager,
-        DbContext dbContext)
+        DbContext dbContext,
+        Skill_Loop.Application.Common.Abstractions.Core.IDateTime dateTimeProvider)
     {
         foreach (var roleName in Roles.All)
         {
@@ -115,12 +116,13 @@ public static class ContextSeed
             await dbContext.SaveChangesAsync();
         }
 
-        await LinkPermissionsToRolesAsync(roleManager, dbContext);
+        await LinkPermissionsToRolesAsync(roleManager, dbContext, dateTimeProvider);
     }
 
     private static async Task LinkPermissionsToRolesAsync(
         RoleManager<ApplicationRole> roleManager,
-        DbContext dbContext)
+        DbContext dbContext,
+        Skill_Loop.Application.Common.Abstractions.Core.IDateTime dateTimeProvider)
     {
         var allPermissions = await dbContext.Set<TbPermission>().ToListAsync();
         var permissionsByName = allPermissions.ToDictionary(p => p.Name, p => p.Id);
@@ -148,7 +150,7 @@ public static class ContextSeed
                 {
                     RoleId = role.Id,
                     PermissionId = pid,
-                    GrantedAt = DateTime.UtcNow
+                    GrantedAt = dateTimeProvider.Now
                 })
                 .ToList();
 

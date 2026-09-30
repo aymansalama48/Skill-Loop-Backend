@@ -1,50 +1,68 @@
-﻿using Skill_Loop.Domain.Constants;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Infrastructure.Persistence.Seed;
 
-/// <summary>
-/// خرائط الأدوار إلى الصلاحيات الممنوحة لها.
-/// الـ ContextSeed بيستخدم الخريطة دي لربط كل دور بصلاحياته تلقائيًا.
-/// </summary>
 public static class RolePermissionsMap
 {
     public static readonly IReadOnlyDictionary<string, IReadOnlyList<string>> Map =
         new Dictionary<string, IReadOnlyList<string>>
         {
-            // SuperAdmin: كل الصلاحيات (نستخدم GetAllPermissions عشان أي صلاحية جديدة تروح له تلقائيًا)
             [Roles.SuperAdmin] = Permissions.GetAllPermissions(),
 
-            // Admin: إدارة المحتوى + المستخدمين + عرض الحجوزات
             [Roles.Admin] = new[]
             {
+                Permissions.Courses.ManageAll,
+                Permissions.Sessions.ManageAll,
+                Permissions.Bookings.ManageAll,
+                Permissions.Users.ManageAll,
+                Permissions.Finance.ManageAll,
+                Permissions.Dashboards.ViewAdmin,
                 Permissions.Catalog.CategoriesManage,
                 Permissions.Catalog.SkillsManage,
                 Permissions.Catalog.TagsManage,
-                Permissions.Catalog.SessionsModerate,
-                Permissions.Users.View,
-                Permissions.Users.Activate,
-                Permissions.Users.Deactivate,
-                Permissions.Users.AssignRole,
-                Permissions.Bookings.View,
+                Permissions.SiteSettings.Manage,
+                Permissions.Support.Manage,
+                Permissions.Instructors.ManageAll
             },
 
-            // FinanceManager: كل ما يخص الفلوس والباقات
             [Roles.FinanceManager] = new[]
             {
+                Permissions.Finance.ManageAll,
                 Permissions.Finance.PackagesManage,
                 Permissions.Finance.PromoCodesManage,
                 Permissions.Finance.WalletAdjust,
                 Permissions.Finance.PaymentsView,
+                Permissions.Dashboards.ViewAdmin
             },
 
-            // Support: قراءة فقط
             [Roles.Support] = new[]
             {
                 Permissions.Users.View,
-                Permissions.Bookings.View,
+                Permissions.Bookings.ViewAll,
+                Permissions.Finance.View,
+                Permissions.Support.Manage
             },
 
-            // Roles.User و Roles.Instructor مش محتاجين صلاحيات Staff.
-            // الحماية بتاعتهم بتتعمل بـ [Authorize] + Ownership Checks جوه الـ Handlers.
+            [Roles.Instructor] = new[]
+            {
+                Permissions.Courses.Create,
+                Permissions.Courses.Update,
+                Permissions.Courses.Delete,
+                Permissions.Courses.Publish,
+                Permissions.Courses.Archive,
+                Permissions.Sessions.Create,
+                Permissions.Sessions.Update,
+                Permissions.Sessions.Delete,
+                Permissions.Sessions.Cancel,
+                Permissions.Sessions.UploadMaterials,
+                Permissions.Sessions.DeleteMaterials,
+                Permissions.Sessions.ReorderMaterials,
+                Permissions.Dashboards.ViewInstructor
+            },
+
+            [Roles.User] = new string[]
+            {
+                // Users mainly rely on [AuthenticatedOnly] for their own data.
+            }
         };
 }
