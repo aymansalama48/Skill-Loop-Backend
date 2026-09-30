@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.ArchiveCourse;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Archive)]
 public sealed record ArchiveCourseCommand(Guid CourseId) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

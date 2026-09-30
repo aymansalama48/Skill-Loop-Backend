@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.ReorderSections;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record ReorderSectionsCommand(Guid CourseId, Dictionary<Guid, int> SectionOrders) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

@@ -7,7 +7,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Emails.Commands.TestEmail;
 
-[AuthenticatedOnly]
+[Permission(Permissions.SiteSettings.Manage)]
 public record TestEmailCommand(string To, string Subject) : IRequest<Result<string>>;
 
 public class TestEmailCommandHandler : IRequestHandler<TestEmailCommand, Result<string>>

@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Courses.DTOs;
@@ -17,7 +17,7 @@ public enum CourseSortOption
     PriceHighToLow = 4
 }
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed class GetCoursesPagedQuery : PaginationParameters, ICacheableQuery<PagedResult<CourseSummaryDto>>
 {
     public string? SearchTerm { get; init; }

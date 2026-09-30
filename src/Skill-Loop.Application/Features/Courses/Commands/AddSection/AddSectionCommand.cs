@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.AddSection;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Create)]
 public sealed record AddSectionCommand(
     Guid CourseId,
     string Title,

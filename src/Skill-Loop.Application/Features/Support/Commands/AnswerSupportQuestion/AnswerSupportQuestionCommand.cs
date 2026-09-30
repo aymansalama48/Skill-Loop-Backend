@@ -9,7 +9,7 @@ namespace Skill_Loop.Application.Features.Support.Commands.AnswerSupportQuestion
 /// <summary>
 /// رد فريق الدعم على استفسار قايم. لو الـ Publish = true السؤال بينزل في الـ FAQ العام بعد ما يتبعت للمستخدم.
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.Manage)]
 public sealed record AnswerSupportQuestionCommand(
     Guid Id,
     string Answer,

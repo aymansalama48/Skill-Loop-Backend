@@ -12,7 +12,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionsPag
 /// قائمة الاستفسارات الكاملة — لفريق الدعم والـ Admin بس.
 /// الـ Endpoint العام بيستخدم <see cref="GetPublishedSupportQuestionsPagedQuery"/> اللي بيرجّع المنشور فقط.
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.View)]
 public sealed record GetSupportQuestionsPagedQuery(
     PaginationParameters Pagination,
     string? SearchTerm = null,

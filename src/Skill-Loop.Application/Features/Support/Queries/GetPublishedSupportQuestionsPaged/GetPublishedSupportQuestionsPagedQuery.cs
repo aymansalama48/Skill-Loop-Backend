@@ -11,7 +11,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetPublishedSupportQue
 /// الـ FAQ العام. بيرجّع الأسئلة المنشورة فقط وبشكل مبسّط
 /// من غير بريد المستخدم ولا اسمه.
 /// </summary>
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetPublishedSupportQuestionsPagedQuery(
     PaginationParameters Pagination,
     string? SearchTerm = null,

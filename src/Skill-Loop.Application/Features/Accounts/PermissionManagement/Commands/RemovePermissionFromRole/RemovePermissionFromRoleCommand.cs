@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.PermissionManagement.Commands.RemovePermissionFromRole;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Access.PermissionsManage)]
 public sealed record RemovePermissionFromRoleCommand(
     Guid RoleId,
     Guid PermissionId) : ICommand, ICacheInvalidatorCommand

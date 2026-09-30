@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -7,7 +7,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.SiteSettings.Queries.GetSiteSettings
 {
-    [AuthenticatedOnly]
+    [AllowAnonymous]
 public sealed record GetSiteSettingsQuery
         : ICacheableQuery<SiteSettingsRespone>
     {

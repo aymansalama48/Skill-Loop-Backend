@@ -86,19 +86,24 @@ public class CoursesController : BaseApiController
     }
     [HttpPost]
     [Authorize]
-    public async Task<IResult> CreateCourse([FromBody] CreateCourseRequest request, CancellationToken cancellationToken)
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> CreateCourse([FromForm] CreateCourseRequest request, CancellationToken cancellationToken)
     {
         var instructorId = _currentUser.UserId ?? Guid.Empty;
         var instructorName = _currentUser.FullName ?? "Instructor";
+
+        // نمرر الـ Stream والاسم مباشرة، ولو مفيش صورة هيبعت null
         var command = new CreateCourseCommand(
             request.Title,
             request.Description,
-            request.ThumbnailUrl,
+            request.ThumbnailImage?.OpenReadStream(),
+            request.ThumbnailImage?.FileName,
             request.Credits,
             request.Level,
             instructorId,
             instructorName,
             request.CategoryId);
+
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

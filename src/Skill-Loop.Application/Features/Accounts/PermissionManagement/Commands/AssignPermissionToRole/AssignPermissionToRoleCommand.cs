@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.PermissionManagement.Commands.AssignPermissionToRole;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Access.PermissionsManage)]
 public sealed record AssignPermissionToRoleCommand(
     Guid RoleId,
     Guid PermissionId) : ICommand, ICacheInvalidatorCommand

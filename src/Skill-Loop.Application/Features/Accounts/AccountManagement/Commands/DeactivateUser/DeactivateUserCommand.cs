@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.DeactivateUser;
 
 // بياخد الـ ID بتاع اليوزر اللي الآدمن عاوز يوقفه
-[AuthenticatedOnly]
+[Permission(Permissions.Users.Deactivate)]
 public sealed record DeactivateUserCommand(Guid UserId) : ICommand<bool>, ICacheInvalidatorCommand
 {
     // هيمسح كاش شاشة الـ CRM عشان حالة اليوزر اتغيرت

@@ -1,10 +1,10 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitation;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitation;
 
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Domain.Constants;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record AcceptInvitationCommand(
     string InvitationToken,
     string FullName,

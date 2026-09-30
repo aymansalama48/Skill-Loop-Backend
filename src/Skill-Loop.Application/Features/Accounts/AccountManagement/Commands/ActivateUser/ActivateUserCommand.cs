@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ActivateUser;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Users.Activate)]
 public sealed record ActivateUserCommand(Guid UserId) : ICommand<bool>, ICacheInvalidatorCommand
 {
     // هيمسح كاش شاشة الـ CRM عشان حالة اليوزر اتغيرت

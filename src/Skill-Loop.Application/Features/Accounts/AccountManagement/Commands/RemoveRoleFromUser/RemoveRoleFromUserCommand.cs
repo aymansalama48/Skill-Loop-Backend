@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.RemoveRoleFromUser;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Users.AssignRole)]
 public sealed record RemoveRoleFromUserCommand(Guid UserId, string RoleName) : ICommand<bool>, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => ["users-list"];

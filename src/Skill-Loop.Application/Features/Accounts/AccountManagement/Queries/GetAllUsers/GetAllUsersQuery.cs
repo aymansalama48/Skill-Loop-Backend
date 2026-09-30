@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetAllUsers;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Users.View)]
 public sealed record GetAllUsersQuery(
     int PageNumber,
     int PageSize,

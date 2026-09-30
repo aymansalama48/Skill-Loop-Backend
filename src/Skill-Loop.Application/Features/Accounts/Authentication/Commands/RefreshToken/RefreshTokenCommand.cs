@@ -5,6 +5,6 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.Authentication.Commands.RefreshToken;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record RefreshTokenCommand(
     string RefreshToken) : ICommand<StaffAuthResponse>;

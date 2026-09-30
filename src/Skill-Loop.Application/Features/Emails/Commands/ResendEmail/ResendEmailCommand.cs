@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Emails.Commands.ResendEmail;
 
-[AuthenticatedOnly]
+[Permission(Permissions.SiteSettings.Manage)]
 public record ResendEmailCommand(Guid EmailLogId) : IRequest<Result<bool>>;
 
 public class ResendEmailCommandHandler : IRequestHandler<ResendEmailCommand, Result<bool>>

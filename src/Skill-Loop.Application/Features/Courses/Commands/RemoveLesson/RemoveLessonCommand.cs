@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.RemoveLesson;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record RemoveLessonCommand(Guid CourseId, Guid SectionId, Guid LessonId) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

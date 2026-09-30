@@ -10,7 +10,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.PromoCodes.Commands.CreatePromoCode;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Finance.PromoCodesManage)]
 public record CreatePromoCodeCommand(
     string Code,
     DiscountType DiscountType,

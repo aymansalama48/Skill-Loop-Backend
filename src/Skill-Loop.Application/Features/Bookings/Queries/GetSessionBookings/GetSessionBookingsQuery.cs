@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Bookings.Queries.GetSessionBookings;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Bookings.ViewAll)]
 public sealed record GetSessionBookingsQuery(
     Guid SessionId,
     int PageNumber = 1,
