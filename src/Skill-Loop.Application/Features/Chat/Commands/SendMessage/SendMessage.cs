@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Realtime;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -13,6 +15,7 @@ namespace Skill_Loop.Application.Features.Chat.Commands.SendMessage;
 /// ابعت رسالة في محادثة. الـ Command ده بيتنادى من مكانين: الـ REST Controller والـ SignalR Hub
 /// وبيشتغلوا بنفس المنطق بالظبط (مكان واحد للـ Business Logic).
 /// </summary>
+[AuthenticatedOnly]
 public sealed record SendMessageCommand(Guid SenderId, Guid ConversationId, string Content) : ICommand<MessageDto>;
 
 public sealed class SendMessageCommandValidator : AbstractValidator<SendMessageCommand>

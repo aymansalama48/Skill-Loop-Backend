@@ -36,8 +36,9 @@
 | 🔑 **Permission System** | Granular module-based permissions · Role–Permission assignment · Dynamic RBAC |
 | 📱 **OTP Verification** | HMAC-hashed codes · Configurable expiry & cooldown · Max attempts lockout |
 | 🎟️ **Live Session Booking** | Book sessions · Cancel with refund · Instructor status management · Credit payment |
-| 📊 **Observability** | Structured logging (Serilog) · Correlation IDs · Performance tracking |
-| ⚙️ **Background Jobs** | Outbox pattern with Hangfire for reliable domain event processing |
+| 🛡️ **Security** | Hashed refresh tokens with reuse detection · Per-endpoint rate limiting · Session revocation on password reset · Fail-fast secret validation · Security headers · Strict CORS allowlist |
+| 📊 **Observability** | Structured logging (Serilog) · Validated correlation IDs · Performance tracking |
+| ⚙️ **Background Jobs** | Outbox pattern with Hangfire (dedicated database) for reliable domain event processing |
 
 ---
 
@@ -83,9 +84,11 @@ The project follows **Clean Architecture** (aka Onion Architecture) with strict 
 - **AutoMapper 16** — Object mapping
 
 ### Authentication & Security
-- **JWT Bearer Tokens** (`Microsoft.AspNetCore.Authentication.JwtBearer`)
+- **JWT Bearer Tokens** (`Microsoft.AspNetCore.Authentication.JwtBearer`) — HMAC-SHA256, UTC `exp`/`iat`/`nbf`
+- **Rotating refresh tokens** — SHA-256 digest storage, token families, reuse detection
+- **Endpoint rate limiting** (`Microsoft.AspNetCore.RateLimiting`) — per-IP and per-identity
 - **Google OAuth** (`Google.Apis.Auth`)
-- **OTP with HMAC Hashing**
+- **OTP with HMAC Hashing** — purpose-derived key separation
 
 ### Infrastructure
 - **Hangfire** — Background job processing & outbox consumer
@@ -125,12 +128,12 @@ Skill-Loop/
 │   │   │   ├── SupportManagementController  # Staff support queue (answer/publish/delete)
 │   │   │   ├── NotificationsController #     In-app notifications
 │   │   │   ├── SiteSettingsController  #     Public site settings (SuperAdmin update)
-│   │   │   ├── DevController           #     Development-only helpers
+│   │   │   ├── DevController           #     Development-only helpers (removed from routing outside Development)
 │   │   │   └── BookingsController      #     Live session bookings
 │   │   ├── Contracts/                  #   Request/Response DTOs
-│   │   ├── Middlewares/                #   CorrelationId, GlobalExceptionHandler
-│   │   ├── Extensions/                #   Pipeline & DI extensions
-│   │   └── appsettings.json           #   Configuration
+│   │   ├── Middlewares/                #   CorrelationId, SecurityHeaders, GlobalExceptionHandler
+│   │   ├── Extensions/                 #   Pipeline, DI, CORS, RateLimiting, SecurityConfiguration
+│   │   └── appsettings.json           #   Configuration (tracked, contains NO secrets)
 │   │
 │   ├── Skill-Loop.Application/        # 📋 Application Layer
 │   │   ├── Features/
@@ -208,7 +211,7 @@ Skill-Loop/
 │       └── DependencyInjection/       #   Infrastructure DI registration
 │
 └── tests/
-    └── Skill-Loop.UnitTests/          # 🧪 Unit Tests
+    └── Skill-Loop.UnitTests/          # 🧪 Unit Tests (incl. security regression suites)
 ```
 
 ---
@@ -232,36 +235,92 @@ cd Skill-Loop
 
 ### 2. Configure the Application
 
-Update `src/Skill-Loop.Api/appsettings.json` with your settings:
+> ⚠️ **Secrets are never stored in `appsettings.json`.** That file is tracked in Git and ships
+> with empty secret values. The application **refuses to start** if a required secret is
+> missing, too short, or matches a value that was previously committed. See
+> [`docs/SECURITY.md`](docs/SECURITY.md) for the full list of requirements.
+
+#### Local development — user-secrets
+
+> Do **not** run `dotnet user-secrets init`. `Skill-Loop.Api.csproj` already declares a
+> `UserSecretsId`, so that command fails with *"UserSecretsId is already set"*.
+
+```bash
+cd src/Skill-Loop.Api
+
+dotnet user-secrets set "Jwt:Key"                 "$(openssl rand -base64 48)"
+dotnet user-secrets set "OtpSettings:HashingSecret" "$(openssl rand -base64 48)"
+dotnet user-secrets set "MailSettings:Host"      "smtp.example.com"
+dotnet user-secrets set "MailSettings:Username"  "your-username"
+dotnet user-secrets set "MailSettings:Password"  "your-app-password"
+dotnet user-secrets set "MailSettings:SenderEmail" "your-email@example.com"
+```
+
+`Jwt:Key` and `OtpSettings:HashingSecret` are the only two the application will refuse to
+start without; the mail values only matter if you exercise the email endpoints.
+
+Then start the API:
+
+```powershell
+# from the repository root
+powershell -ExecutionPolicy Bypass -File docs\run-api-local.ps1
+```
+
+That script creates both databases (`Skill-Loop` and the separate `Skill-Loop-Hangfire`),
+falls back to the in-memory cache because there is no Redis locally, points SQL at the
+`localhost` instance, and validates your secrets before handing off to `dotnet run`. See
+[`docs/TESTING_RUNBOOK.md`](docs/TESTING_RUNBOOK.md).
+
+Seeding the first `SuperAdmin` is opt-in. Without these two values no admin account is
+created — there is no default password anywhere in the codebase.
+
+```bash
+dotnet user-secrets set "Seed:SuperAdmin:Email"    "admin@your-domain.com"
+dotnet user-secrets set "Seed:SuperAdmin:Password" "$(openssl rand -base64 24)Aa1!"
+```
+
+#### Production — environment variables
+
+Use `__` as the section separator:
+
+```bash
+export Jwt__Key="..."
+export OtpSettings__HashingSecret="..."
+export MailSettings__Password="..."
+export Seed__SuperAdmin__Email="..."
+export Seed__SuperAdmin__Password="..."
+```
+
+#### Non-secret settings
+
+`appsettings.json` holds only non-sensitive structure and carries inline comments for each
+key. These are the values you normally edit:
 
 ```jsonc
 {
-  // Database connection
   "ConnectionStrings": {
-    "DefaultConnection": "Server=YOUR_SERVER;Database=SkillLoop;Trusted_Connection=True;TrustServerCertificate=True;"
+    "DefaultConnection":  "Server=...;Database=Skill-Loop;...",
+    // Must be a SEPARATE database from the application database.
+    "HangfireConnection": "Server=...;Database=Skill-Loop-Hangfire;..."
   },
 
-  // JWT settings
+  "CorsSettings": {
+    // "*" is rejected at startup, as is any loopback or plain-HTTP origin
+    // outside Development.
+    "AllowedOrigins": ["https://app.your-domain.com"]
+  },
+
   "Jwt": {
-    "Key": "your-secure-secret-key-at-least-32-characters",
-    "Issuer": "https://localhost:7271",
-    "Audience": "https://localhost:7271",
-    "ExpiryMinutes": 60
+    "Issuer":         "https://api.your-domain.com",
+    "Audience":       "https://api.your-domain.com",
+    "ExpiryMinutes":  60   // must be > 0 and <= 60
   },
 
-  // Email (SMTP)
-  "MailSettings": {
-    "SenderEmail": "your-email@example.com",
-    "Host": "smtp.example.com",
-    "Port": 587,
-    "Username": "your-username",
-    "Password": "your-app-password",
-    "EnableSsl": true
-  },
-
-  // Google OAuth (optional)
-  "GoogleAuth": {
-    "ClientId": "your-google-client-id"
+  "OtpSettings": {
+    "CodeLength":      6,
+    "Expiry":          "00:05:00",
+    "ResendCooldown":  "00:02:00",  // must be >= 00:01:00
+    "MaxAttempts":     3
   }
 }
 ```
@@ -272,6 +331,10 @@ Update `src/Skill-Loop.Api/appsettings.json` with your settings:
 cd src/Skill-Loop.Api
 dotnet ef database update --project ../Skill-Loop.Infrastructure
 ```
+
+> The `HardenRefreshTokenStorage` migration changes how refresh tokens are stored and
+> **deletes all existing refresh tokens**, so every user must sign in again. See
+> [`docs/SECURITY.md` §3.3](docs/SECURITY.md#33-refresh-token-storage-and-rotation).
 
 ### 4. Run the Application
 
@@ -286,6 +349,12 @@ The API will be available at:
 ---
 
 ## 📡 API Endpoints
+
+> ### 🛡️ Rate-limited endpoints
+>
+> Unauthenticated endpoints are throttled per **IP and target identity** — see
+> [`docs/SECURITY.md` §3.4](docs/SECURITY.md#34-rate-limiting) for the full limit table.
+> Exceeding a limit returns `429` with `Retry-After`.
 
 ### 🔐 Authentication (`/api/v1/auth`)
 
@@ -314,23 +383,19 @@ The API will be available at:
 
 ### 👥 User Management (`/api/v1/users`)
 
-> ⚠️ **Security**: `[Authorize(Roles = "Admin,SuperAdmin")]` is **commented out** at `UsersController.cs:15`, so these endpoints are currently reachable anonymously.
-
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `GET` | `/api/v1/users` | ⚠️ None | List all users (paginated) |
-| `PATCH` | `/api/v1/users/{userId}/activate` | ⚠️ None | Activate a user |
-| `PATCH` | `/api/v1/users/{userId}/deactivate` | ⚠️ None | Deactivate a user |
-| `POST` | `/api/v1/users/{userId}/roles` | ⚠️ None | Assign role to user |
-| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | ⚠️ None | Remove role from user |
+| `GET` | `/api/v1/users` | 🔒 Admin,SuperAdmin | List all users (paginated) |
+| `PATCH` | `/api/v1/users/{userId}/activate` | 🔒 Admin,SuperAdmin | Activate a user |
+| `PATCH` | `/api/v1/users/{userId}/deactivate` | 🔒 Admin,SuperAdmin | Deactivate a user (revokes all sessions) |
+| `POST` | `/api/v1/users/{userId}/roles` | 🔒 Admin,SuperAdmin | Assign role to user |
+| `DELETE` | `/api/v1/users/{userId}/roles/{roleName}` | 🔒 Admin,SuperAdmin | Remove role from user |
 
 ### 📩 Staff Invitations (`/api/v1/staff-invitations`)
 
-> ⚠️ **Security**: `[Authorize(Roles = "Admin")]` is **commented out** at `StaffInvitationsController.cs:21`, so `POST /send` is currently reachable anonymously.
-
 | Method | Endpoint | Auth | Description |
 |--------|----------|------|-------------|
-| `POST` | `/api/v1/staff-invitations/send` | ⚠️ None | Send invitation email |
+| `POST` | `/api/v1/staff-invitations/send` | 🔒 Admin,SuperAdmin | Send invitation email |
 | `GET` | `/api/v1/staff-invitations/validate/{token}` | ❌ | Validate invitation token |
 | `POST` | `/api/v1/staff-invitations/accept` | ❌ | Accept with password |
 | `POST` | `/api/v1/staff-invitations/accept-google` | ❌ | Accept with Google account |
@@ -490,23 +555,56 @@ The API will be available at:
 
 ---
 
-## 🔄 MediatR Pipeline
+## 🔄 Request Pipeline
 
-Every request flows through a carefully ordered chain of cross-cutting behaviors:
+### HTTP middleware (`PipelineExtensions.UseApplicationPipeline`)
+
+Order is significant:
 
 ```
 Request
   │
-  ├─ 1. LoggingBehavior         → Logs start/end of every request
-  ├─ 2. PerformanceBehavior     → Alerts on slow requests
-  ├─ 3. AuthorizationBehavior   → Checks user permissions
-  ├─ 4. ValidationBehavior      → Runs FluentValidation rules
-  ├─ 5. CachingBehavior         → Returns cached response (Queries)
-  ├─ 6. CacheInvalidationBehavior → Clears cache (Commands)
-  └─ 7. TransactionBehavior     → Wraps handler in DB transaction
+  ├─ 1. CorrelationIdMiddleware     → Validated trace ID (≤64 chars, alphanumeric)
+  ├─ 2. SecurityHeadersMiddleware   → nosniff, frame-deny, CSP, referrer-policy
+  ├─ 3. RateLimitIdentityMiddleware → Buffers/rewinds body, extracts target identity
+  ├─ 4. UseRateLimiter              → Global per-IP limit + per-endpoint policies
+  ├─ 5. UseExceptionHandler         → 401 / 409 / ProblemDetails
+  ├─ 6. UseHsts + UseHttpsRedirection
+  ├─ 7. UseCors("AllowFrontend")    → Explicit origin allowlist, no wildcard
+  ├─ 8. UseStaticFiles              → /uploads
+  ├─ 9. UseOpenApiDocumentation
+  ├─ 10. UseAuthentication
+  ├─ 11. UseAuthorization
+  ├─ 12. MapControllers
+  └─ 13. MapChatHub                 → /hubs/chat
+```
+
+`RateLimitIdentityMiddleware` must run **before** `UseRateLimiter`: the limiter partitions
+buckets on the identity it extracts. It buffers and rewinds the body so model binding is
+unaffected.
+
+### MediatR behaviors
+
+```
+Request
+  │
+  ├─ 1. LoggingBehavior              → Logs start/end of every request
+  ├─ 2. PerformanceBehavior          → Alerts on slow requests
+  ├─ 3. AuthorizationBehavior        → Checks user permissions
+  │     CourseOwnershipBehavior
+  │     SessionOwnershipBehavior
+  ├─ 4. ValidationBehavior           → Runs FluentValidation rules
+  ├─ 5. CachingBehavior              → Returns cached response (Queries)
+  ├─ 6. CacheInvalidationBehavior    → Clears cache (Commands)
+  ├─ 7. TransactionBehavior          → DB transaction for ICommand<TResponse>
+  └─ 8. NonGenericCommandTransactionBehavior → DB transaction for ICommand
         │
         └─ Handler → Executes business logic
 ```
+
+> Both transaction behaviors are required. `TransactionBehavior` is constrained to
+> `ICommand<TResponse>`, so without the second one, non-returning commands such as
+> `DeactivatePromoCode` and `AssignPermissionToRole` would run with no transaction at all.
 
 ---
 
@@ -516,6 +614,11 @@ Request
 dotnet test tests/Skill-Loop.UnitTests
 ```
 
+The suite includes dedicated security regression coverage for refresh-token hashing and
+rotation, session revocation on password reset, startup secret validation, and correlation-ID
+input sanitisation. See [`docs/SECURITY.md` §6](docs/SECURITY.md#6-security-regression-tests)
+for the mapping of suites to controls.
+
 ---
 
 ## 📚 Documentation
@@ -524,12 +627,15 @@ Deeper docs live in [`docs/`](docs):
 
 | Doc | Covers |
 |-----|--------|
+| **[SECURITY.md](docs/SECURITY.md)** | **Secret rotation runbook, configuration requirements, and every security control** |
 | [ARCHITECTURE_GUIDE.md](docs/ARCHITECTURE_GUIDE.md) | Layer-by-layer walkthrough: entities, enums, events, behaviors, DI, caching |
+| [explanation.md](docs/explanation.md) | High-level code map and request flows |
 | [BACKEND_GAP_ANALYSIS.md](docs/BACKEND_GAP_ANALYSIS.md) | Feature matrix, test coverage, and known gaps |
+| [TESTING_RUNBOOK.md](docs/TESTING_RUNBOOK.md) | Running and writing tests |
 | [Support_Subsystem.md](docs/Support_Subsystem.md) | FAQ + support requests: endpoints, caching, email, domain rules |
 | [Chat_Subsystem.md](docs/Chat_Subsystem.md) | Real-time chat and SignalR |
 | [Course_And_Enrollment_Subsystem.md](docs/Course_And_Enrollment_Subsystem.md) | Courses, sections, lessons, enrollment, progress |
-| [explanation.md](docs/explanation.md) | High-level code map and request flows |
+| [PERMISSIONS_MATRIX.md](docs/PERMISSIONS_MATRIX.md) | Role-to-permission reference |
 
 ---
 

@@ -1,6 +1,7 @@
-﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity;
 using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authentication;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.Identity.Providers;
 using Skill_Loop.Application.Common.Abstractions.Identity.Tokens;
 using Skill_Loop.Application.Common.Errors.Identity;
@@ -16,52 +17,53 @@ public class UserAuthService(
     SignInManager<ApplicationUser> signInManager,
     IJwtTokenGenerator jwtTokenGenerator,
     IRefreshTokenService refreshTokenService,
+    IPermissionService permissionService,
     IDateTime dateTime,
     IEnumerable<IExternalAuthProvider> externalAuthProviders) : IUserAuthService
 {
-    // لاحظ أننا نرجع UserAuthResponse
+    // ???? ???? ???? UserAuthResponse
     public async Task<Result<UserAuthResponse>> LoginAsync(
         string email,
         string password,
         CancellationToken cancellationToken = default)
     {
-        // 1. نجيب المستخدم — لو مش موجود بنرجّع نفس رسالة الباسورد الغلط
-        //    (منع Email Enumeration)
+        // 1. ???? ???????? � ?? ?? ????? ?????? ??? ????? ???????? ?????
+        //    (??? Email Enumeration)
         var user = await userManager.FindByEmailAsync(email);
         if (user is null)
             return Result<UserAuthResponse>.Failure(UserErrors.InvalidCredentials);
 
-        // 2. ⚠️ نفحص الباسورد الأول (بدون pre-sign-in checks)
-        //    ده اللي بيمنع الـ Email Enumeration
+        // 2. ?? ???? ???????? ????? (???? pre-sign-in checks)
+        //    ?? ???? ????? ??? Email Enumeration
         var passwordValid = await userManager.CheckPasswordAsync(user, password);
 
         if (!passwordValid)
         {
-            // نسجّل المحاولة الفاشلة (Lockout على المحاولات)
+            // ????? ???????? ??????? (Lockout ??? ?????????)
             await userManager.AccessFailedAsync(user);
 
-            // لو الحساب اتقفل بسبب المحاولات الكتير
+            // ?? ?????? ????? ???? ????????? ??????
             if (await userManager.IsLockedOutAsync(user))
                 return Result<UserAuthResponse>.Failure(UserErrors.AccountLocked);
 
-            // رسالة عامة (نفسها للمستخدم الغلط والإيميل الغلط)
+            // ????? ???? (????? ???????? ????? ???????? ?????)
             return Result<UserAuthResponse>.Failure(UserErrors.InvalidCredentials);
         }
 
-        // 3. ✅ الباسورد صح — نصفّر عدد المحاولات
+        // 3. ? ???????? ?? � ????? ??? ?????????
         await userManager.ResetAccessFailedCountAsync(user);
 
-        // 4. دلوقتي بس نفحص باقي الشروط (المستخدم عرف باسورده، فمفيش مشكلة نقوله السبب الحقيقي)
+        // 4. ?????? ?? ???? ???? ?????? (???????? ??? ???????? ????? ????? ????? ????? ???????)
 
-        // 4.a — الإيميل مؤكد؟
+        // 4.a � ??????? ?????
         if (!user.EmailConfirmed)
             return Result<UserAuthResponse>.Failure(UserErrors.EmailNotConfirmed);
 
-        // 4.b — الحساب نشط؟
+        // 4.b � ?????? ????
         if (!user.IsActive)
             return Result<UserAuthResponse>.Failure(UserErrors.AccountDeactivated);
 
-        // 4.c — مش Staff داخل من بوابة الـ User؟
+        // 4.c � ?? Staff ???? ?? ????? ??? User?
         var roles = await userManager.GetRolesAsync(user);
         if (roles.Any(r =>
                 r == Roles.Admin ||
@@ -72,13 +74,20 @@ public class UserAuthService(
             return Result<UserAuthResponse>.Failure(UserErrors.UseStaffPortal);
         }
 
-        // 5. نولّد التوكنات
+        // 5. ????? ????????
+        // Role-based permissions must go into the token, exactly as StaffAuthService does.
+        // Instructor is not one of the staff-only roles, so an instructor signs in through
+        // this portal; passing an empty permission list left them with a token that could
+        // never satisfy a [Permission(...)] check, so every instructor endpoint returned
+        // 403 Auth.Forbidden no matter which role the account actually held.
+        var permissions = await permissionService.GetUserPermissionsAsync(user.Id, cancellationToken);
+
         var accessToken = jwtTokenGenerator.GenerateJwtToken(
-            user.Id, user.Email!, user.FullName, roles, []);
+            user.Id, user.Email!, user.FullName, roles, permissions);
         var refreshToken = await refreshTokenService
             .GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
-        user.LastLoginAt = dateTime.Now;
+        user.LastLoginAt = dateTime.UtcNow;
         await userManager.UpdateAsync(user);
 
         return Result<UserAuthResponse>.Success(new UserAuthResponse
@@ -89,7 +98,7 @@ public class UserAuthService(
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresInSeconds = 3600,
-            LoggedInAt = dateTime.Now,
+            LoggedInAt = dateTime.UtcNow,
             Roles = roles.ToList()
         });
     }
@@ -101,16 +110,33 @@ public class UserAuthService(
         var tokenResult = await provider.ValidateTokenAsync(idToken, cancellationToken);
         if (!tokenResult.IsSuccess) return Result<UserAuthResponse>.Failure(tokenResult.Errors);
 
-        var user = await userManager.FindByEmailAsync(tokenResult.Data!.Email); // استخدمنا Data بدل Value
+        var user = await userManager.FindByEmailAsync(tokenResult.Data!.Email); // ???????? Data ??? Value
         if (user is null) return Result<UserAuthResponse>.Failure(UserErrors.NotFound);
+
+        // ??? ?????? ??????? ?? LoginAsync � ????? ???? ????? ?????? ????????
+        if (!user.EmailConfirmed) return Result<UserAuthResponse>.Failure(UserErrors.EmailNotConfirmed);
+
         if (!user.IsActive) return Result<UserAuthResponse>.Failure(UserErrors.AccountDeactivated);
 
         var roles = await userManager.GetRolesAsync(user);
 
-        var accessToken = jwtTokenGenerator.GenerateJwtToken(user.Id, user.Email!, user.FullName, roles, []);
+        // ?? Staff ???? ?? ????? ??? User?
+        if (roles.Any(r =>
+                r == Roles.Admin ||
+                r == Roles.SuperAdmin ||
+                r == Roles.FinanceManager ||
+                r == Roles.Support))
+        {
+            return Result<UserAuthResponse>.Failure(UserErrors.UseStaffPortal);
+        }
+
+        // Same reason as LoginAsync: an end-user token must carry its role's permissions.
+        var permissions = await permissionService.GetUserPermissionsAsync(user.Id, cancellationToken);
+
+        var accessToken = jwtTokenGenerator.GenerateJwtToken(user.Id, user.Email!, user.FullName, roles, permissions);
         var refreshToken = await refreshTokenService.GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
-        user.LastLoginAt = dateTime.Now;
+        user.LastLoginAt = dateTime.UtcNow;
         await userManager.UpdateAsync(user);
 
         return Result<UserAuthResponse>.Success(new UserAuthResponse

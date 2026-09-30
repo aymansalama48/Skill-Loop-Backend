@@ -1,5 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Features.Sessions.Common;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Domain.Constants;
@@ -20,8 +21,10 @@ public sealed record UpdateSessionCommand(
     int? CreditsPrice = null,
     SessionLocationType? LocationType = null,
     string? LocationDetails = null,
-    int? MaxParticipants = null) : ICommand, ICacheInvalidatorCommand
+    int? MaxParticipants = null) : ICommand, ICacheInvalidatorCommand, ISessionCommand
 {
+    public Guid SessionId => Id;
+
     public IReadOnlyCollection<string> CacheKeys =>
     [
         "sessions:all",

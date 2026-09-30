@@ -1755,19 +1755,29 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<DateTime?>("LastUsedAt")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Token")
+                    b.Property<string>("ReplacedByTokenHash")
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
+
+                    b.Property<Guid>("TokenFamilyId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("TokenHash")
                         .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)");
 
                     b.Property<Guid>("UserId")
                         .HasColumnType("uniqueidentifier");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("Token")
+                    b.HasIndex("TokenFamilyId")
+                        .HasDatabaseName("IX_RefreshTokens_TokenFamilyId");
+
+                    b.HasIndex("TokenHash")
                         .IsUnique()
-                        .HasDatabaseName("IX_RefreshTokens_Token");
+                        .HasDatabaseName("IX_RefreshTokens_TokenHash");
 
                     b.HasIndex("UserId")
                         .HasDatabaseName("IX_RefreshTokens_UserId");
@@ -1960,8 +1970,7 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasOne("Skill_Loop.Domain.Entities.Courses.Course", "Course")
                         .WithMany("Attachments")
                         .HasForeignKey("CourseId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("Course");
                 });

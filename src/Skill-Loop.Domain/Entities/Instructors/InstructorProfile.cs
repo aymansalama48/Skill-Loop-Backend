@@ -1,5 +1,6 @@
 using Skill_Loop.Domain.Common.Errors.InstructorReview;
 using Skill_Loop.Domain.Common.Errors.InstructorProfile;
+using Skill_Loop.Domain.Common.Errors.Review;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
@@ -64,11 +65,20 @@ public sealed class InstructorProfile : AuditableEntity
 
     // دوال لتحديث الإحصائيات (الرصيد والجلسات)
     public void IncrementSessionsCompleted() => SessionsCompleted++;
-    public void AddCreditsEarned(int amount) => CreditsEarned += amount;
+    public void AddCreditsEarned(int amount)
+    {
+        if (amount <= 0)
+            return;
+
+        CreditsEarned += amount;
+    }
 
     // دالة إضافة التقييم وتحديث المتوسط تلقائياً
     public Result AddReview(Guid learnerUserId, int rating, string? comment)
     {
+        if (learnerUserId == UserId)
+            return Result.Failure(ReviewErrors.InstructorCannotReview);
+
         if (_reviews.Any(r => r.LearnerUserId == learnerUserId))
         {
             return Result.Failure(InstructorProfileErrors.AlreadyReviewed);
@@ -78,7 +88,7 @@ public sealed class InstructorProfile : AuditableEntity
         if (!reviewResult.IsSuccess)
             return reviewResult;
 
-        _reviews.Add(reviewResult.Data);
+        _reviews.Add(reviewResult.Data!);
 
         // حساب المتوسط الجديد للتقييم بمجرد إضافة المراجعة
         RecalculateRating();
@@ -104,7 +114,9 @@ public sealed class InstructorProfile : AuditableEntity
             return Result.Failure(InstructorReviewErrors.InvalidRating);
         }
 
-        review.Update(rating, comment);
+        var updateResult = review.Update(rating, comment);
+        if (!updateResult.IsSuccess)
+            return updateResult;
 
         // إعادة حساب التقييم بعد التعديل
         RecalculateRating();
@@ -136,7 +148,7 @@ public sealed class InstructorProfile : AuditableEntity
     /// <summary>
     /// إضافة موعد جديد متاح للعمل
     /// </summary>
-    public Result AddAvailability(DayOfWeek dayOfWeek, TimeSpan startTime, TimeSpan endTime)
+    public Result<Guid> AddAvailability(DayOfWeek dayOfWeek, TimeSpan startTime, TimeSpan endTime)
     {
         // التحقق من عدم وجود تداخل في المواعيد لنفس اليوم (اختياري ولكنه مفيد)
         var hasOverlap = _availabilities.Any(a =>
@@ -145,15 +157,15 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (hasOverlap)
         {
-            return Result.Failure(InstructorProfileErrors.AvailabilityOverlap);
+            return Result<Guid>.Failure(InstructorProfileErrors.AvailabilityOverlap);
         }
 
         var availabilityResult = InstructorAvailability.Create(Id, dayOfWeek, startTime, endTime);
         if (!availabilityResult.IsSuccess)
-            return availabilityResult;
+            return Result<Guid>.Failure(availabilityResult.Errors);
 
-        _availabilities.Add(availabilityResult.Data);
-        return Result.Success();
+        _availabilities.Add(availabilityResult.Data!);
+        return Result<Guid>.Success(availabilityResult.Data!.Id);
     }
 
     /// <summary>

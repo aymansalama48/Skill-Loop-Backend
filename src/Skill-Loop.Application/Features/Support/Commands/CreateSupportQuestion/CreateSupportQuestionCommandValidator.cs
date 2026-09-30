@@ -24,10 +24,12 @@ public sealed class CreateSupportQuestionCommandValidator : AbstractValidator<Cr
             .WithMessage("Answer cannot exceed 5000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Answer));
 
-        RuleFor(x => x.IsPublished)
-            .Equal(true)
-            .When(x => !string.IsNullOrEmpty(x.Answer))
+        // Publishing requires an answer; answering does not require publishing
+        // (a drafted answer can be saved and published later).
+        RuleFor(x => x.Answer)
+            .NotEmpty()
+            .When(x => x.IsPublished)
             .WithMessage("Cannot publish without an answer.")
-            .OverridePropertyName("IsPublished");
+            .OverridePropertyName("Answer");
     }
 }

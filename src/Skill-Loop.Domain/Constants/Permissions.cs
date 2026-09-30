@@ -78,7 +78,23 @@ public class Permissions
 
     public static class SiteSettings
     {
+        public const string View = "SiteSettings.View";
+        public const string Update = "SiteSettings.Update";
         public const string Manage = "SiteSettings.Manage";
+    }
+
+    /// <summary>
+    /// Outbound email operations. These are deliberately separate from <c>Support.Manage</c>:
+    /// the platform SMTP relay is a reputation-bearing resource, and sending mail to an
+    /// arbitrary address turns the API into a spam relay that damages deliverability for
+    /// every transactional message (password resets, booking confirmations).
+    /// </summary>
+    public static class Emails
+    {
+        public const string View = "Emails.View";
+        public const string SendTest = "Emails.SendTest";
+        public const string Resend = "Emails.Resend";
+        public const string ManageAll = "Emails.ManageAll";
     }
 
     public static class Support
@@ -91,6 +107,55 @@ public class Permissions
     {
         public const string View = "Instructors.View";
         public const string ManageAll = "Instructors.ManageAll";
+    }
+
+    /// <summary>
+    /// Each "umbrella" permission and the granular permissions it subsumes.
+    /// Holding the umbrella must satisfy a check for any of its members — otherwise an
+    /// Admin (who holds <c>Courses.ManageAll</c> but not <c>Courses.Create</c>) would be
+    /// rejected by [Permission(Permissions.Courses.Create)].
+    /// </summary>
+    private static readonly IReadOnlyList<(string Umbrella, string[] Members)> UmbrellaPermissions =
+        new (string, string[])[]
+        {
+            (Courses.ManageAll, new[]
+            {
+                Courses.View, Courses.Create, Courses.Update, Courses.Delete,
+                Courses.Publish, Courses.Archive
+            }),
+            (Sessions.ManageAll, new[]
+            {
+                Sessions.View, Sessions.Create, Sessions.Update, Sessions.Cancel,
+                Sessions.Delete, Sessions.Moderate, Sessions.ViewMaterials,
+                Sessions.UploadMaterials, Sessions.DeleteMaterials, Sessions.ReorderMaterials
+            }),
+            (Bookings.ManageAll, new[] { Bookings.View, Bookings.ViewAll }),
+            (Users.ManageAll, new[]
+            {
+                Users.View, Users.Activate, Users.Deactivate, Users.AssignRole
+            }),
+            (Finance.ManageAll, new[]
+            {
+                Finance.View, Finance.PackagesManage, Finance.PromoCodesManage,
+                Finance.WalletAdjust, Finance.PaymentsView
+            }),
+            (Instructors.ManageAll, new[] { Instructors.View }),
+            (SiteSettings.Manage, new[] { SiteSettings.View, SiteSettings.Update }),
+            (Emails.ManageAll, new[] { Emails.View, Emails.SendTest, Emails.Resend })
+        };
+
+    /// <summary>
+    /// Returns the umbrella permissions that grant <paramref name="permission"/>.
+    /// </summary>
+    public static IReadOnlyList<string> GetImplyingPermissions(string permission)
+    {
+        if (string.IsNullOrWhiteSpace(permission))
+            return Array.Empty<string>();
+
+        return UmbrellaPermissions
+            .Where(u => u.Members.Contains(permission, StringComparer.OrdinalIgnoreCase))
+            .Select(u => u.Umbrella)
+            .ToList();
     }
 
     public static IReadOnlyList<string> GetAllPermissions()

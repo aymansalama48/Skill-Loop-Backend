@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Chat;
@@ -11,6 +13,7 @@ namespace Skill_Loop.Application.Features.Chat.Queries.GetConversationMessages;
 /// <summary>
 /// رسايل محادثة معينة، الأحدث الأول (الصفحة 1 = آخر رسايل). الـ Frontend يقلبها للعرض.
 /// </summary>
+[AuthenticatedOnly]
 public sealed class GetConversationMessagesQuery : PaginationParameters, IQuery<PagedResult<MessageDto>>
 {
     public Guid UserId { get; init; }

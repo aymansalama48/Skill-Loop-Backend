@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Payments;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -15,6 +17,7 @@ namespace Skill_Loop.Application.Features.CreditPurchases.Queries.GetPurchaseQuo
 /// "هدفع كام لو اشتريت X كريديت (وبالكود ده)؟" — معاينة بس، مفيش أي حاجة بتتحفظ.
 /// شاشة الدفع بتناديها لما المستخدم يكتب كود الخصم عشان يشوف السعر الجديد.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetPurchaseQuoteQuery(Guid UserId, int Credits, string? PromoCode) : IQuery<PurchaseQuoteDto>;
 
 public sealed class GetPurchaseQuoteQueryValidator : AbstractValidator<GetPurchaseQuoteQuery>

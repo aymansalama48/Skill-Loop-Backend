@@ -16,11 +16,4 @@ public sealed record SessionMaterialDownloadInfoResponse(
 [AuthenticatedOnly]
 public sealed record GetSessionMaterialDownloadInfoQuery(
     Guid SessionId,
-    Guid MaterialId) : ICacheableQuery<SessionMaterialDownloadInfoResponse>
-{
-    public string CacheKey => CacheKeys.SessionMaterialDownload(SessionId, MaterialId);
-
-    public TimeSpan? SlidingExpiration => TimeSpan.FromMinutes(5);
-
-    public TimeSpan? AbsoluteExpiration => TimeSpan.FromMinutes(30);
-}
+    Guid MaterialId) : IQuery<SessionMaterialDownloadInfoResponse>;

@@ -24,7 +24,7 @@ public class NotificationsController : BaseApiController
     {
         var query = new GetMyNotificationsQuery
         {
-            UserId = _currentUser.UserId ?? Guid.Empty,
+            UserId = RequireUserId(),
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
         };
@@ -34,21 +34,21 @@ public class NotificationsController : BaseApiController
     [HttpGet("unread-count")]
     public async Task<IResult> GetUnreadCount(CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new GetUnreadNotificationCountQuery(userId), cancellationToken);
         return HandleResult(result);
     }
     [HttpPost("{notificationId:guid}/read")]
     public async Task<IResult> MarkAsRead(Guid notificationId, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new MarkNotificationReadCommand(userId, notificationId), cancellationToken);
         return HandleResult(result);
     }
     [HttpPost("read-all")]
     public async Task<IResult> MarkAllAsRead(CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new MarkAllNotificationsReadCommand(userId), cancellationToken);
         return HandleResult(result);
     }

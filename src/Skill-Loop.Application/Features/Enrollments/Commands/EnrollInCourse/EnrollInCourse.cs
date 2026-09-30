@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Errors.Wallet;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Errors.Enrollment;
 using Skill_Loop.Application.Common.Errors.Course;
 using FluentValidation;
@@ -11,6 +13,7 @@ using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Application.Features.Enrollments.Commands.EnrollInCourse;
 
+[AuthenticatedOnly]
 public sealed record EnrollInCourseCommand(Guid UserId, Guid CourseId) : ICommand<EnrollmentResultDto>;
 
 public sealed class EnrollInCourseCommandValidator : AbstractValidator<EnrollInCourseCommand>
@@ -60,9 +63,14 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
                 _context.UserWallets.Where(w => w.UserId == request.UserId),
                 cancellationToken);
 
+            // Create it on demand, exactly as the wallet, booking and credit-purchase paths
+            // already do. Wallets were only ever created by GET /api/v1/Wallets/me, so a
+            // newly registered user could not enrol in a paid course until they happened to
+            // open the wallet page first.
             if (wallet is null)
             {
-                return Result<EnrollmentResultDto>.Failure(WalletErrors.NotFound);
+                wallet = Skill_Loop.Domain.Entities.Wallets.UserWallet.Create(request.UserId, 0);
+                _context.Add(wallet);
             }
 
             var deductionResult = wallet.DeductCredits(

@@ -7,9 +7,9 @@ using Skill_Loop.Domain.Common.Results;
 namespace Skill_Loop.Application.Features.Instructors.Commands.AddInstructorAvailability;
 
 public sealed class AddInstructorAvailabilityCommandHandler(
-    IApplicationDbContext _dbContext) : ICommandHandler<AddInstructorAvailabilityCommand, bool>
+    IApplicationDbContext _dbContext) : ICommandHandler<AddInstructorAvailabilityCommand, Guid>
 {
-    public async Task<Result<bool>> Handle(AddInstructorAvailabilityCommand request, CancellationToken cancellationToken)
+    public async Task<Result<Guid>> Handle(AddInstructorAvailabilityCommand request, CancellationToken cancellationToken)
     {
         // بنجيب البروفايل مع مواعيده الحالية عشان نتشيك لو فيه تداخل
         var profile = await _dbContext.InstructorProfiles
@@ -18,7 +18,7 @@ public sealed class AddInstructorAvailabilityCommandHandler(
 
         if (profile is null)
         {
-            return Result<bool>.Failure(InstructorProfileErrors.NotFound);
+            return Result<Guid>.Failure(InstructorProfileErrors.NotFound);
         }
 
         // استدعاء دالة الدومين اللي بنيناها
@@ -26,11 +26,11 @@ public sealed class AddInstructorAvailabilityCommandHandler(
 
         if (!addResult.IsSuccess)
         {
-            return Result<bool>.Failure(addResult.Errors);
+            return Result<Guid>.Failure(addResult.Errors);
         }
 
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        return Result<bool>.Success(true);
+        return Result<Guid>.Success(addResult.Data);
     }
 }

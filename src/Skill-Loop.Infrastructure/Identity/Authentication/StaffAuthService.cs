@@ -68,7 +68,7 @@ public class StaffAuthService(
 
         var refreshToken = await refreshTokenService.GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
-        user.LastLoginAt = dateTime.Now;
+        user.LastLoginAt = dateTime.UtcNow;
         await userManager.UpdateAsync(user);
 
         logger.LogInformation("تم تسجيل دخول الموظف {Email} بنجاح", email);
@@ -81,7 +81,7 @@ public class StaffAuthService(
             AccessToken = accessToken,
             RefreshToken = refreshToken,
             ExpiresInSeconds = 3600,
-            LoggedInAt = dateTime.Now,
+            LoggedInAt = dateTime.UtcNow,
             Roles = roles.ToList()
         });
     }
@@ -123,7 +123,7 @@ public class StaffAuthService(
 
         var refreshToken = await refreshTokenService.GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
-        user.LastLoginAt = dateTime.Now;
+        user.LastLoginAt = dateTime.UtcNow;
         await userManager.UpdateAsync(user);
 
         logger.LogInformation("تم تسجيل دخول الموظف {Email} بجوجل", externalUser.Email);

@@ -32,8 +32,15 @@ public sealed class GoogleAuthProvider(
         {
             var settings = new GoogleJsonWebSignature.ValidationSettings();
 
-            if (!string.IsNullOrWhiteSpace(options.Value.ClientId))
-                settings.Audience = new[] { options.Value.ClientId };
+            // Fail closed: بدون Audience محدد، جوجل بيتحقق من التوقيع والـ Issuer بس،
+            // وده كان بيسمح بتوكن صادر لتطبيق جوجل تاني إنه يمر على الـ API بتاعنا.
+            if (string.IsNullOrWhiteSpace(options.Value.ClientId))
+            {
+                logger.LogError("GoogleAuth:ClientId غير مضبوط في الإعدادات — تم رفض التحقق من التوكن.");
+                return Result<ExternalUserResult>.Failure(ExternalAuthErrors.InvalidToken);
+            }
+
+            settings.Audience = new[] { options.Value.ClientId };
 
             // ملحوظة: المكتبة دي مالهاش Overload بياخد CancellationToken (قيد خارجي زي UserManager بالظبط)
             var payload = await GoogleJsonWebSignature.ValidateAsync(idToken, settings);

@@ -8,6 +8,10 @@ using Skill_Loop.Domain.Constants;
 namespace Skill_Loop.Api.Controllers;
 /// <summary>
 /// إدارة إعدادات الموقع العامة والتكوينات
+///
+/// Security: writes are restricted to SuperAdmin. The previous [Authorize] allowed any
+/// authenticated user to repoint SupportEmail, which is the sender identity for
+/// password-reset mail and therefore a phishing primitive.
 /// </summary>
 [Route("api/v1/[controller]")]
 public class SiteSettingsController : BaseApiController
@@ -19,8 +23,9 @@ public class SiteSettingsController : BaseApiController
         var result = await Mediator.Send(new GetSiteSettingsQuery(), cancellationToken);
         return HandleResult(result);
     }
+
     [HttpPut]
-    [Authorize]
+    [Authorize(Roles = "SuperAdmin")]
     public async Task<IResult> UpdateSettings(
         [FromBody] UpdateSiteSettingsCommand command,
         CancellationToken cancellationToken)

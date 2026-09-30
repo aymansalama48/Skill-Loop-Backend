@@ -9,7 +9,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Promotions.Queries.ValidatePromoCode;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public record ValidatePromoCodeQuery(string Code) : IRequest<Result<PromoCodeDto>>;
 
 public class ValidatePromoCodeQueryHandler : IRequestHandler<ValidatePromoCodeQuery, Result<PromoCodeDto>>

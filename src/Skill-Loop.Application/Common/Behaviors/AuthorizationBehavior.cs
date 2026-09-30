@@ -4,6 +4,7 @@ using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Helpers;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Common.Behaviors;
 
@@ -48,7 +49,10 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
 
         if (permissionAttribute is not null)
         {
-            var hasPermission = currentUser.HasPermission(permissionAttribute.Name);
+            var hasPermission = currentUser.HasPermission(permissionAttribute.Name)
+                // صلاحية الـ ManageAll بتغطي كل الصلاحيات التفصيلية تحت نفس المجموعة.
+                || Permissions.GetImplyingPermissions(permissionAttribute.Name).Any(currentUser.HasPermission);
+
             if (!hasPermission)
             {
                 return ResultFactory.CreateFailure<TResponse>(AuthErrors.Forbidden);

@@ -483,18 +483,46 @@ $RECYCLE.BIN/
 
 # Skill-Loop Specific Ignores
 UploadedFiles/
+uploads/
 Logs/
 *.log
-appsettings.json
+
+# API test-suite run artifacts. The plan itself (docs/scalar-test-plan.json) and the
+# generated .http/Postman collections ARE tracked - they are the source of truth for the
+# suite. Only the per-run report is throwaway.
+docs/test-plan-report.json
+docs/_openapi.json
+
+# Python bytecode from the docs/ helper scripts.
+__pycache__/
+*.pyc
+
+# Merge leftovers. Two .cs.rej files from the PR #20 merge were committed by accident and
+# shadowed nothing but must never be staged again.
+*.rej
+*.orig
+
+# NOTE: docs/test-files/ is deliberately NOT ignored. Those are the real upload fixtures
+# the suite posts; without them every multipart step would have no file to send.
+
+# Local configuration overrides. These are where developers put real values.
+# NOTE: appsettings.json is intentionally NOT ignored — it is tracked and holds
+# structure only, with every secret left empty. Ignoring a file that is already
+# tracked gives a false sense of protection: the ignore rule silently does nothing,
+# so a developer who pastes a real secret in gets no warning. Startup validation
+# (SecurityConfigurationExtensions) rejects missing/weak secrets and the file's own
+# comments explain where the real values go. See docs/SECURITY.md.
 appsettings.*.local.json
+appsettings.Production.json
+appsettings.Staging.json
+
 .agents/
 .gemini/
 .idea/
 .vscode/
 
-
-
-google-drive-key.json
-.env
+# Google service-account private key (grants Drive access) — never commit.
 google-drive-key.json
 **/google-drive-key.json
+.env
+

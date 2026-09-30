@@ -1,7 +1,9 @@
 namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Skill_Loop.Api.Controllers.Base;
+using Skill_Loop.Api.Extensions;
 using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.ResendEmailOtp;
 using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.VerifyEmailOtp;
 using Skill_Loop.Api.Contracts.Auth;
@@ -14,6 +16,9 @@ public class OtpController : BaseApiController
 {
     [HttpPost("verify")]
     [AllowAnonymous]
+    // The OTP is only 4 digits (10,000 combinations), so guessing is the threat this
+    // limit exists to stop — not credential stuffing.
+    [EnableRateLimiting(RateLimitingExtensions.OtpVerifyPolicy)]
     public async Task<IResult> VerifyEmail(
         [FromBody] VerifyEmailRequest request,
         CancellationToken cancellationToken)
@@ -24,6 +29,7 @@ public class OtpController : BaseApiController
     }
     [HttpPost("resend")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.OtpResendPolicy)]
     public async Task<IResult> ResendVerificationCode(
         [FromBody] ResendVerificationCodeRequest request,
         CancellationToken cancellationToken)

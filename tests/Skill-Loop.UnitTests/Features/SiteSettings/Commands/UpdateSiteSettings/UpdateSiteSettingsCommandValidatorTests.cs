@@ -74,7 +74,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("absolute http(s) URL"));
     }
 
     [Fact]
@@ -95,7 +95,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("absolute http(s) URL"));
     }
 
     [Fact]
@@ -116,7 +116,7 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("Invalid value."));
+        result.Errors.Should().Contain(e => e.ErrorMessage.Contains("absolute http(s) URL"));
     }
 
     [Fact]
@@ -157,5 +157,58 @@ public class UpdateSiteSettingsCommandValidatorTests
         var result = await _validator.ValidateAsync(command, CancellationToken.None);
 
         result.IsValid.Should().BeTrue();
+    }
+
+    // -----------------------------------------------------------------
+    // Security regression: the old validator used FluentValidation's Must(), which
+    // swallowed the inner expression without evaluating it, so "not-a-valid-url" was
+    // accepted. Site settings URLs are rendered as links in outbound email, so an
+    // unvalidated value here is an injection vector.
+    // -----------------------------------------------------------------
+
+    [Theory]
+    [InlineData("javascript:alert(1)")]
+    [InlineData("not-a-valid-url")]
+    [InlineData("ftp://example.com")]
+    [InlineData("//example.com")]
+    [InlineData("https://")]
+    public async Task Validate_NonHttpAbsoluteUrl_IsRejected(string url)
+    {
+        var command = new UpdateSiteSettingsCommand(
+            AppName: "SkillLoop",
+            LogoName: null,
+            SupportEmail: null,
+            ContactPhoneNumber: null,
+            Address: null,
+            WebsiteUrl: url,
+            FacebookUrl: null,
+            InstagramUrl: null,
+            WhatsAppNumber: null
+        );
+
+        var result = await _validator.ValidateAsync(command, CancellationToken.None);
+
+        result.IsValid.Should().BeFalse(
+            $"'{url}' must not be stored as a site URL; only absolute http/https URLs are safe to render");
+    }
+
+    [Fact]
+    public async Task Validate_OverlongAppName_IsRejected()
+    {
+        var command = new UpdateSiteSettingsCommand(
+            AppName: new string('a', 500),
+            LogoName: null,
+            SupportEmail: null,
+            ContactPhoneNumber: null,
+            Address: null,
+            WebsiteUrl: null,
+            FacebookUrl: null,
+            InstagramUrl: null,
+            WhatsAppNumber: null
+        );
+
+        var result = await _validator.ValidateAsync(command, CancellationToken.None);
+
+        result.IsValid.Should().BeFalse("unbounded strings are a storage and rendering hazard");
     }
 }

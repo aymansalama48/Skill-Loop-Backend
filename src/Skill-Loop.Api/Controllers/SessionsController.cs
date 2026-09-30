@@ -32,7 +32,7 @@ public class SessionsController : BaseApiController
             CancellationToken cancellationToken)
     {
         // 1. سحب الـ ID الخاص بالمستخدم الحالي من التوكن تلقائياً
-        var instructorId = _currentUser.UserId ?? Guid.Empty;
+        var instructorId = RequireUserId();
         // 2. تمريره للـ Command
         var command = new CreateSessionCommand(
             request.Title,
@@ -123,7 +123,7 @@ public class SessionsController : BaseApiController
         [FromQuery] bool pastOnly = false,
         CancellationToken cancellationToken = default)
     {
-        var instructorId = _currentUser.UserId ?? Guid.Empty;
+        var instructorId = RequireUserId();
         var query = new GetMySessionsPagedQuery(instructorId, pageNumber, pageSize, status, upcomingOnly, pastOnly);
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);

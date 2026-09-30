@@ -1,10 +1,13 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Promotions;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Promotions.Commands.DeactivatePromoCode;
 
+[Permission(Permissions.Finance.PromoCodesManage)]
 public sealed record DeactivatePromoCodeCommand(Guid PromoCodeId) : ICommand;
 
 public sealed class DeactivatePromoCodeCommandHandler : ICommandHandler<DeactivatePromoCodeCommand>

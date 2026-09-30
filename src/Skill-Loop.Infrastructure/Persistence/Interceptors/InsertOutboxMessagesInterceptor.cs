@@ -25,7 +25,7 @@ public sealed class InsertOutboxMessagesInterceptor(
                 cancellationToken);
         }
 
-        var occurredOnUtc = dateTime.Now;
+        var occurredOnUtc = dateTime.UtcNow;
 
         var outboxMessages = context.ChangeTracker
             .Entries<IHasDomainEvents>()

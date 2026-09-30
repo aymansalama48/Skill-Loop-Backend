@@ -19,4 +19,9 @@ public static class EnrollmentErrors
         "Enrollment is required.",
         ErrorType.Validation);
 
+    public static readonly Error NotActive = new Error(
+        "Enrollment.NotActive",
+        "Progress can only be recorded on an active enrollment.",
+        ErrorType.Validation);
+
 }

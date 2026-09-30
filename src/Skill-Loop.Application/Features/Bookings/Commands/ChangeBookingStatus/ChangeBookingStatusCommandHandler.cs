@@ -14,7 +14,11 @@ public sealed class ChangeBookingStatusCommandHandler(
 {
     public async Task<Result> Handle(ChangeBookingStatusCommand request, CancellationToken cancellationToken)
     {
-        var utcNow = _dateTime.Now;
+        // UtcNow, not Now: this timestamp is persisted onto the booking (StartedAtUtc,
+        // CompletedAtUtc, and friends) as a UTC value, and is compared against
+        // ScheduledAtUtc. Using display-local time stored a two-hour skew on every
+        // booking transition.
+        var utcNow = _dateTime.UtcNow;
 
         var booking = await _dbContext.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);

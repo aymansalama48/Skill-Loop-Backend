@@ -49,6 +49,12 @@ public sealed class Enrollment : AuditableEntity
         if (lessonId == Guid.Empty)
             return Result.Failure(EnrollmentErrors.InvalidLesson);
 
+        if (Status != EnrollmentStatus.Active)
+            return Result.Failure(EnrollmentErrors.NotActive);
+
+        if (totalCourseLessons <= 0)
+            return Result.Failure(EnrollmentErrors.InvalidCourse);
+
         var progress = _lessonProgresses.FirstOrDefault(p => p.LessonId == lessonId);
         if (progress == null)
         {
@@ -60,7 +66,13 @@ public sealed class Enrollment : AuditableEntity
         LastWatchedLessonId = lessonId;
 
         var completedCount = _lessonProgresses.Count(p => p.IsCompleted);
-        ProgressPercentage = totalCourseLessons > 0 ? Math.Round(((double)completedCount / totalCourseLessons) * 100, 2) : 100.0;
+
+        // Clamp: progress rows can only ever reflect the lessons actually in the course,
+        // and the stored value must never exceed 100.
+        ProgressPercentage = Math.Clamp(
+            Math.Round(((double)completedCount / totalCourseLessons) * 100, 2),
+            0.0,
+            100.0);
 
         if (ProgressPercentage >= 100 && Status != EnrollmentStatus.Completed)
         {

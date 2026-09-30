@@ -25,7 +25,7 @@ public class CourseReviewsController : BaseApiController
         [FromBody] AddCourseReviewRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new AddCourseReviewCommand(courseId, userId, request.Stars, request.Comment);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);

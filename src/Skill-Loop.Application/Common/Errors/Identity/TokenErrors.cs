@@ -32,6 +32,15 @@ public static class TokenErrors
         ErrorType.Validation);
 
     /// <summary>
+    /// Refresh Token كان قد تم تدويره (rotated) وتم استخدامه مرة أخرى.
+    /// ده مؤشر على سرقة التوكن، لذلك يتم إلغاء كل التوكنات في نفس العائلة.
+    /// </summary>
+    public static readonly Error TokenReuseDetected = new(
+        "TOKEN_REUSE_DETECTED",
+        "تم إلغاء جميع الجلسات لأسباب أمنية. يرجى تسجيل الدخول مجدداً.",
+        ErrorType.Forbidden);
+
+    /// <summary>
     /// فشل في إنشاء Refresh Token بسبب خطأ غير متوقع.
     /// </summary>
     public static readonly Error TokenGenerationFailed = new(

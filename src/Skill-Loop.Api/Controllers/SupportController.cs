@@ -2,8 +2,10 @@ using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Skill_Loop.Api.Contracts.Support;
 using Skill_Loop.Api.Controllers.Base;
+using Skill_Loop.Api.Extensions;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Support.Commands.SendFaqAnswerEmail;
@@ -60,6 +62,9 @@ public class SupportController : BaseApiController
     }
     [HttpPost("contact")]
     [Authorize]
+    // Throttled per IP: the contact form sends an email per submission, so an authenticated
+    // user could otherwise flood the support inbox and the SMTP provider's quota.
+    [EnableRateLimiting(RateLimitingExtensions.ContactFormPolicy)]
     public async Task<IResult> SubmitContactForm(
         [FromBody] SubmitContactFormRequest request,
         CancellationToken cancellationToken)

@@ -24,7 +24,7 @@ public class SessionReviewsController : BaseApiController
         [FromBody] AddSessionReviewRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new AddSessionReviewCommand(userId, sessionId, request.Stars, request.Comment);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);

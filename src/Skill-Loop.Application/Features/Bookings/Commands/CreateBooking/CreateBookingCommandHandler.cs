@@ -15,8 +15,11 @@ public sealed class CreateBookingCommandHandler(
 {
     public async Task<Result<Guid>> Handle(CreateBookingCommand request, CancellationToken cancellationToken)
     {
-        // استخدام خدمة الوقت الموحدة للمقارنات وعملية الإنشاء
-        var utcNow = _dateTime.Now;
+        // استخدام خدمة الوقت الموحدة للمقارنات وعملية الإنشاء.
+        // UtcNow, not Now: Session.ScheduledAtUtc is a UTC column, so comparing it against
+        // the display-local clock (UTC+2) made every session look two hours further in the
+        // future than it is — letting users book sessions that had already started.
+        var utcNow = _dateTime.UtcNow;
 
         // 1. جلب الجلسة
         var session = await _dbContext.Sessions

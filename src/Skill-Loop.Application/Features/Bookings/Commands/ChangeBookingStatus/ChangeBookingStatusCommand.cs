@@ -6,7 +6,12 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.ChangeBookingStatus;
 
-[Permission(Permissions.Bookings.ManageAll)]
+// Sessions.Moderate, not Bookings.ManageAll: the handler refuses anyone who is not the
+// session's own instructor or owner, so the permission only has to express "may move a
+// session through its states". Requiring the global Bookings.ManageAll here meant an
+// instructor could never confirm a booking against their own session - the request was
+// rejected before the ownership check ever ran.
+[Permission(Permissions.Sessions.Moderate)]
 public sealed record ChangeBookingStatusCommand(
     Guid BookingId,
     Guid InstructorUserId,

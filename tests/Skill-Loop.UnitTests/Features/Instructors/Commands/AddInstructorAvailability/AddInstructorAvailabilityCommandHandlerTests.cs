@@ -50,13 +50,14 @@ public class AddInstructorAvailabilityCommandHandlerTests
         var result = await _handler.Handle(command, CancellationToken.None);
 
         result.IsSuccess.Should().BeTrue();
-        result.Data.Should().BeTrue();
+        result.Data.Should().NotBe(Guid.Empty);
 
         var persisted = await _dbContext.FirstOrDefaultAsync(
             _dbContext.InstructorAvailabilities.Where(a => a.InstructorProfileId == profile.Id),
             CancellationToken.None);
         persisted.Should().NotBeNull();
         persisted!.DayOfWeek.Should().Be(DayOfWeek.Tuesday);
+        persisted.Id.Should().Be(result.Data);
     }
 
     [Fact]

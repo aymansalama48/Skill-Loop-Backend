@@ -66,5 +66,12 @@ WORKDIR /app
 # ننسخ الناتج النهائي من مرحلة الـ publish
 COPY --from=publish /app/publish .
 
-# الأمر اللي بيشغّل التطبيق أول ما الحاوية تبدأ
+# Merge note: origin/main replaced this with a bare comment. The base stage already creates
+# /app/UploadedFiles, but COPY --from=publish runs as root afterwards, and docker-compose
+# mounts a named volume there that is created root-owned - so the app (running as $APP_UID)
+# could not write uploads. Kept from the security branch.
+USER root
+RUN mkdir -p /app/UploadedFiles && chown -R $APP_UID:$APP_UID /app/UploadedFiles
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "Skill-Loop.Api.dll"]

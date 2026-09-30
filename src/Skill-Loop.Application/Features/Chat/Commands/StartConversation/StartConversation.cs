@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -13,6 +15,7 @@ namespace Skill_Loop.Application.Features.Chat.Commands.StartConversation;
 /// ابدأ محادثة مع مستخدم تاني. لو المحادثة موجودة أصلاً بنرجّعها (Idempotent)
 /// عشان الـ Frontend يقدر يندهها كل مرة يدوس فيها زرار "راسل".
 /// </summary>
+[AuthenticatedOnly]
 public sealed record StartConversationCommand(Guid UserId, Guid OtherUserId) : ICommand<ConversationDto>;
 
 public sealed class StartConversationCommandValidator : AbstractValidator<StartConversationCommand>

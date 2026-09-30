@@ -1,10 +1,13 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Enrollments.DTOs;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Enrollments.Queries.GetUserEnrolledCourses;
 
+[AuthenticatedOnly]
 public sealed record GetUserEnrolledCoursesQuery(Guid UserId) : IQuery<IReadOnlyList<UserEnrolledCourseDto>>;
 
 public sealed class GetUserEnrolledCoursesQueryHandler : IQueryHandler<GetUserEnrolledCoursesQuery, IReadOnlyList<UserEnrolledCourseDto>>

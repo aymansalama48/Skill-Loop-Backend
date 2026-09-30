@@ -1,8 +1,10 @@
-using Skill_Loop.Application.Common.Errors.Category;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
-using Skill_Loop.Application.Common.Abstractions.External.FileStorage; // مسار الانترفيس بتاعك
+using Skill_Loop.Application.Common.Errors.Category;
+using Skill_Loop.Application.Common.Abstractions.External.FileStorage; // responsible for storage setup
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Domain.Entities.Courses;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
@@ -10,13 +12,16 @@ namespace Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 public sealed class CreateCourseCommandHandler : ICommandHandler<CreateCourseCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IFileStorage _fileStorage; // حقن خدمة الملفات
+private readonly ICurrentUser _currentUser;
+    private readonly IFileStorage _fileStorage; // real storage dependency
 
     public CreateCourseCommandHandler(
         IApplicationDbContext context,
+        ICurrentUser currentUser,
         IFileStorage fileStorage)
     {
         _context = context;
+        _currentUser = currentUser;
         _fileStorage = fileStorage;
     }
 
@@ -32,36 +37,47 @@ public sealed class CreateCourseCommandHandler : ICommandHandler<CreateCourseCom
             return Result<Guid>.Failure(CategoryErrors.NotFound);
         }
 
-        // 2. معالجة ورفع الصورة لو اليوزر بعتها
-        string uploadedThumbnailUrl = string.Empty;
+// Merge note: this handler gained two independent features from opposite sides and needs
+// both, because Course.Create consumes all three values. Order matters for security: the
+// instructor identity is resolved first so a caller who is not allowed to publish as their
+// claimed instructor never causes a file upload as a side effect.
+var canManageAll = _currentUser.HasPermission(Permissions.Courses.ManageAll);
 
-        if (request.ThumbnailStream is not null && !string.IsNullOrWhiteSpace(request.ThumbnailFileName))
-        {
-            // استخدام دالة الرفع وتمرير اسم الفولدر "Courses" كـ Parameter تالت
-            var uploadResult = await _fileStorage.UploadAsync(
-                request.ThumbnailStream,
-                request.ThumbnailFileName,
-                "Courses");
+var instructorId = canManageAll ? request.InstructorId : _currentUser.UserId!.Value;
+var instructorName = canManageAll
+    ? request.InstructorName
+    : _currentUser.FullName ?? string.Empty;
 
-            // لو الرفع فشل، بنرجع الإيرور فوراً
-            if (uploadResult.IsFailure)
-            {
-                return Result<Guid>.Failure(uploadResult.Errors.First());
-            }
+// 2. Thumbnail upload, when one was supplied.
+string uploadedThumbnailUrl = string.Empty;
 
-            // لو نجح، بناخد مسار الصورة
-            uploadedThumbnailUrl = uploadResult.Data!;
-        }
+if (request.ThumbnailStream is not null && !string.IsNullOrWhiteSpace(request.ThumbnailFileName))
+{
+    // The "Courses" parameter determines the storage folder.
+    var uploadResult = await _fileStorage.UploadAsync(
+        request.ThumbnailStream,
+        request.ThumbnailFileName,
+        "Courses");
 
-        // 3. إنشاء الكورس بالرابط (أو نص فارغ لو مفيش صورة)
+    // If the upload fails, abort with the same error and do not proceed.
+    if (uploadResult.IsFailure)
+    {
+        return Result<Guid>.Failure(uploadResult.Errors.First());
+    }
+
+    // A successful upload yields the relative file path.
+    uploadedThumbnailUrl = uploadResult.Data!;
+}
+
+// 3. Course persistence (zero or one thumbnail)
         var courseResult = Course.Create(
             request.Title,
             request.Description,
             uploadedThumbnailUrl,
             request.Credits,
             request.Level,
-            request.InstructorId,
-            request.InstructorName,
+            instructorId,
+            instructorName,
             request.CategoryId);
 
         if (courseResult.IsFailure)

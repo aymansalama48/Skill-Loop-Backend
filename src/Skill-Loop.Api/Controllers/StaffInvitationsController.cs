@@ -15,7 +15,7 @@ using Skill_Loop.Application.Features.Accounts.StaffInvitations.Queries.Validate
 public class StaffInvitationsController : BaseApiController
 {
     [HttpPost("send")]
-    //[Authorize]
+    [Authorize(Roles = "Admin,SuperAdmin")]
     public async Task<IResult> SendInvitation(
         [FromBody] SendStaffInvitationRequest request,
         CancellationToken cancellationToken)

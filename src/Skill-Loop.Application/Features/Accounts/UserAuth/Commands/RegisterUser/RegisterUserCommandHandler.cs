@@ -48,8 +48,8 @@ public sealed class RegisterUserCommandHandler : ICommandHandler<RegisterUserCom
         if (!createResult.IsSuccess)
             return Result<bool>.Failure(createResult.Errors);
 
-        // 3. توليد كود الـ OTP
-        var otpResult = await _otpService.GenerateOtpAsync(
+        // 3. توليد كود الـ OTP (عبر Resend احتراماً لفترة الـ Cooldown لمنع إغراق المستخدم بأكواد)
+        var otpResult = await _otpService.ResendOtpAsync(
             request.Email,
             OtpPurpose.EmailVerification,
             cancellationToken);

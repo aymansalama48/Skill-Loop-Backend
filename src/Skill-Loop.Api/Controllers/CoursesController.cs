@@ -89,7 +89,7 @@ public class CoursesController : BaseApiController
     [Consumes("multipart/form-data")]
     public async Task<IResult> CreateCourse([FromForm] CreateCourseRequest request, CancellationToken cancellationToken)
     {
-        var instructorId = _currentUser.UserId ?? Guid.Empty;
+        var instructorId = RequireUserId();
         var instructorName = _currentUser.FullName ?? "Instructor";
 
         // نمرر الـ Stream والاسم مباشرة، ولو مفيش صورة هيبعت null
@@ -119,7 +119,7 @@ public class CoursesController : BaseApiController
     [Authorize]
     public async Task<IResult> ToggleBookmark(Guid courseId, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new ToggleCourseBookmarkCommand(userId, courseId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);

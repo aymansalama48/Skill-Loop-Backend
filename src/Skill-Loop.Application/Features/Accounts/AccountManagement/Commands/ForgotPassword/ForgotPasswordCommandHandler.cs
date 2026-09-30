@@ -30,8 +30,8 @@ public sealed class ForgotPasswordCommandHandler(
             return Result.Success();
         }
 
-        // 3. إنشاء كود OTP من 4 أرقام لإعادة تعيين كلمة المرور
-        var otpResult = await otpService.GenerateOtpAsync(
+        // 3. إنشاء كود OTP لإعادة تعيين كلمة المرور (عبر Resend احتراماً لفترة الـ Cooldown ومنع إغراق البريد بأكواد)
+        var otpResult = await otpService.ResendOtpAsync(
             request.Email,
             OtpPurpose.PasswordReset,
             cancellationToken);

@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Notifications;
@@ -6,6 +8,7 @@ using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Notifications.Commands.MarkNotificationRead;
 
+[AuthenticatedOnly]
 public sealed record MarkNotificationReadCommand(Guid UserId, Guid NotificationId) : ICommand;
 
 public sealed class MarkNotificationReadCommandValidator : AbstractValidator<MarkNotificationReadCommand>

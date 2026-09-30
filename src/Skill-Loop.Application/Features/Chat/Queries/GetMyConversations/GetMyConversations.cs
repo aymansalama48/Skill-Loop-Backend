@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Chat.DTOs;
@@ -9,6 +11,7 @@ namespace Skill_Loop.Application.Features.Chat.Queries.GetMyConversations;
 /// <summary>
 /// قايمة محادثاتي (الأحدث فوق) مع اسم الطرف التاني وعدد الرسايل غير المقروءة.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetMyConversationsQuery(Guid UserId) : IQuery<IReadOnlyList<ConversationDto>>;
 
 public sealed class GetMyConversationsQueryHandler : IQueryHandler<GetMyConversationsQuery, IReadOnlyList<ConversationDto>>

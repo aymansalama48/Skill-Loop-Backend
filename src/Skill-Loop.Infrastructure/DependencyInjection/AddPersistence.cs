@@ -2,9 +2,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Application.Common.Abstractions.Persistence.Transaction;
 using Skill_Loop.Infrastructure.BackgroundJobs;
 using Skill_Loop.Infrastructure.Persistence.Data;
 using Skill_Loop.Infrastructure.Persistence.Interceptors;
+using Skill_Loop.Infrastructure.Persistence.Transaction;
 
 namespace Skill_Loop.Infrastructure.DependencyInjection;
 
@@ -43,6 +45,15 @@ public static partial class DependencyInjection
 
         // تسجيل الـ Adapter ليربط الواجهة بالكلاس الجديد
         services.AddScoped<IApplicationDbContext, ApplicationDbContextAdapter>();
+
+        // EfTransactionManager was never registered, so ITransactionManager could not be
+        // resolved. That stayed invisible while TransactionBehavior<,> was effectively dead
+        // (it constrains TResponse : Result, while commands are declared as
+        // ICommand<Guid> / ICommand<bool>, so MediatR never selected it). Once
+        // NonGenericCommandTransactionBehavior - which constrains only TRequest : ICommand -
+        // was registered, it WAS selected, and every non-generic command failed at
+        // resolution time with a 500. Registering the implementation is the real fix.
+        services.AddScoped<ITransactionManager, EfTransactionManager>();
 
         // تسجيل الكلاس كـ Scoped:
         services.AddScoped<ProcessOutboxMessagesJob>();

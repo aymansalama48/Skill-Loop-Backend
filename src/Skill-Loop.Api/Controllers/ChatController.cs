@@ -24,14 +24,14 @@ public class ChatController : BaseApiController
     [HttpPost("conversations")]
     public async Task<IResult> StartConversation([FromBody] StartConversationRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new StartConversationCommand(userId, request.OtherUserId), cancellationToken);
         return HandleResult(result);
     }
     [HttpGet("conversations")]
     public async Task<IResult> GetMyConversations(CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new GetMyConversationsQuery(userId), cancellationToken);
         return HandleResult(result);
     }
@@ -43,7 +43,7 @@ public class ChatController : BaseApiController
     {
         var query = new GetConversationMessagesQuery
         {
-            UserId = _currentUser.UserId ?? Guid.Empty,
+            UserId = RequireUserId(),
             ConversationId = conversationId,
             PageNumber = request.PageNumber,
             PageSize = request.PageSize
@@ -57,14 +57,14 @@ public class ChatController : BaseApiController
         [FromBody] SendMessageRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new SendMessageCommand(userId, conversationId, request.Content), cancellationToken);
         return HandleResult(result);
     }
     [HttpPost("conversations/{conversationId:guid}/read")]
     public async Task<IResult> MarkAsRead(Guid conversationId, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var result = await Mediator.Send(new MarkConversationReadCommand(userId, conversationId), cancellationToken);
         return HandleResult(result);
     }

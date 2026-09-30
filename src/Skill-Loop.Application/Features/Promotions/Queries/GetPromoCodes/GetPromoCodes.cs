@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Promotions.DTOs;
@@ -8,6 +10,7 @@ using Skill_Loop.Domain.Entities.Promotions;
 namespace Skill_Loop.Application.Features.Promotions.Queries.GetPromoCodes;
 
 /// <summary>قايمة أكواد الخصم للمسؤول المالي، الأحدث فوق.</summary>
+[Permission(Permissions.Finance.PromoCodesManage)]
 public sealed class GetPromoCodesQuery : PaginationParameters, IQuery<PagedResult<PromoCodeDto>>
 {
 }

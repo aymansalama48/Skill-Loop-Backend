@@ -31,6 +31,11 @@
     <ProjectReference Include="..\..\src\Skill-Loop.Domain\Skill-Loop.Domain.csproj" />
     <ProjectReference Include="..\..\src\Skill-Loop.Application\Skill-Loop.Application.csproj" />
     <ProjectReference Include="..\..\src\Skill-Loop.Infrastructure\Skill-Loop.Infrastructure.csproj" />
+    <!-- Referenced so the startup-time security configuration validation and the
+         correlation-ID / security-header middleware can be regression tested. Both are
+         security controls, and neither is reachable from the Application or
+         Infrastructure layers. -->
+    <ProjectReference Include="..\..\src\Skill-Loop.Api\Skill-Loop.Api.csproj" />
   </ItemGroup>
 
 </Project>

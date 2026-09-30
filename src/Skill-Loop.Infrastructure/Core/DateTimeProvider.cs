@@ -7,38 +7,45 @@ public class DateTimeProvider : IDateTime
     private static readonly TimeZoneInfo EgyptTimeZone =
         TimeZoneInfo.FindSystemTimeZoneById("Egypt Standard Time");
 
-    // 🔹 1. الوقت الحالي
+    /// <summary>
+    /// 🔹 1. الوقت الحالي بتوقيت UTC — استخدمه للتخزين والمقارنات والتوكنات
+    /// </summary>
+    public System.DateTime UtcNow => System.DateTime.UtcNow;
+
+    /// <summary>
+    /// 🔹 2. الوقت الحالي بتوقيت العرض (مصر) — استخدمه للعرض فقط
+    /// </summary>
     public System.DateTime Now =>
         TimeZoneInfo.ConvertTimeFromUtc(System.DateTime.UtcNow, EgyptTimeZone);
 
-    // 🔹 2. الوقت كنص
+    /// <summary>🔹 3. الوقت كنص</summary>
     public string GetTimeString() =>
         Now.ToString("HH:mm:ss");
 
-    // 🔹 3. التاريخ كنص
+    /// <summary>🔹 4. التاريخ كنص</summary>
     public string GetDateString() =>
         Now.ToString("yyyy-MM-dd");
 
-    // 🔹 4. التاريخ والوقت كنص
+    /// <summary>🔹 5. التاريخ والوقت كنص</summary>
     public string GetDateTimeString() =>
         Now.ToString("yyyy-MM-dd HH:mm:ss");
 
-    // 🔹 5. أول يوم في الشهر الحالي
+    /// <summary>🔹 6. أول يوم في الشهر الحالي</summary>
     public System.DateTime GetCurrentMonthStart()
     {
         var now = Now;
         return new System.DateTime(now.Year, now.Month, 1);
     }
 
-    // 🔹 6. أول يوم في الشهر اللي فات
+    /// <summary>🔹 7. أول يوم في الشهر اللي فات</summary>
     public System.DateTime GetLastMonthStart() =>
         GetCurrentMonthStart().AddMonths(-1);
 
-    // 🔹 7. آخر لحظة في الشهر اللي فات
+    /// <summary>🔹 8. آخر لحظة في الشهر اللي فات</summary>
     public System.DateTime GetLastMonthEnd() =>
         GetCurrentMonthStart().AddTicks(-1);
 
-    // 🔹 8. تجميع الـ 3 قيم في مرة واحدة
+    /// <summary>🔹 9. تجميع الـ 3 قيم في مرة واحدة</summary>
     public (System.DateTime current, System.DateTime lastStart, System.DateTime lastEnd) GetMonthRange() =>
         (GetCurrentMonthStart(), GetLastMonthStart(), GetLastMonthEnd());
 }

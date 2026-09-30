@@ -100,7 +100,7 @@ public class PermissionManagementService(
         {
             RoleId = roleId,
             PermissionId = permissionId,
-            GrantedAt = dateTime.Now // 👈 استخدام IDateTime هنا
+            GrantedAt = dateTime.UtcNow // 👈 استخدام IDateTime هنا
         };
 
         await context.Set<TbRolePermission>().AddAsync(rolePermission, cancellationToken);
@@ -138,7 +138,7 @@ public class PermissionManagementService(
             {
                 RoleId = roleId,
                 PermissionId = id,
-                GrantedAt = dateTime.Now // 👈 واستخدام IDateTime هنا
+                GrantedAt = dateTime.UtcNow // 👈 واستخدام IDateTime هنا
             })
             .ToList();
 
