@@ -1,5 +1,4 @@
-﻿namespace Skill_Loop.Api.Controllers;
-
+namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -9,9 +8,11 @@ using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.Change
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.UpdateMyProfile;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.UpdateMyProfilePicture;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetMyProfile;
-
+/// <summary>
+/// إدارة الملف الشخصي للمستخدم الحالي
+/// </summary>
 [Route("api/v1/[controller]")]
-[Authorize]       // حماية الكنترولر بالكامل
+[Authorize]       // ����� ��������� �������
 public class ProfileController : BaseApiController
 {
     [HttpGet]
@@ -20,7 +21,6 @@ public class ProfileController : BaseApiController
         var result = await Mediator.Send(new GetMyAccountProfileQuery(), cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPut]
     public async Task<IResult> UpdateMyProfile(
         [FromBody] UpdateMyAccountProfileRequest request,
@@ -33,10 +33,6 @@ public class ProfileController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// رفع وتحديث الصورة الشخصية للمستخدم الحالي
-    /// </summary>
     [HttpPatch("picture")]
     [Consumes("multipart/form-data")]
     public async Task<IResult> UpdateMyProfilePicture(
@@ -45,17 +41,13 @@ public class ProfileController : BaseApiController
     {
         if (file is null || file.Length == 0)
         {
-            return Results.BadRequest(new { message = "يرجى اختيار ملف صالح للرفع." });
+            return Results.BadRequest(new { message = "���� ������ ��� ���� �����." });
         }
-
         await using var stream = file.OpenReadStream();
-
         var command = new UpdateMyProfilePictureCommand(stream, file.FileName);
         var result = await Mediator.Send(command, cancellationToken);
-
         return HandleResult(result);
     }
-
     [HttpPost("change-password")]
     public async Task<IResult> ChangePassword(
         [FromBody] ChangePasswordRequest request,

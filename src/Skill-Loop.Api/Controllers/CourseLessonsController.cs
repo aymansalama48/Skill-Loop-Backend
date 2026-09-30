@@ -6,16 +6,14 @@ using Skill_Loop.Application.Features.Courses.Commands.AddLesson;
 using Skill_Loop.Application.Features.Courses.Commands.RemoveLesson;
 using Skill_Loop.Application.Features.Courses.Commands.ReorderLessons;
 using Skill_Loop.Application.Features.Courses.Commands.UpdateLesson;
-
 namespace Skill_Loop.Api.Controllers;
-
+/// <summary>
+/// إدارة دروس الكورسات ومحتواها
+/// </summary>
 [Route("api/v1/courses/{courseId:guid}/sections/{sectionId:guid}/lessons")]
 [Tags("Course Lessons")]
 public class CourseLessonsController : BaseApiController
 {
-    /// <summary>
-    /// إضافة درس جديد لقسم داخل الكورس
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IResult> AddLesson(
@@ -34,14 +32,9 @@ public class CourseLessonsController : BaseApiController
             request.IsPreviewable,
             request.StreamingResolution,
             request.ExternalProviderId);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// تعديل درس (Lesson)
-    /// </summary>
     [HttpPut("{lessonId:guid}")]
     [Authorize]
     public async Task<IResult> UpdateLesson(
@@ -62,14 +55,9 @@ public class CourseLessonsController : BaseApiController
             request.ExternalProviderId, 
             request.OrderIndex, 
             request.IsPreviewable);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حذف درس (Lesson)
-    /// </summary>
     [HttpDelete("{lessonId:guid}")]
     [Authorize]
     public async Task<IResult> RemoveLesson(
@@ -82,10 +70,6 @@ public class CourseLessonsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// إعادة ترتيب الدروس داخل القسم
-    /// </summary>
     [HttpPut("reorder")]
     [Authorize]
     public async Task<IResult> ReorderLessons(

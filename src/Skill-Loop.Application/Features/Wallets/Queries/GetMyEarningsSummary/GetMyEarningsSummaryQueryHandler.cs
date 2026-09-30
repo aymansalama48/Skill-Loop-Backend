@@ -4,6 +4,7 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.User;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.Domain.Entities.Wallets;
 
@@ -13,11 +14,13 @@ public sealed class GetMyEarningsSummaryQueryHandler : IQueryHandler<GetMyEarnin
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IDateTime _dateTime;
 
-    public GetMyEarningsSummaryQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetMyEarningsSummaryQueryHandler(IApplicationDbContext context, ICurrentUser currentUser, IDateTime dateTime)
     {
         _context = context;
         _currentUser = currentUser;
+        _dateTime = dateTime;
     }
 
     public async Task<Result<EarningsSummaryDto>> Handle(GetMyEarningsSummaryQuery request, CancellationToken cancellationToken)
@@ -37,7 +40,7 @@ public sealed class GetMyEarningsSummaryQueryHandler : IQueryHandler<GetMyEarnin
             return Result<EarningsSummaryDto>.Success(new EarningsSummaryDto(0, 0, 0, [], [], []));
         }
 
-        var now = DateTime.UtcNow;
+        var now = _dateTime.Now;
         var thisMonthStart = new DateTime(now.Year, now.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var lastMonthStart = thisMonthStart.AddMonths(-1);
 

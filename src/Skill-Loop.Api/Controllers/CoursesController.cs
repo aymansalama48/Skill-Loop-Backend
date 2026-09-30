@@ -13,23 +13,19 @@ using Skill_Loop.Application.Features.Courses.Queries.GetCourseBookmarks;
 using Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 using Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
 using Skill_Loop.Domain.Enums;
-
 namespace Skill_Loop.Api.Controllers;
-
+/// <summary>
+/// إدارة الكورسات (إنشاء، تحديث، ونشر)
+/// </summary>
 [Route("api/v1/[controller]")]
 [Tags("Courses")]
 public class CoursesController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
-
     public CoursesController(ICurrentUser currentUser)
     {
         _currentUser = currentUser;
     }
-
-    /// <summary>
-    /// استرجاع الكورسات المنشورة فقط (الكتالوج الخاص بالطلاب)
-    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<IResult> GetCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
@@ -46,14 +42,9 @@ public class CoursesController : BaseApiController
             SortBy = request.SortBy,
             Status = CourseStatus.Published // ثابت: بيجيب المنشور بس
         };
-
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// استرجاع الكورسات المسودة (Drafts) الخاصة بالمدرب الحالي فقط
-    /// </summary>
     [HttpGet("drafts")]
     [Authorize]
     public async Task<IResult> GetMyDraftCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
@@ -71,14 +62,9 @@ public class CoursesController : BaseApiController
             Status = CourseStatus.Draft, // ثابت: بيجيب المسودات بس
             InstructorId = _currentUser.UserId // أمان: عشان المدرب ميشوفش مسودات غيره
         };
-
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// استرجاع الكورسات المفضلة للمستخدم الحالي
-    /// </summary>
     [HttpGet("bookmarks")]
     [Authorize]
     public async Task<IResult> GetMyBookmarks(
@@ -90,10 +76,6 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// استرجاع تفاصيل الكورس ومحتوى الدروس (Syllabus)
-    /// </summary>
     [HttpGet("{courseId:guid}")]
     [AllowAnonymous]
     public async Task<IResult> GetCourseById(Guid courseId, CancellationToken cancellationToken)
@@ -102,17 +84,12 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// إنشاء كورس جديد (للمحاضرين والمسؤولين)
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IResult> CreateCourse([FromBody] CreateCourseRequest request, CancellationToken cancellationToken)
     {
         var instructorId = _currentUser.UserId ?? Guid.Empty;
         var instructorName = _currentUser.FullName ?? "Instructor";
-
         var command = new CreateCourseCommand(
             request.Title,
             request.Description,
@@ -122,14 +99,9 @@ public class CoursesController : BaseApiController
             instructorId,
             instructorName,
             request.CategoryId);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// نشر الكورس ليصبح متاحاً للطلاب في الكتالوج
-    /// </summary>
     [HttpPost("{courseId:guid}/publish")]
     [Authorize]
     public async Task<IResult> PublishCourse(Guid courseId, CancellationToken cancellationToken)
@@ -138,10 +110,6 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حفظ الكورس في المفضلة / إزالته من المفضلة
-    /// </summary>
     [HttpPost("{courseId:guid}/bookmark")]
     [Authorize]
     public async Task<IResult> ToggleBookmark(Guid courseId, CancellationToken cancellationToken)
@@ -151,10 +119,6 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// تعديل تفاصيل الكورس
-    /// </summary>
     [HttpPut("{courseId:guid}")]
     [Authorize]
     public async Task<IResult> UpdateCourseDetails(
@@ -170,14 +134,9 @@ public class CoursesController : BaseApiController
             request.Credits,
             request.Level,
             request.CategoryId);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// أرشفة الكورس (تغيير حالته إلى Archived)
-    /// </summary>
     [HttpPost("{courseId:guid}/archive")]
     [Authorize]
     public async Task<IResult> ArchiveCourse(Guid courseId, CancellationToken cancellationToken)
@@ -186,10 +145,6 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حذف الكورس (Soft Delete)
-    /// </summary>
     [HttpDelete("{courseId:guid}")]
     [Authorize]
     public async Task<IResult> DeleteCourse(Guid courseId, CancellationToken cancellationToken)

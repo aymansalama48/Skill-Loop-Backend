@@ -1,5 +1,4 @@
 namespace Skill_Loop.Api.Controllers;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,14 +16,16 @@ using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.VerifyEmailOtp;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ForgotPassword;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ResetPassword;
 using Skill_Loop.Api.Contracts.Auth;
-
-[Route("api/v1/[controller]")]
+/// <summary>
+/// إدارة المصادقة وتسجيل الدخول للمستخدمين
+/// </summary>
+[Route("api/v1
+[controller]")]
 public class AuthController : BaseApiController
 {
     // =========================================================================
     // 1. Staff Authentication (لوحة التحكم)
     // =========================================================================
-
     [HttpPost("staff/login")]
     [AllowAnonymous]
     public async Task<IResult> StaffLogin(
@@ -35,7 +36,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("staff/login/google")]
     [AllowAnonymous]
     public async Task<IResult> StaffGoogleLogin(
@@ -46,11 +46,9 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     // =========================================================================
     // 2. User Authentication (الموبايل / المستخدم العادي)
     // =========================================================================
-
     [HttpPost("user/login")]
     [AllowAnonymous]
     public async Task<IResult> UserLogin(
@@ -61,7 +59,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("user/login/google")]
     [AllowAnonymous]
     public async Task<IResult> UserGoogleLogin(
@@ -72,7 +69,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("user/register")]
     [AllowAnonymous]
     public async Task<IResult> RegisterUser(
@@ -84,15 +80,12 @@ public class AuthController : BaseApiController
             request.LastName,
             request.Email,
             request.Password);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     // =========================================================================
     // 3. Token Management
     // =========================================================================
-
     [HttpPost("refresh-token")]
     [AllowAnonymous]
     public async Task<IResult> RefreshToken(
@@ -103,7 +96,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("logout")]
     [Authorize]
     public async Task<IResult> Logout(
@@ -114,6 +106,5 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     // =========================================================================
 }

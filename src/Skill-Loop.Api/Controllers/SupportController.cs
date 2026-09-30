@@ -12,12 +12,9 @@ using Skill_Loop.Application.Features.Support.Queries.GetMySupportQuestions;
 using Skill_Loop.Application.Features.Support.Queries.GetPublishedSupportQuestionsPaged;
 using Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionById;
 using Skill_Loop.Domain.Common.Results;
-
 namespace Skill_Loop.Api.Controllers;
-
 /// <summary>
-/// واجهة الدعم الموجّهة للمستخدم: الـ FAQ العام (Anonymous) واستفسارات المستخدم المسجّل.
-/// إدارة الاستفسارات (رد/نشر/حذف) في <see cref="SupportManagementController"/>.
+/// إدارة طلبات الدعم الفني من المستخدمين
 /// </summary>
 [Route("api/support")]
 [ApiController]
@@ -25,16 +22,11 @@ public class SupportController : BaseApiController
 {
     private readonly IMediator _mediator;
     private readonly ICurrentUser _currentUser;
-
     public SupportController(IMediator mediator, ICurrentUser currentUser)
     {
         _mediator = mediator;
         _currentUser = currentUser;
     }
-
-    /// <summary>
-    /// Search the public FAQ. Only published questions are returned.
-    /// </summary>
     [HttpGet("questions")]
     [AllowAnonymous]
     public async Task<IResult> GetPublishedSupportQuestions(
@@ -45,15 +37,9 @@ public class SupportController : BaseApiController
             new PaginationParameters { PageNumber = request.PageNumber, PageSize = request.PageSize },
             request.SearchTerm,
             request.Category);
-
         var result = await _mediator.Send(query, cancellationToken);
-
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// Get a published support question by ID.
-    /// </summary>
     [HttpGet("questions/{id:guid}")]
     [AllowAnonymous]
     public async Task<IResult> GetSupportQuestionById(
@@ -61,13 +47,8 @@ public class SupportController : BaseApiController
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new GetSupportQuestionByIdQuery(id), cancellationToken);
-
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// Send the published answer of a FAQ question to the logged-in user's email.
-    /// </summary>
     [HttpPost("questions/{id:guid}/email-answer")]
     [Authorize]
     public async Task<IResult> SendFaqAnswerByEmail(
@@ -75,13 +56,8 @@ public class SupportController : BaseApiController
         CancellationToken cancellationToken)
     {
         var result = await _mediator.Send(new SendFaqAnswerEmailCommand(id), cancellationToken);
-
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// Submit a support question. The asker's name and email come from the JWT, not the body.
-    /// </summary>
     [HttpPost("contact")]
     [Authorize]
     public async Task<IResult> SubmitContactForm(
@@ -92,15 +68,9 @@ public class SupportController : BaseApiController
             request.Subject,
             request.Message,
             request.Category);
-
         var result = await _mediator.Send(command, cancellationToken);
-
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// List the support questions submitted by the current user.
-    /// </summary>
     [HttpGet("questions/mine")]
     [Authorize]
     public async Task<IResult> GetMySupportQuestions(
@@ -113,13 +83,10 @@ public class SupportController : BaseApiController
             return HandleResult(Result.Failure(
                 SupportQuestionErrors.MissingIdentifier));
         }
-
         var query = new GetMySupportQuestionsQuery(
             userId.Value,
             new PaginationParameters { PageNumber = request.PageNumber, PageSize = request.PageSize });
-
         var result = await _mediator.Send(query, cancellationToken);
-
         return HandleResult(result);
     }
 }

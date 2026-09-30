@@ -6,16 +6,14 @@ using Skill_Loop.Application.Features.Courses.Commands.RemoveCourseMaterial;
 using Skill_Loop.Application.Features.Courses.Commands.RemoveLessonMaterial;
 using Skill_Loop.Application.Features.Courses.Commands.UploadCourseMaterial;
 using Skill_Loop.Application.Features.Courses.Commands.UploadLessonMaterial;
-
 namespace Skill_Loop.Api.Controllers;
-
+/// <summary>
+/// إدارة المواد التعليمية والملحقات الخاصة بالكورسات
+/// </summary>
 [Route("api/v1/courses/{courseId:guid}")]
 [Tags("Course Materials")]
 public class CourseMaterialsController : BaseApiController
 {
-    /// <summary>
-    /// إضافة ملف للكورس
-    /// </summary>
     [HttpPost("materials")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -32,14 +30,9 @@ public class CourseMaterialsController : BaseApiController
             request.File.ContentType,
             request.File.Length,
             request.MaterialType);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حذف ملف من الكورس
-    /// </summary>
     [HttpDelete("materials/{materialId:guid}")]
     [Authorize]
     public async Task<IResult> RemoveCourseMaterial(
@@ -51,10 +44,6 @@ public class CourseMaterialsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// إضافة ملف للدرس
-    /// </summary>
     [HttpPost("sections/{sectionId:guid}/lessons/{lessonId:guid}/materials")]
     [Authorize]
     [Consumes("multipart/form-data")]
@@ -75,14 +64,9 @@ public class CourseMaterialsController : BaseApiController
             request.File.ContentType,
             request.File.Length,
             request.MaterialType);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حذف ملف من الدرس
-    /// </summary>
     [HttpDelete("sections/{sectionId:guid}/lessons/{lessonId:guid}/materials/{materialId:guid}")]
     [Authorize]
     public async Task<IResult> RemoveLessonMaterial(

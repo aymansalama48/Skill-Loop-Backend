@@ -18,17 +18,20 @@ public class BookingEmailHandler : INotificationHandler<DomainEventNotification<
     private readonly IEmailTemplateEngine _templateEngine;
     private readonly ILogger<BookingEmailHandler> _logger;
     private readonly IUserManagementService _userManagementService;
+    private readonly IDateTime _dateTime;
 
     public BookingEmailHandler(
         IApplicationDbContext context,
         IEmailTemplateEngine templateEngine,
         ILogger<BookingEmailHandler> logger,
-        IUserManagementService userManagementService)
+        IUserManagementService userManagementService,
+        IDateTime dateTime)
     {
         _context = context;
         _templateEngine = templateEngine;
         _logger = logger;
         _userManagementService = userManagementService;
+        _dateTime = dateTime;
     }
 
     public async Task Handle(DomainEventNotification<BookingCreatedDomainEvent> notification, CancellationToken cancellationToken)
@@ -72,7 +75,7 @@ public class BookingEmailHandler : INotificationHandler<DomainEventNotification<
             SessionTime = domainEvent.ScheduledAtUtc ?? session.ScheduledAtUtc,
             MeetingLink = session.LocationDetails ?? "سيتم إضافة الرابط قريباً",
             DashboardUrl = $"https://skillloop.com/dashboard/bookings/{booking.Id}",
-            Year = DateTime.UtcNow.Year
+            Year = _dateTime.Now.Year
         };
 
         var htmlBody = await _templateEngine.RenderTemplateAsync("BookingConfirmed", model);
@@ -98,17 +101,20 @@ public class BookingCancelledEmailHandler : INotificationHandler<DomainEventNoti
     private readonly IEmailTemplateEngine _templateEngine;
     private readonly ILogger<BookingCancelledEmailHandler> _logger;
     private readonly IUserManagementService _userManagementService;
+    private readonly IDateTime _dateTime;
 
     public BookingCancelledEmailHandler(
         IApplicationDbContext context,
         IEmailTemplateEngine templateEngine,
         ILogger<BookingCancelledEmailHandler> logger,
-        IUserManagementService userManagementService)
+        IUserManagementService userManagementService,
+        IDateTime dateTime)
     {
         _context = context;
         _templateEngine = templateEngine;
         _logger = logger;
         _userManagementService = userManagementService;
+        _dateTime = dateTime;
     }
 
     public async Task Handle(DomainEventNotification<BookingCancelledDomainEvent> notification, CancellationToken cancellationToken)
@@ -126,7 +132,7 @@ public class BookingCancelledEmailHandler : INotificationHandler<DomainEventNoti
             LearnerName = learnerUserResult.Data.FullName,
             Reason = domainEvent.Reason ?? "لم يتم تحديد سبب",
             DashboardUrl = $"https://skillloop.com/dashboard/bookings/{domainEvent.BookingId}",
-            Year = DateTime.UtcNow.Year
+            Year = _dateTime.Now.Year
         };
 
         var htmlBody = await _templateEngine.RenderTemplateAsync("BookingCancelled", model);

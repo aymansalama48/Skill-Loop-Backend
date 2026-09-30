@@ -9,9 +9,10 @@ using Skill_Loop.Application.Features.Sessions.Materials.Commands.ReorderSession
 using Skill_Loop.Application.Features.Sessions.Materials.Commands.UploadSessionMaterial;
 using Skill_Loop.Application.Features.Sessions.Materials.Queries.GetSessionMaterialDownloadInfo;
 using Skill_Loop.Application.Features.Sessions.Materials.Queries.GetSessionMaterials;
-
 namespace Skill_Loop.Api.Controllers;
-
+/// <summary>
+/// إدارة الملحقات والمواد الخاصة بالجلسات
+/// </summary>
 [Authorize]
 [Route("api/v1/sessions")]
 public sealed class SessionMaterialsController(
@@ -25,7 +26,6 @@ public sealed class SessionMaterialsController(
         CancellationToken cancellationToken)
     {
         await using var stream = request.File.OpenReadStream();
-
         var command = new UploadSessionMaterialCommand(
             sessionId,
             stream,
@@ -33,11 +33,9 @@ public sealed class SessionMaterialsController(
             request.File.ContentType,
             request.File.Length,
             request.MaterialType); // تمرير النوع لو تمت إضافته
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpGet("{sessionId:guid}/materials")]
     public async Task<IResult> GetSessionMaterials(
         Guid sessionId,
@@ -47,11 +45,9 @@ public sealed class SessionMaterialsController(
         var query = new GetSessionMaterialsQuery(
             sessionId,
             new PaginationParameters { PageNumber = request.PageNumber, PageSize = request.PageSize });
-
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpGet("{sessionId:guid}/materials/{materialId:guid}/download")]
     public async Task<IResult> DownloadSessionMaterial(
         Guid sessionId,
@@ -64,14 +60,11 @@ public sealed class SessionMaterialsController(
         {
             return HandleResult(queryResult);
         }
-
         var downloadResult = await courseContentStorage.DownloadAsync(
             queryResult.Data.DriveFileId,
             cancellationToken);
-
         return HandleResult(downloadResult);
     }
-
     [HttpDelete("{sessionId:guid}/materials/{materialId:guid}")]
     public async Task<IResult> DeleteSessionMaterial(
         Guid sessionId,
@@ -81,10 +74,8 @@ public sealed class SessionMaterialsController(
         var result = await Mediator.Send(
             new DeleteSessionMaterialCommand(sessionId, materialId),
             cancellationToken);
-
         return HandleResult(result);
     }
-
     [HttpPut("{sessionId:guid}/materials/reorder")]
     public async Task<IResult> ReorderSessionMaterials(
         Guid sessionId,
@@ -96,7 +87,6 @@ public sealed class SessionMaterialsController(
                 sessionId,
                 request.Materials.Select(m => m.MaterialId).ToList()),
             cancellationToken);
-
         return HandleResult(result);
     }
 }

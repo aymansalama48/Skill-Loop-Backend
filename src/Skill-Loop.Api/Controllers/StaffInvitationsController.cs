@@ -1,6 +1,4 @@
 namespace Skill_Loop.Api.Controllers;
-
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,13 +8,13 @@ using Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptI
 using Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitationWithGoogle;
 using Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.SendInvitation;
 using Skill_Loop.Application.Features.Accounts.StaffInvitations.Queries.ValidateInvitation;
-
-[Route("api/v1/[controller]")]
+/// <summary>
+/// إدارة دعوات انضمام فريق العمل (Staff/Admins)
+/// </summary>
+[Route("api/v1
+[controller]")]
 public class StaffInvitationsController : BaseApiController
 {
-    /// <summary>
-    /// إرسال دعوة لموظف جديد (خاص بالأدمن فقط)
-    /// </summary>
     [HttpPost("send")]
     //[Authorize(Roles = "Admin")]
     public async Task<IResult> SendInvitation(
@@ -26,14 +24,9 @@ public class StaffInvitationsController : BaseApiController
         var command = new SendStaffInvitationCommand(
             request.Email,
             request.Role);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// التحقق من صلاحية التوكن (يُستدعى من الـ Frontend عند فتح صفحة قبول الدعوة)
-    /// </summary>
     [HttpGet("validate/{token}")]
     [AllowAnonymous]
     public async Task<IResult> ValidateInvitation(
@@ -44,10 +37,6 @@ public class StaffInvitationsController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// قبول الدعوة وإنشاء الحساب (بالطريقة التقليدية: إيميل وباسورد)
-    /// </summary>
     [HttpPost("accept")]
     [AllowAnonymous]
     public async Task<IResult> AcceptInvitation(
@@ -59,14 +48,9 @@ public class StaffInvitationsController : BaseApiController
             request.FullName,
             request.Password,
             request.PhoneNumber);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// قبول الدعوة وإنشاء الحساب (عبر جوجل)
-    /// </summary>
     [HttpPost("accept-google")]
     [AllowAnonymous]
     public async Task<IResult> AcceptInvitationWithGoogle(
@@ -76,7 +60,6 @@ public class StaffInvitationsController : BaseApiController
         var command = new AcceptInvitationWithGoogleCommand(
             request.InvitationToken,
             request.GoogleIdToken);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

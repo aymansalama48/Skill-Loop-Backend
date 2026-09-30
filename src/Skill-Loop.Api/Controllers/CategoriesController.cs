@@ -7,15 +7,14 @@ using Skill_Loop.Application.Features.Categories.Commands.DeleteCategory;
 using Skill_Loop.Application.Features.Categories.Commands.UpdateCategory;
 using Skill_Loop.Application.Features.Categories.Queries.GetCategories;
 using Skill_Loop.Domain.Constants;
-
 namespace Skill_Loop.Api.Controllers;
-
-[Route("api/v1/[controller]")]
+/// <summary>
+/// إدارة التصنيفات الخاصة بالكورسات والمجالات
+/// </summary>
+[Route("api/v1
+[controller]")]
 public class CategoriesController : BaseApiController
 {
-    /// <summary>
-    /// استرجاع كل التصنيفات (محفوظة بالكاش)
-    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<IResult> GetCategories(CancellationToken cancellationToken)
@@ -24,10 +23,6 @@ public class CategoriesController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// إنشاء تصنيف جديد مع إمكانية رفع صورة (multipart/form-data)
-    /// </summary>
     [HttpPost]
     [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
     [Consumes("multipart/form-data")]                       // ✅ 1
@@ -41,7 +36,6 @@ public class CategoriesController : BaseApiController
         {
             iconStream = request.IconFile.OpenReadStream();
         }
-
         var command = new CreateCategoryCommand(
             request.Name,
             request.Slug,
@@ -49,14 +43,9 @@ public class CategoriesController : BaseApiController
             request.IconFile?.FileName,
             request.Description,
             request.DisplayOrder);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// تعديل تصنيف مع إمكانية تغيير الصورة (multipart/form-data)
-    /// </summary>
     [HttpPut("{id:guid}")]
     [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
     [Consumes("multipart/form-data")]                       // ✅
@@ -70,7 +59,6 @@ public class CategoriesController : BaseApiController
         {
             iconStream = request.IconFile.OpenReadStream();
         }
-
         var command = new UpdateCategoryCommand(
             id,
             request.Name,
@@ -79,14 +67,9 @@ public class CategoriesController : BaseApiController
             request.IconFile?.FileName,
             request.Description,
             request.DisplayOrder);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// حذف تصنيف
-    /// </summary>
     [HttpDelete("{id:guid}")]
     [Authorize(Roles = Roles.Admin + "," + Roles.SuperAdmin)]
     public async Task<IResult> DeleteCategory(Guid id, CancellationToken cancellationToken)

@@ -1,19 +1,17 @@
 namespace Skill_Loop.Api.Controllers;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skill_Loop.Api.Contracts.Instructors;
 using Skill_Loop.Api.Controllers.Base;
 using Skill_Loop.Application.Features.Instructors.Commands.AddInstructorAvailability;
 using Skill_Loop.Application.Features.Instructors.Commands.RemoveInstructorAvailability;
-
+/// <summary>
+/// إدارة أوقات الفراغ والمواعيد المتاحة للمحاضرين
+/// </summary>
 [Route("api/v1/instructor-profiles/{profileId:guid}/availabilities")]
 [Tags("Instructor Availabilities")]
 public class InstructorAvailabilitiesController : BaseApiController
 {
-    /// <summary>
-    /// إضافة موعد عمل جديد للمدرب
-    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IResult> AddAvailability(
@@ -27,14 +25,9 @@ public class InstructorAvailabilitiesController : BaseApiController
             request.StartTime,
             request.EndTime
         );
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    /// <summary>
-    /// مسح موعد عمل
-    /// </summary>
     [HttpDelete("{availabilityId:guid}")]
     [Authorize]
     public async Task<IResult> RemoveAvailability(
@@ -46,7 +39,6 @@ public class InstructorAvailabilitiesController : BaseApiController
             profileId,
             availabilityId
         );
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
