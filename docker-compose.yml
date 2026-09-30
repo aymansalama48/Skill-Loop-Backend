@@ -89,10 +89,14 @@ services:
       # Client ID بتاع Google Auth
       GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID}
     volumes:
-      # ملف مفاتيح Google Drive (للقراءة بس عشان الأمان)
-      - ./google-drive-key.json:/app/google-drive-key.json:ro
       # ملفات المستخدمين المرفوعة (بتفضل محفوظة)
       - uploaded_files:/app/UploadedFiles
+
+      # ملحوظة: شلنا ربط ملف google-drive-key.json من هنا.
+      # السبب: لو الملف مش موجود على الجهاز، Docker بيعمل مكانه مجلد فاضي
+      # وبيطلع error (not a directory) ويوقف الـ API.
+      # دلوقتي الملف (لو موجود في src/Skill-Loop.Api) بيدخل جوه الـ image
+      # مع الـ build، ولو مش موجود الحاوية بتشتغل عادي.
     depends_on:
       # الـ API ميشتغلش غير لما الـ SQL يبقى healthy فعلاً
       sqlserver:

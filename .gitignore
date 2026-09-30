@@ -495,3 +495,6 @@ appsettings.*.local.json
 
 
 google-drive-key.json
+.env
+google-drive-key.json
+**/google-drive-key.json
