@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Auth;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -28,7 +29,7 @@ public sealed class GetCourseBookmarksQueryHandler : IQueryHandler<GetCourseBook
         var userId = _currentUser.UserId ?? Guid.Empty;
         if (userId == Guid.Empty)
         {
-            return Result<PagedResult<CourseSummaryDto>>.Failure(new Error("Auth.Unauthorized", "User is not authenticated.", ErrorType.Unauthorized));
+            return Result<PagedResult<CourseSummaryDto>>.Failure(AuthErrors.Unauthorized);
         }
 
         var query = _context.CourseBookmarks

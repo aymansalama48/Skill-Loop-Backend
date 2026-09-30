@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.CompleteBooking;
 
@@ -7,7 +7,7 @@ public sealed class CompleteBookingCommandValidator : AbstractValidator<Complete
     public CompleteBookingCommandValidator()
     {
         RuleFor(x => x.BookingId)
-            .NotEmpty().WithMessage("معرف الحجز مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الحجز غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
     }
 }

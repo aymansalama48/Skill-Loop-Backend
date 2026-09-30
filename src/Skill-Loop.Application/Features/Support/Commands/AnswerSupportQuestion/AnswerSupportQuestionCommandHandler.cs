@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -32,7 +33,7 @@ public sealed class AnswerSupportQuestionCommandHandler : ICommandHandler<Answer
         if (question is null)
         {
             return Result<Guid>.Failure(
-                new Error("SupportQuestion.NotFound", "Support question not found.", ErrorType.NotFound));
+                SupportQuestionErrors.NotFound);
         }
 
         var answerResult = question.SetAnswer(request.Answer);

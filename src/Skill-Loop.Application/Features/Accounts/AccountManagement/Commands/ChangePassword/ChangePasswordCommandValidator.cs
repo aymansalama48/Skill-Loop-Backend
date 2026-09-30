@@ -12,18 +12,18 @@ public sealed class ChangePasswordCommandValidator : AbstractValidator<ChangePas
     {
         // 1. التحقق من كلمة المرور الحالية
         RuleFor(x => x.CurrentPassword)
-            .NotEmpty().WithMessage("كلمة المرور الحالية مطلوبة.");
+            .NotEmpty().WithMessage("This field is required.");
 
         // 2. التحقق من كلمة المرور الجديدة باستخدام القواعد الموحدة
         RuleFor(x => x.NewPassword)
             .ApplyStandardPasswordRules()
             .NotEqual(x => x.CurrentPassword)
-            .WithMessage("يجب أن تكون كلمة المرور الجديدة مختلفة عن كلمة المرور الحالية.");
+            .WithMessage("Invalid value.");
 
         // 3. التحقق من تأكيد كلمة المرور الجديدة
         RuleFor(x => x.ConfirmNewPassword)
-            .NotEmpty().WithMessage("تأكيد كلمة المرور الجديدة مطلوب.")
+            .NotEmpty().WithMessage("This field is required.")
             .Equal(x => x.NewPassword)
-            .WithMessage("كلمة المرور الجديدة وتأكيدها غير متطابقين.");
+            .WithMessage("Invalid value.");
     }
 }

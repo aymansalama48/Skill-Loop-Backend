@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Session;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -21,7 +22,7 @@ public sealed class ChangeSessionStatusCommandHandler : ICommandHandler<ChangeSe
 
         if (session is null)
         {
-            return Result.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
+            return Result.Failure(SessionErrors.NotFound);
         }
 
         // استخدام دالة ChangeStatus اللي ضفناها في الكيان

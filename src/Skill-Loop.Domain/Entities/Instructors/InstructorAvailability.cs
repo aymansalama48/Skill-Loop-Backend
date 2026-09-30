@@ -1,4 +1,5 @@
-﻿using Skill_Loop.Domain.Common.Entities;
+using Skill_Loop.Domain.Common.Errors.Availability;
+using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Domain.Entities.Instructors;
@@ -21,7 +22,7 @@ public sealed class InstructorAvailability : BaseEntity
         TimeSpan endTime)
     {
         if (startTime >= endTime)
-            return Result<InstructorAvailability>.Failure(new Error("Availability.InvalidTime", "وقت بداية العمل يجب أن يكون قبل وقت النهاية.", ErrorType.Validation));
+            return Result<InstructorAvailability>.Failure(AvailabilityErrors.InvalidTime);
 
         return Result<InstructorAvailability>.Success(new InstructorAvailability
         {
@@ -36,7 +37,7 @@ public sealed class InstructorAvailability : BaseEntity
     internal Result UpdateTime(TimeSpan newStartTime, TimeSpan newEndTime)
     {
         if (newStartTime >= newEndTime)
-            return Result.Failure(new Error("Availability.InvalidTime", "وقت بداية العمل يجب أن يكون قبل وقت النهاية.", ErrorType.Validation));
+            return Result.Failure(AvailabilityErrors.InvalidTime);
 
         StartTime = newStartTime;
         EndTime = newEndTime;

@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
@@ -33,7 +34,7 @@ public sealed class SendFaqAnswerEmailCommandHandler : ICommandHandler<SendFaqAn
         if (!_currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(email))
         {
             return Result.Failure(
-                new Error("SupportQuestion.Unauthenticated", "You must be logged in to request the answer by email.", ErrorType.Unauthorized));
+                SupportQuestionErrors.Unauthenticated);
         }
 
         var question = await _dbContext.SupportQuestions
@@ -42,7 +43,7 @@ public sealed class SendFaqAnswerEmailCommandHandler : ICommandHandler<SendFaqAn
         if (question is null || !question.IsPublished || string.IsNullOrWhiteSpace(question.Answer))
         {
             return Result.Failure(
-                new Error("SupportQuestion.AnswerNotAvailable", "لا توجد إجابة متاحة لهذا السؤال.", ErrorType.NotFound));
+                SupportQuestionErrors.AnswerNotAvailable);
         }
 
         var result = await _notificationService.SendFaqAnswerAsync(

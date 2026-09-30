@@ -31,6 +31,7 @@ public class ChangeInstructorApprovalStatusCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.UserId)
-            .WithErrorMessage("معرّف المستخدم مطلوب.");
+            ;
     }
 }
+

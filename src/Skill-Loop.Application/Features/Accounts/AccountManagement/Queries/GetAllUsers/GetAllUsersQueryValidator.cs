@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -12,11 +12,11 @@ public sealed class GetAllUsersQueryValidator : AbstractValidator<GetAllUsersQue
     public GetAllUsersQueryValidator()
     {
         RuleFor(x => x.PageNumber)
-            .GreaterThan(0).WithMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+            .GreaterThan(0).WithMessage("Value must be greater than 0.");
 
         RuleFor(x => x.PageSize)
-            .GreaterThan(0).WithMessage("حجم الصفحة يجب أن يكون أكبر من الصفر.")
-            .LessThanOrEqualTo(100).WithMessage("الحد الأقصى لحجم الصفحة هو 100.");
+            .GreaterThan(0).WithMessage("Value must be greater than 0.")
+            .LessThanOrEqualTo(100).WithMessage("Invalid value.");
     }
 }
 

@@ -7,11 +7,11 @@ public sealed class RemoveRoleFromUserCommandValidator : AbstractValidator<Remov
     public RemoveRoleFromUserCommandValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.RoleName)
-            .NotEmpty().WithMessage("اسم الدور (Role) مطلوب.")
-            .MaximumLength(50).WithMessage("اسم الدور لا يمكن أن يتجاوز 50 حرفاً.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(50).WithMessage("Length exceeds the maximum allowed.");
     }
 }

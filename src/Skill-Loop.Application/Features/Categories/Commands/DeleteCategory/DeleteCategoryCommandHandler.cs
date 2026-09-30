@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Category;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -19,12 +20,12 @@ public sealed class DeleteCategoryCommandHandler(
 
         if (category is null)
         {
-            return Result.Failure(new Error("Category.NotFound", "التصنيف غير موجود.", ErrorType.NotFound));
+            return Result.Failure(CategoryErrors.NotFound);
         }
 
         if (category.Courses.Any())
         {
-            return Result.Failure(new Error("Category.HasCourses", "لا يمكن حذف تصنيف يحتوي على كورسات مسجلة.", ErrorType.Conflict));
+            return Result.Failure(CategoryErrors.HasCourses);
         }
 
         if (!string.IsNullOrWhiteSpace(category.IconUrl))

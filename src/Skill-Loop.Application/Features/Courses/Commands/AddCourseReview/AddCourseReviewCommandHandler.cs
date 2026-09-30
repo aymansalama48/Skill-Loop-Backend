@@ -1,3 +1,5 @@
+using Skill_Loop.Application.Common.Errors.Review;
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -24,7 +26,7 @@ public sealed class AddCourseReviewCommandHandler : ICommandHandler<AddCourseRev
 
         if (course is null)
         {
-            return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result.Failure(CourseErrors.NotFound);
         }
 
         var isEnrolled = await _context.AnyAsync(
@@ -33,7 +35,7 @@ public sealed class AddCourseReviewCommandHandler : ICommandHandler<AddCourseRev
 
         if (!isEnrolled)
         {
-            return Result.Failure(new Error("Review.NotEnrolled", "You must be enrolled in this course to review it.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.NotEnrolled);
         }
 
         var reviewResult = course.AddReview(request.UserId, request.Stars, request.Comment);

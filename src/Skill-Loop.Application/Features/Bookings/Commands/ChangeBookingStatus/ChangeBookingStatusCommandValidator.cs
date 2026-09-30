@@ -18,22 +18,22 @@ public sealed class ChangeBookingStatusCommandValidator : AbstractValidator<Chan
     public ChangeBookingStatusCommandValidator()
     {
         RuleFor(x => x.BookingId)
-            .NotEmpty().WithMessage("معرف الحجز مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الحجز غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.InstructorUserId)
-            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.NewStatus)
             .Must(s => InstructorAllowedStatuses.Contains(s))
-            .WithMessage("الحالة المطلوبة غير مسموح بها. الحالات المسموحة: Confirmed, InProgress, Completed, Rejected, NoShow.");
+            .WithMessage("This field is required.");
 
         RuleFor(x => x.Reason)
-            .MaximumLength(500).WithMessage("السبب لا يجب أن يتجاوز 500 حرف.");
+            .MaximumLength(500).WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x)
             .Must(x => x.NewStatus != BookingStatus.Rejected || !string.IsNullOrWhiteSpace(x.Reason))
-            .WithMessage("سبب الرفض مطلوب.");
+            .WithMessage("This field is required.");
     }
 }

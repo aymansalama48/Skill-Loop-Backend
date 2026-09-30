@@ -1,3 +1,5 @@
+using Skill_Loop.Application.Common.Errors.Review;
+using Skill_Loop.Application.Common.Errors.Session;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -25,7 +27,7 @@ public sealed class AddSessionReviewCommandHandler : ICommandHandler<AddSessionR
 
         if (session is null)
         {
-            return Result.Failure(new Error("Session.NotFound", "Session was not found.", ErrorType.NotFound));
+            return Result.Failure(SessionErrors.NotFound);
         }
 
         // Must have a completed booking
@@ -35,7 +37,7 @@ public sealed class AddSessionReviewCommandHandler : ICommandHandler<AddSessionR
 
         if (!hasCompletedBooking)
         {
-            return Result.Failure(new Error("Review.BookingRequired", "You must have a completed booking to review this session.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.BookingRequired);
         }
 
         var reviewResult = session.AddReview(request.UserId, request.Stars, request.Comment);

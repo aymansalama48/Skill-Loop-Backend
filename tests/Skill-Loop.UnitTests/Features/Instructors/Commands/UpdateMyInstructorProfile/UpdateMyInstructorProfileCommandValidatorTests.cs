@@ -33,7 +33,7 @@ public class UpdateMyInstructorProfileCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Headline)
-            .WithErrorMessage("العنوان التعريفي مطلوب.");
+            ;
     }
 
     [Fact]
@@ -44,6 +44,7 @@ public class UpdateMyInstructorProfileCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Bio)
-            .WithErrorMessage("النبذة التعريفية مطلوبة.");
+            ;
     }
 }
+

@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -26,7 +27,7 @@ public sealed class AddLessonCommandHandler : ICommandHandler<AddLessonCommand, 
 
         if (course is null)
         {
-            return Result<Guid>.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(CourseErrors.NotFound);
         }
 
         var addLessonResult = course.AddLessonToSection(

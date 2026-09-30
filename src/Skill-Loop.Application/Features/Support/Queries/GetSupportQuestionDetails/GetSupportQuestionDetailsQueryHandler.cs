@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -39,7 +40,7 @@ public sealed class GetSupportQuestionDetailsQueryHandler : IQueryHandler<GetSup
         if (question is null)
         {
             return Result<SupportQuestionDetailsResponse>.Failure(
-                new Error("SupportQuestion.NotFound", "Support question not found.", ErrorType.NotFound));
+                SupportQuestionErrors.NotFound);
         }
 
         return Result<SupportQuestionDetailsResponse>.Success(question);

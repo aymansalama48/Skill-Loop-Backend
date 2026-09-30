@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Queries.GetInstructorFullProfileByUserId;
 
@@ -7,6 +7,6 @@ public sealed class GetInstructorFullProfileByUserIdQueryValidator : AbstractVal
     public GetInstructorFullProfileByUserIdQueryValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("معرّف المستخدم مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

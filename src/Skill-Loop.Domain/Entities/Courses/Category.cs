@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Category;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
@@ -19,10 +20,10 @@ public sealed class Category : AuditableEntity
     public static Result<Category> Create(string name, string slug, string? iconUrl = null, string? description = null, int displayOrder = 0)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return Result<Category>.Failure(new Error("Category.EmptyName", "Category name is required.", ErrorType.Validation));
+            return Result<Category>.Failure(CategoryErrors.EmptyName);
 
         if (string.IsNullOrWhiteSpace(slug))
-            return Result<Category>.Failure(new Error("Category.EmptySlug", "Category slug is required.", ErrorType.Validation));
+            return Result<Category>.Failure(CategoryErrors.EmptySlug);
 
         return Result<Category>.Success(new Category
         {
@@ -38,10 +39,10 @@ public sealed class Category : AuditableEntity
     public Result Update(string name, string slug, string? iconUrl, string? description, int displayOrder)
     {
         if (string.IsNullOrWhiteSpace(name))
-            return Result.Failure(new Error("Category.EmptyName", "Category name is required.", ErrorType.Validation));
+            return Result.Failure(CategoryErrors.EmptyName);
 
         if (string.IsNullOrWhiteSpace(slug))
-            return Result.Failure(new Error("Category.EmptySlug", "Category slug is required.", ErrorType.Validation));
+            return Result.Failure(CategoryErrors.EmptySlug);
 
         Name = name.Trim();
         Slug = slug.Trim().ToLowerInvariant();

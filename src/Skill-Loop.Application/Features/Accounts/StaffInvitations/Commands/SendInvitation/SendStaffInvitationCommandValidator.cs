@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.SendInvitation;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.SendInvitation;
 
 using Skill_Loop.Domain.Constants;
 using FluentValidation;
@@ -8,12 +8,12 @@ public sealed class SendStaffInvitationCommandValidator : AbstractValidator<Send
     public SendStaffInvitationCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-            .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.");
+            .NotEmpty().WithMessage("This field is required.")
+            .EmailAddress().WithMessage("Invalid email address format.");
 
         RuleFor(x => x.Role)
-            .NotEmpty().WithMessage("الدور الوظيفي مطلوب.")
-            .WithMessage("الدور الوظيفي غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .WithMessage("Invalid value.");
 
     }
 }

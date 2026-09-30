@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.AddInstructorReview;
 
@@ -7,12 +7,12 @@ public sealed class AddInstructorReviewCommandValidator : AbstractValidator<AddI
     public AddInstructorReviewCommandValidator()
     {
         RuleFor(x => x.InstructorProfileId)
-            .NotEmpty().WithMessage("معرّف المدرب مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
 
         RuleFor(x => x.Rating)
-            .InclusiveBetween(1, 5).WithMessage("التقييم يجب أن يكون بين 1 و 5 نجوم.");
+            .InclusiveBetween(1, 5).WithMessage("Value is out of range.");
 
         RuleFor(x => x.Comment)
-            .MaximumLength(1000).WithMessage("التعليق يجب ألا يتجاوز 1000 حرف.");
+            .MaximumLength(1000).WithMessage("Length exceeds the maximum allowed.");
     }
 }

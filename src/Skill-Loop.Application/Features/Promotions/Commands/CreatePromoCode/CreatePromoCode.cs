@@ -22,11 +22,11 @@ public sealed class CreatePromoCodeCommandValidator : AbstractValidator<CreatePr
 {
     public CreatePromoCodeCommandValidator()
     {
-        RuleFor(x => x.Code).NotEmpty().WithMessage("الكود مطلوب.");
+        RuleFor(x => x.Code).NotEmpty().WithMessage("This field is required.");
         RuleFor(x => x.DiscountType)
             .Must(t => Enum.TryParse<DiscountType>(t, ignoreCase: true, out _))
-            .WithMessage("نوع الخصم لازم يكون Percentage أو FixedAmount.");
-        RuleFor(x => x.DiscountValue).GreaterThan(0).WithMessage("قيمة الخصم لازم تكون أكبر من صفر.");
+            .WithMessage("Invalid value.");
+        RuleFor(x => x.DiscountValue).GreaterThan(0).WithMessage("Invalid value.");
     }
 }
 

@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Course;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
@@ -32,13 +33,13 @@ public sealed class CourseOwnershipBehavior<TRequest, TResponse>(
 
         if (course is null)
         {
-            var error = new Error("Course.NotFound", "The specified course was not found.", ErrorType.NotFound);
+            var error = CourseErrors.NotFound;
             return ResultFactory.CreateFailure<TResponse>(error);
         }
 
         if (course.InstructorId != currentUser.UserId)
         {
-            var error = new Error("Course.Forbidden", "You are not the owner of this course.", ErrorType.Forbidden);
+            var error = CourseErrors.Forbidden;
             return ResultFactory.CreateFailure<TResponse>(error);
         }
 

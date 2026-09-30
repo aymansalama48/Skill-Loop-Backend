@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Notification;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
@@ -35,14 +36,14 @@ public sealed class Notification : AuditableEntity
     public static Result<Notification> Create(Guid userId, string type, string title, string body, string? data = null)
     {
         if (userId == Guid.Empty)
-            return Result<Notification>.Failure(new Error("Notification.InvalidUser", "المستخدم مطلوب.", ErrorType.Validation));
+            return Result<Notification>.Failure(NotificationErrors.InvalidUser);
 
         if (string.IsNullOrWhiteSpace(type))
-            return Result<Notification>.Failure(new Error("Notification.InvalidType", "نوع الإشعار مطلوب.", ErrorType.Validation));
+            return Result<Notification>.Failure(NotificationErrors.InvalidType);
 
         var trimmedTitle = (title ?? string.Empty).Trim();
         if (string.IsNullOrEmpty(trimmedTitle))
-            return Result<Notification>.Failure(new Error("Notification.EmptyTitle", "عنوان الإشعار مطلوب.", ErrorType.Validation));
+            return Result<Notification>.Failure(NotificationErrors.EmptyTitle);
 
         // قص دفاعي بدل ما نرفض الإشعار كامل لو النص طلع أطول من المتوقع بقليل
         if (trimmedTitle.Length > TitleMaxLength)

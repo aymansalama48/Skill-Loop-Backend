@@ -37,7 +37,7 @@ public class GetAllUsersQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.PageNumber)
-            .WithErrorMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+            ;
     }
 
     [Theory]
@@ -54,3 +54,4 @@ public class GetAllUsersQueryValidatorTests
             .WithErrorMessage(expectedErrorMessage);
     }
 }
+

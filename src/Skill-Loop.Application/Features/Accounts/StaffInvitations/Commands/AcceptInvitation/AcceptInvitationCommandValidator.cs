@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitation;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitation;
 
 using Skill_Loop.Application.Common.Validation; // 👈 استدعاء الـ Extension
 using FluentValidation;
@@ -8,18 +8,18 @@ public sealed class AcceptInvitationCommandValidator : AbstractValidator<AcceptI
     public AcceptInvitationCommandValidator()
     {
         RuleFor(x => x.InvitationToken)
-            .NotEmpty().WithMessage("رمز الدعوة مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
 
         RuleFor(x => x.FullName)
-            .NotEmpty().WithMessage("الاسم الكامل مطلوب.")
-            .MinimumLength(3).WithMessage("الاسم الكامل يجب أن يكون 3 أحرف على الأقل.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MinimumLength(3).WithMessage("Invalid value.");
 
         // 👇 استخدام السطر الموحد لضمان التطابق التام مع Identity
         RuleFor(x => x.Password)
             .ApplyStandardPasswordRules();
 
         RuleFor(x => x.PhoneNumber)
-            .MaximumLength(20).WithMessage("رقم الهاتف طويل جداً.")
+            .MaximumLength(20).WithMessage("Invalid value.")
             .When(x => !string.IsNullOrWhiteSpace(x.PhoneNumber));
     }
 }

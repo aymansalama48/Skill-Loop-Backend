@@ -1,3 +1,4 @@
+using Skill_Loop.Infrastructure.Common.Errors.SupportNotification;
 using Microsoft.Extensions.Options;
 using Skill_Loop.Application.Common.Abstractions.External.Email;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models;
@@ -149,7 +150,7 @@ public sealed class SupportNotificationService : ISupportRequestNotifier, ISuppo
     {
         if (string.IsNullOrWhiteSpace(toEmail))
         {
-            return Result.Failure(new Error("SupportNotification.MissingRecipient", "لا يوجد بريد إلكتروني لإرسال الرد إليه.", ErrorType.Validation));
+            return Result.Failure(SupportNotificationErrors.MissingRecipient);
         }
 
         try

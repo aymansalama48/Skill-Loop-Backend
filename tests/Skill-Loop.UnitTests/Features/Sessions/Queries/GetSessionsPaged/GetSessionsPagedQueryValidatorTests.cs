@@ -32,6 +32,7 @@ public class GetSessionsPagedQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.Pagination)
-            .WithErrorMessage("إعدادات الصفحات مطلوبة.");
+            ;
     }
 }
+

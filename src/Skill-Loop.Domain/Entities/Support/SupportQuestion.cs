@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.SupportQuestion;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
@@ -27,10 +28,10 @@ public sealed class SupportQuestion : AuditableEntity
         Guid? askedByUserId = null)
     {
         if (string.IsNullOrWhiteSpace(question))
-            return Result<SupportQuestion>.Failure(new Error("SupportQuestion.EmptyQuestion", "Question is required.", ErrorType.Validation));
+            return Result<SupportQuestion>.Failure(SupportQuestionErrors.EmptyQuestion);
 
         if (string.IsNullOrWhiteSpace(category))
-            return Result<SupportQuestion>.Failure(new Error("SupportQuestion.EmptyCategory", "Category is required.", ErrorType.Validation));
+            return Result<SupportQuestion>.Failure(SupportQuestionErrors.EmptyCategory);
 
         return Result<SupportQuestion>.Success(new SupportQuestion
         {
@@ -52,13 +53,13 @@ public sealed class SupportQuestion : AuditableEntity
         string category)
     {
         if (string.IsNullOrWhiteSpace(question))
-            return Result<SupportQuestion>.Failure(new Error("SupportQuestion.EmptyQuestion", "Question is required.", ErrorType.Validation));
+            return Result<SupportQuestion>.Failure(SupportQuestionErrors.EmptyQuestion);
 
         if (string.IsNullOrWhiteSpace(answer))
-            return Result<SupportQuestion>.Failure(new Error("SupportQuestion.EmptyAnswer", "Answer is required for published questions.", ErrorType.Validation));
+            return Result<SupportQuestion>.Failure(SupportQuestionErrors.EmptyAnswer);
 
         if (string.IsNullOrWhiteSpace(category))
-            return Result<SupportQuestion>.Failure(new Error("SupportQuestion.EmptyCategory", "Category is required.", ErrorType.Validation));
+            return Result<SupportQuestion>.Failure(SupportQuestionErrors.EmptyCategory);
 
         return Result<SupportQuestion>.Success(new SupportQuestion
         {
@@ -76,7 +77,7 @@ public sealed class SupportQuestion : AuditableEntity
     public Result SetAnswer(string answer)
     {
         if (string.IsNullOrWhiteSpace(answer))
-            return Result.Failure(new Error("SupportQuestion.EmptyAnswer", "Answer cannot be empty.", ErrorType.Validation));
+            return Result.Failure(SupportQuestionErrors.EmptyAnswer);
 
         Answer = answer.Trim();
         MarkAnswered(overwriteAnsweredAt: true);
@@ -87,7 +88,7 @@ public sealed class SupportQuestion : AuditableEntity
     public Result Publish()
     {
         if (string.IsNullOrWhiteSpace(Answer))
-            return Result.Failure(new Error("SupportQuestion.NoAnswer", "Cannot publish without an answer.", ErrorType.Validation));
+            return Result.Failure(SupportQuestionErrors.NoAnswer);
 
         IsPublished = true;
         return Result.Success();
@@ -109,10 +110,10 @@ public sealed class SupportQuestion : AuditableEntity
     public Result Update(string question, string? answer, string category, bool isPublished)
     {
         if (string.IsNullOrWhiteSpace(question))
-            return Result.Failure(new Error("SupportQuestion.EmptyQuestion", "Question is required.", ErrorType.Validation));
+            return Result.Failure(SupportQuestionErrors.EmptyQuestion);
 
         if (string.IsNullOrWhiteSpace(category))
-            return Result.Failure(new Error("SupportQuestion.EmptyCategory", "Category is required.", ErrorType.Validation));
+            return Result.Failure(SupportQuestionErrors.EmptyCategory);
 
         Question = question.Trim();
         Answer = answer?.Trim();

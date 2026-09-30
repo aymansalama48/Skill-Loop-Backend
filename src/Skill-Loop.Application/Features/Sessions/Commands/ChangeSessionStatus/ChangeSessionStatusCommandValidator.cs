@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Sessions.Commands.ChangeSessionStatus;
 
@@ -7,10 +7,10 @@ public sealed class ChangeSessionStatusCommandValidator : AbstractValidator<Chan
     public ChangeSessionStatusCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("معرف الجلسة مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الجلسة غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.NewStatus)
-            .IsInEnum().WithMessage("حالة الجلسة غير صالحة.");
+            .IsInEnum().WithMessage("Invalid value.");
     }
 }

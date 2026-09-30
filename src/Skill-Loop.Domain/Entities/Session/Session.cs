@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Review;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Session;
@@ -201,13 +202,13 @@ public sealed class Session : AuditableEntity
     public Result AddReview(Guid userId, int stars, string? comment)
     {
         if (stars is < 1 or > 5)
-            return Result.Failure(new Error("Review.InvalidStars", "Rating must be between 1 and 5.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.InvalidStars);
 
         if (userId == InstructorId)
-            return Result.Failure(new Error("Review.InstructorCannotReview", "Instructor cannot review their own session.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.InstructorCannotReview);
 
         if (_reviews.Any(r => r.UserId == userId))
-            return Result.Failure(new Error("Review.Duplicate", "User has already reviewed this session.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.Duplicate);
 
         // Note: We could check if the user has a completed booking here, but we will do it in the command handler
         // because the booking check requires querying the DB (or checking the _bookings collection if loaded).

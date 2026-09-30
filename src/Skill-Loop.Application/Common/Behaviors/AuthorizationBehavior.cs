@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Auth;
 using MediatR;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
@@ -29,21 +30,21 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
 
         if (!currentUser.IsAuthenticated)
         {
-            var error = new Error("Auth.Unauthorized", "You are not authenticated.", ErrorType.Unauthorized);
+            var error = AuthErrors.Unauthorized;
             return ResultFactory.CreateFailure<TResponse>(error);
         }
 
         var userId = currentUser.UserId.ToString();
         if (string.IsNullOrEmpty(userId))
         {
-            var error = new Error("Auth.MissingIdentifier", "User identifier is missing.", ErrorType.Unauthorized);
+            var error = AuthErrors.MissingIdentifier;
             return ResultFactory.CreateFailure<TResponse>(error);
         }
 
         var hasPermission = currentUser.HasPermission(permissionAttribute.Name);
         if (!hasPermission)
         {
-            var error = new Error("Auth.Forbidden", "You don't have permission to perform this action.", ErrorType.Forbidden);
+            var error = AuthErrors.Forbidden;
             return ResultFactory.CreateFailure<TResponse>(error);
         }
 

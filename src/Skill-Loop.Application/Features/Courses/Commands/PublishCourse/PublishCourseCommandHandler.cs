@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -25,7 +26,7 @@ public sealed class PublishCourseCommandHandler : ICommandHandler<PublishCourseC
 
         if (course is null)
         {
-            return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result.Failure(CourseErrors.NotFound);
         }
 
         var publishResult = course.Publish();

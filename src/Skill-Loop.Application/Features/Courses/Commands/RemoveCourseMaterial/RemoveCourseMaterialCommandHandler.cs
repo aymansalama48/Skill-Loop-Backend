@@ -1,3 +1,5 @@
+using Skill_Loop.Application.Common.Errors.CourseMaterial;
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.Storage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -27,11 +29,11 @@ public sealed class RemoveCourseMaterialCommandHandler : ICommandHandler<RemoveC
             cancellationToken);
 
         if (course is null)
-            return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result.Failure(CourseErrors.NotFound);
 
         var material = course.Attachments.FirstOrDefault(m => m.Id == request.MaterialId);
         if (material is null)
-            return Result.Failure(new Error("CourseMaterial.NotFound", "Material not found.", ErrorType.NotFound));
+            return Result.Failure(CourseMaterialErrors.NotFound);
 
         await _storage.DeleteAsync(material.DriveFileId, cancellationToken);
         

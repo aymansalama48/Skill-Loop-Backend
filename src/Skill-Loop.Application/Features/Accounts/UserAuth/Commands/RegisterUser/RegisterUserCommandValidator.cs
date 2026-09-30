@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using Skill_Loop.Application.Common.Validation;
 
 namespace Skill_Loop.Application.Features.Accounts.UserAuth.Commands.RegisterUser;
@@ -9,16 +9,16 @@ public sealed class RegisterUserCommandValidator : AbstractValidator<RegisterUse
     {
         RuleFor(x => x.FirstName)
             .NotEmpty()
-            .WithMessage("الاسم الأول مطلوب.");
+            .WithMessage("This field is required.");
 
         RuleFor(x => x.LastName)
             .NotEmpty()
-            .WithMessage("اسم العائلة مطلوب.");
+            .WithMessage("This field is required.");
 
         RuleFor(x => x.Email)
             .NotEmpty()
             .EmailAddress()
-            .WithMessage("بريد إلكتروني غير صالح.");
+            .WithMessage("Invalid value.");
 
         RuleFor(x => x.Password)
             .ApplyStandardPasswordRules();

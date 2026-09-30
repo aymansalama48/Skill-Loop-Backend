@@ -7,7 +7,7 @@ public sealed class DeactivateUserCommandValidator : AbstractValidator<Deactivat
     public DeactivateUserCommandValidator()
     {
         RuleFor(x => x.UserId)
-            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
     }
 }

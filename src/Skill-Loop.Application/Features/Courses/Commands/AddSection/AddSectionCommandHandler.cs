@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Course;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -24,7 +25,7 @@ public sealed class AddSectionCommandHandler : ICommandHandler<AddSectionCommand
 
         if (course is null)
         {
-            return Result<Guid>.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(CourseErrors.NotFound);
         }
 
         // 2. تطبيق البيزنس لوجيك (القسم هينضاف في الذاكرة)

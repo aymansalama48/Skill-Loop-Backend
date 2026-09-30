@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using Microsoft.Extensions.Logging;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -33,7 +34,7 @@ public sealed class SubmitContactFormCommandHandler : ICommandHandler<SubmitCont
         if (!_currentUser.IsAuthenticated || string.IsNullOrWhiteSpace(email))
         {
             return Result<Guid>.Failure(
-                new Error("SupportQuestion.Unauthenticated", "You must be logged in to submit a question.", ErrorType.Unauthorized));
+                SupportQuestionErrors.Unauthenticated);
         }
 
         var userName = string.IsNullOrWhiteSpace(_currentUser.FullName) ? email : _currentUser.FullName;

@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Categories.Commands.DeleteCategory;
 
@@ -7,6 +7,6 @@ public sealed class DeleteCategoryCommandValidator : AbstractValidator<DeleteCat
     public DeleteCategoryCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("معرف التصنيف مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

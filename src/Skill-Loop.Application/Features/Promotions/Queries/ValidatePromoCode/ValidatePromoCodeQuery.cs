@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Promo;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -24,7 +25,7 @@ public class ValidatePromoCodeQueryHandler : IRequestHandler<ValidatePromoCodeQu
             .FirstOrDefaultAsync(p => p.Code == normalizedCode, cancellationToken);
 
         if (promo == null)
-            return Result<PromoCodeDto>.Failure(new Error("Promo.NotFound", "Promo code not found.", ErrorType.NotFound));
+            return Result<PromoCodeDto>.Failure(PromoErrors.NotFound);
 
         var checkResult = promo.CheckUsable(DateTime.UtcNow);
         if (checkResult.IsFailure)

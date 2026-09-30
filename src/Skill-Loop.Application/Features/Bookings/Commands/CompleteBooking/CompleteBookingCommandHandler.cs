@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.User;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -15,7 +16,7 @@ public sealed class CompleteBookingCommandHandler(
 {
     public async Task<Result<bool>> Handle(CompleteBookingCommand request, CancellationToken cancellationToken)
     {
-        if (!_currentUser.UserId.HasValue) return Result<bool>.Failure(new Error("User.Unauthorized", "غير مصرح.", ErrorType.Unauthorized));
+        if (!_currentUser.UserId.HasValue) return Result<bool>.Failure(UserErrors.Unauthorized);
 
         // 1. جلب الحجز
         var booking = await _dbContext.Bookings

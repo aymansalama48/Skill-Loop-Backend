@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Category;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -18,7 +19,7 @@ public sealed class CreateCategoryCommandHandler(
 
         if (!isSlugUnique)
         {
-            return Result<Guid>.Failure(new Error("Category.DuplicateSlug", "هذا الرابط (Slug) مستخدم بالفعل لتصنيف آخر.", ErrorType.Conflict));
+            return Result<Guid>.Failure(CategoryErrors.DuplicateSlug);
         }
 
         string? iconUrl = null;

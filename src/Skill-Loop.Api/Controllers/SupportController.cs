@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.SupportQuestion;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -110,7 +111,7 @@ public class SupportController : BaseApiController
         if (!userId.HasValue)
         {
             return HandleResult(Result.Failure(
-                new Error("SupportQuestion.MissingIdentifier", "User identifier is missing.", ErrorType.Unauthorized)));
+                SupportQuestionErrors.MissingIdentifier));
         }
 
         var query = new GetMySupportQuestionsQuery(

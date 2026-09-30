@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Category;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -23,7 +24,7 @@ public sealed class CreateCourseCommandHandler : ICommandHandler<CreateCourseCom
 
         if (!categoryExists)
         {
-            return Result<Guid>.Failure(new Error("Category.NotFound", "The specified category was not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(CategoryErrors.NotFound);
         }
 
         var courseResult = Course.Create(

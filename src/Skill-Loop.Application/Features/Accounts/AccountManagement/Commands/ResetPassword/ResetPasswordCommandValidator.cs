@@ -8,18 +8,18 @@ public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordComm
     public ResetPasswordCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-            .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.");
+            .NotEmpty().WithMessage("This field is required.")
+            .EmailAddress().WithMessage("Invalid email address format.");
 
         RuleFor(x => x.OtpCode) // 👈 التحقق من كود الـ OTP
-            .NotEmpty().WithMessage("كود التحقق مطلوب.")
-            .Length(4).WithMessage("كود التحقق يجب أن يكون 4 أرقام.");
+            .NotEmpty().WithMessage("This field is required.")
+            .Length(4).WithMessage("Invalid value.");
 
         RuleFor(x => x.NewPassword)
             .ApplyStandardPasswordRules();
 
         RuleFor(x => x.ConfirmPassword)
-            .NotEmpty().WithMessage("تأكيد كلمة المرور مطلوب.")
-            .Equal(x => x.NewPassword).WithMessage("كلمة المرور وتأكيدها غير متطابقين.");
+            .NotEmpty().WithMessage("This field is required.")
+            .Equal(x => x.NewPassword).WithMessage("Invalid value.");
     }
 }

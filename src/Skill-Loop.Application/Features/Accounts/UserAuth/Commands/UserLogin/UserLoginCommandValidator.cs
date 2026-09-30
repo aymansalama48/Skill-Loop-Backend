@@ -1,4 +1,4 @@
-﻿// LoginUserCommandValidator.cs
+// LoginUserCommandValidator.cs
 using FluentValidation;
 using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.LoginUser;
 
@@ -9,10 +9,10 @@ public sealed class UserLoginCommandValidator : AbstractValidator<UserLoginComma
     public UserLoginCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-            .EmailAddress().WithMessage("بريد إلكتروني غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .EmailAddress().WithMessage("Invalid value.");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("كلمة المرور مطلوبة.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

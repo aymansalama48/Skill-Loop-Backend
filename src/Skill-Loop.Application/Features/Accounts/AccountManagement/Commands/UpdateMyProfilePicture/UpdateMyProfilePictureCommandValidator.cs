@@ -9,12 +9,12 @@ public sealed class UpdateMyProfilePictureCommandValidator : AbstractValidator<U
     public UpdateMyProfilePictureCommandValidator()
     {
         RuleFor(x => x.FileStream)
-            .NotNull().WithMessage("الملف مطلوب.")
-            .Must(s => s != null && s.Length > 0).WithMessage("الملف غير صالح أو فارغ.");
+            .NotNull().WithMessage("This field is required.")
+            .Must(s => s != null && s.Length > 0).WithMessage("Invalid value.");
 
         RuleFor(x => x.FileName)
-            .NotEmpty().WithMessage("اسم الملف مطلوب.")
+            .NotEmpty().WithMessage("This field is required.")
             .Must(fileName => AllowedExtensions.Contains(Path.GetExtension(fileName).ToLower()))
-            .WithMessage("نوع الملف غير مدعوم. الصيغ المدعومة هي: jpg, jpeg, png, webp");
+            .WithMessage("Invalid value.");
     }
 }
