@@ -19,7 +19,7 @@ public static partial class DependencyInjection
         services.Configure<MailOptions>(configuration.GetSection(MailOptions.SectionName));
 
         // تسجيل محرك القوالب وخدمة الإرسال
-        services.AddScoped<EmailTemplateEngine>();
+        services.AddScoped<IEmailTemplateEngine, EmailTemplateEngine>();
         services.AddScoped<IEmailSender, SmtpEmailSender>();
 
         return services;

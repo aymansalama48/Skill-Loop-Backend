@@ -1,0 +1,113 @@
+services:
+  # ==============================
+  # 🗄️ قاعدة البيانات SQL Server
+  # ==============================
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    container_name: skill-loop-sql
+    environment:
+      # الموافقة على اتفاقية الترخيص (لازم تكون Y)
+      ACCEPT_EULA: "Y"
+      # كلمة مرور حساب الـ SA (بتتقرا من ملف .env)
+      MSSQL_SA_PASSWORD: ${SQL_SA_PASSWORD}
+    ports:
+      # ربط بورت الحاوية 1433 ببورت الجهاز 1433
+      - "1433:1433"
+    volumes:
+      # volume لحفظ بيانات الـ SQL عشان متضيعش لما الحاوية تتقفل
+      - sql_data:/var/opt/mssql
+    healthcheck:
+      # اختبار إن الـ SQL شغال فعلاً باستخدام sqlcmd
+      # -C معناها نثق في الشهادة (Trust Server Certificate)
+      # || exit 1 معناه لو الأمر فشل، الـ healthcheck يبقى فاشل
+      test: /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "$$MSSQL_SA_PASSWORD" -C -Q "SELECT 1" || exit 1
+      # كل 10 ثواني يتعمل check
+      interval: 10s
+      # لو مافيش رد في 5 ثواني يعتبر فشل
+      timeout: 5s
+      # يحاول 10 مرات
+      retries: 10
+      # بيستنى 30 ثانية قبل ما يبدأ يعمل check (عشان الـ SQL بياخد وقت يشتغل)
+      start_period: 30s
+
+  # ==============================
+  # ⚡ الكاش Redis
+  # ==============================
+  redis:
+    image: redis:7
+    container_name: skill-loop-redis
+    ports:
+      # ربط بورت Redis الافتراضي
+      - "6379:6379"
+    healthcheck:
+      # اختبار إن Redis بيرد على ping
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # ==============================
+  # 🚀 الـ API بتاع Skill Loop
+  # ==============================
+  skill-loop.api:
+    image: skillloopapi
+    container_name: skill-loop-api
+    build:
+      # مكان الـ build (root المشروع)
+      context: .
+      # مسار الـ Dockerfile
+      dockerfile: src/Skill-Loop.Api/Dockerfile
+    ports:
+      # البورت 8080 جو الحاوية مربوط بـ 8080 على الجهاز
+      - "8080:8080"
+    environment:
+      # بيئة التشغيل (Development / Production)
+      ASPNETCORE_ENVIRONMENT: Development
+      # العنوان اللي الـ API هيسمع عليه جو الحاوية
+      # + معناه اسمع على كل الـ network interfaces
+      ASPNETCORE_URLS: http://+:8080
+
+      # ============ Connection Strings ============
+      # الاتصال بالـ SQL Server (اسم الـ service: sqlserver)
+      # TrustServerCertificate=True معناه نثق في شهادة السيرفر الذاتية
+      # MultipleActiveResultSets=true بتسمح بأكتر من reader على نفس الاتصال
+      ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=Skill-Loop;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
+
+      # ============ Redis ============
+      # الاتصال بالـ Redis (اسم الـ service: redis)
+      Redis__ConnectionString: redis:6379
+
+      # ============ إعدادات الأمان (بتتقرا من .env) ============
+      # مفتاح توقيع الـ JWT
+      Jwt__Key: ${JWT_KEY}
+      # سيكرت تشفير الـ OTP
+      OtpSettings__HashingSecret: ${OTP_SECRET}
+      # كلمة مرور الإيميل
+      MailSettings__Password: ${MAIL_PASSWORD}
+      # معرف فولدر Google Drive الجذر
+      GoogleDrive__RootFolderId: ${DRIVE_ROOT_FOLDER_ID}
+      # Client ID بتاع Google Auth
+      GoogleAuth__ClientId: ${GOOGLE_CLIENT_ID}
+    volumes:
+      # ملف مفاتيح Google Drive (للقراءة بس عشان الأمان)
+      - ./google-drive-key.json:/app/google-drive-key.json:ro
+      # ملفات المستخدمين المرفوعة (بتفضل محفوظة)
+      - uploaded_files:/app/UploadedFiles
+    depends_on:
+      # الـ API ميشتغلش غير لما الـ SQL يبقى healthy فعلاً
+      sqlserver:
+        condition: service_healthy
+      # ونفس الحاجة مع الـ Redis
+      redis:
+        condition: service_healthy
+    # لو الحاوية وقعت، Docker هيحاول يشغلها تاني
+    restart: on-failure
+
+# ==============================
+# 📦 الـ Volumes (بيانات دائمة)
+# ==============================
+volumes:
+  # بيانات الـ SQL Server
+  sql_data:
+  # الملفات المرفوعة من المستخدمين
+  uploaded_files:

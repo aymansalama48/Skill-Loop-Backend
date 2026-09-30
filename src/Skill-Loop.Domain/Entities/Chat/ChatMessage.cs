@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Chat;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Chat.Events;
@@ -28,15 +29,15 @@ public sealed class ChatMessage : BaseEntity
     public static Result<ChatMessage> Create(Guid conversationId, Guid senderId, string? content)
     {
         if (conversationId == Guid.Empty)
-            return Result<ChatMessage>.Failure(new Error("Chat.InvalidConversation", "المحادثة مطلوبة.", ErrorType.Validation));
+            return Result<ChatMessage>.Failure(ChatErrors.InvalidConversation);
 
         if (senderId == Guid.Empty)
-            return Result<ChatMessage>.Failure(new Error("Chat.InvalidSender", "المرسل مطلوب.", ErrorType.Validation));
+            return Result<ChatMessage>.Failure(ChatErrors.InvalidSender);
 
         var trimmed = content?.Trim();
 
         if (string.IsNullOrEmpty(trimmed))
-            return Result<ChatMessage>.Failure(new Error("Chat.EmptyMessage", "لا يمكن إرسال رسالة فارغة.", ErrorType.Validation));
+            return Result<ChatMessage>.Failure(ChatErrors.EmptyMessage);
 
         if (trimmed.Length > MaxContentLength)
             return Result<ChatMessage>.Failure(new Error(

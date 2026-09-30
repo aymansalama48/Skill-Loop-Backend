@@ -1,4 +1,5 @@
-﻿using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,6 +11,6 @@ public sealed class GetRolePermissionsQueryValidator : AbstractValidator<GetRole
     public GetRolePermissionsQueryValidator()
     {
         RuleFor(x => x.RoleId)
-            .NotEmpty().WithMessage("معرف الدور (RoleId) مطلوب ولا يمكن أن يكون فارغاً.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

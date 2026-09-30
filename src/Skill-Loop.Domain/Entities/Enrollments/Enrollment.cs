@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Enrollment;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Enrollments.Events;
@@ -23,10 +24,10 @@ public sealed class Enrollment : AuditableEntity
     public static Result<Enrollment> Create(Guid userId, Guid courseId, int creditsPaid, int totalCourseLessons)
     {
         if (userId == Guid.Empty)
-            return Result<Enrollment>.Failure(new Error("Enrollment.InvalidUser", "User is required.", ErrorType.Validation));
+            return Result<Enrollment>.Failure(EnrollmentErrors.InvalidUser);
 
         if (courseId == Guid.Empty)
-            return Result<Enrollment>.Failure(new Error("Enrollment.InvalidCourse", "Course is required.", ErrorType.Validation));
+            return Result<Enrollment>.Failure(EnrollmentErrors.InvalidCourse);
 
         var enrollment = new Enrollment
         {
@@ -46,7 +47,7 @@ public sealed class Enrollment : AuditableEntity
     public Result MarkLessonCompleted(Guid lessonId, int totalCourseLessons)
     {
         if (lessonId == Guid.Empty)
-            return Result.Failure(new Error("Enrollment.InvalidLesson", "Lesson is required.", ErrorType.Validation));
+            return Result.Failure(EnrollmentErrors.InvalidLesson);
 
         var progress = _lessonProgresses.FirstOrDefault(p => p.LessonId == lessonId);
         if (progress == null)

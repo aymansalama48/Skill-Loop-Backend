@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Wallet;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Wallets.Events;
@@ -29,7 +30,7 @@ public sealed class UserWallet : AuditableEntity
     public Result AddCredits(int amount, Guid referenceId, string description)
     {
         if (amount <= 0)
-            return Result.Failure(new Error("Wallet.InvalidAmount", "Credit amount must be positive.", ErrorType.Validation));
+            return Result.Failure(WalletErrors.InvalidAmount);
 
         Balance += amount;
         _transactions.Add(WalletTransaction.Create(Id, amount, TransactionType.CreditReward, referenceId, description));
@@ -40,7 +41,7 @@ public sealed class UserWallet : AuditableEntity
     public Result PurchaseCredits(int amount, Guid referenceId, string description)
     {
         if (amount <= 0)
-            return Result.Failure(new Error("Wallet.InvalidAmount", "Credit purchase amount must be positive.", ErrorType.Validation));
+            return Result.Failure(WalletErrors.InvalidAmount);
 
         Balance += amount;
         _transactions.Add(WalletTransaction.Create(Id, amount, TransactionType.CreditPurchase, referenceId, description));
@@ -51,7 +52,7 @@ public sealed class UserWallet : AuditableEntity
     public Result DeductCredits(int amount, Guid referenceId, string description)
     {
         if (amount <= 0)
-            return Result.Failure(new Error("Wallet.InvalidAmount", "Credit amount must be positive.", ErrorType.Validation));
+            return Result.Failure(WalletErrors.InvalidAmount);
 
         if (Balance < amount)
             return Result.Failure(new Error("Wallet.InsufficientBalance", $"Insufficient credits. Required: {amount}, Available: {Balance}", ErrorType.Failure));
@@ -62,8 +63,6 @@ public sealed class UserWallet : AuditableEntity
         AddDomainEvent(new WalletBalanceDeductedDomainEvent(UserId, amount, Balance));
         return Result.Success();
     }
-}
-
     /// <summary>
     /// استرجاع credits (إلغاء حجز / استرجاع purchase) — بيتسجل كـ CreditRefund
     /// عشان الـ transaction history يبقى واضح.
@@ -71,7 +70,7 @@ public sealed class UserWallet : AuditableEntity
     public Result RefundCredits(int amount, Guid referenceId, string description)
     {
         if (amount <= 0)
-            return Result.Failure(new Error("Wallet.InvalidAmount", "Refund amount must be positive.", ErrorType.Validation));
+            return Result.Failure(WalletErrors.InvalidAmount);
 
         Balance += amount;
         _transactions.Add(WalletTransaction.Create(Id, amount, TransactionType.CreditRefund, referenceId, description));

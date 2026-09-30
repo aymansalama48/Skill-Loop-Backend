@@ -46,7 +46,8 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
             .HasConversion<string>()
             .HasMaxLength(20)
             .IsRequired()
-            .HasDefaultValue(SessionLocationType.Online);
+            .HasDefaultValue(SessionLocationType.Online)
+            .HasSentinel((SessionLocationType)0);
 
         builder.Property(x => x.LocationDetails)
             .HasMaxLength(500);
@@ -54,6 +55,19 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
         builder.Property(x => x.MaxParticipants)
             .IsRequired()
             .HasDefaultValue(1);
+
+        builder.Property(x => x.AverageRating)
+            .IsRequired()
+            .HasDefaultValue(0.0);
+
+        builder.Property(x => x.TotalReviews)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.HasMany(x => x.Reviews)
+            .WithOne()
+            .HasForeignKey(x => x.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Ignore(x => x.EndsAtUtc);
 

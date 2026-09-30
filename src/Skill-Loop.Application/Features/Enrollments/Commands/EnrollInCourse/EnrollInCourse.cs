@@ -1,3 +1,6 @@
+using Skill_Loop.Application.Common.Errors.Wallet;
+using Skill_Loop.Application.Common.Errors.Enrollment;
+using Skill_Loop.Application.Common.Errors.Course;
 using FluentValidation;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -37,7 +40,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
 
         if (course is null)
         {
-            return Result<EnrollmentResultDto>.Failure(new Error("Course.NotFound", "Course does not exist or is not published.", ErrorType.NotFound));
+            return Result<EnrollmentResultDto>.Failure(CourseErrors.NotFound);
         }
 
         // 2. Prevent duplicate active enrollments (Idempotency)
@@ -47,7 +50,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
 
         if (isAlreadyEnrolled)
         {
-            return Result<EnrollmentResultDto>.Failure(new Error("Enrollment.Duplicate", "User is already enrolled in this course.", ErrorType.Conflict));
+            return Result<EnrollmentResultDto>.Failure(EnrollmentErrors.Duplicate);
         }
 
         // 3. Virtual Wallet balance validation & atomic deduction
@@ -59,7 +62,7 @@ public sealed class EnrollInCourseCommandHandler : ICommandHandler<EnrollInCours
 
             if (wallet is null)
             {
-                return Result<EnrollmentResultDto>.Failure(new Error("Wallet.NotFound", "User virtual wallet not found.", ErrorType.NotFound));
+                return Result<EnrollmentResultDto>.Failure(WalletErrors.NotFound);
             }
 
             var deductionResult = wallet.DeductCredits(

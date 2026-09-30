@@ -3,6 +3,8 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 
+using Skill_Loop.Application.Common.Abstractions.External.Email;
+
 namespace Skill_Loop.Infrastructure.External.Email;
 
 /// <summary>
@@ -10,7 +12,7 @@ namespace Skill_Loop.Infrastructure.External.Email;
 /// ويدعم المتغيرات {{Property}} و {{Property:format}}،
 /// والشروط {{#if Property}}...{{else}}...{{/if}} و {{#unless Property}}...{{/unless}}.
 /// </summary>
-public class EmailTemplateEngine
+public class EmailTemplateEngine : IEmailTemplateEngine
 {
     private readonly Assembly _assembly;
 

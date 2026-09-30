@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Purchase;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
@@ -40,7 +41,7 @@ public sealed class CreditPurchase : AuditableEntity
         Guid? promoCodeId)
     {
         if (userId == Guid.Empty)
-            return Result<CreditPurchase>.Failure(new Error("Purchase.InvalidUser", "المستخدم مطلوب.", ErrorType.Validation));
+            return Result<CreditPurchase>.Failure(PurchaseErrors.InvalidUser);
 
         if (credits is < MinCredits or > MaxCredits)
             return Result<CreditPurchase>.Failure(new Error(
@@ -49,8 +50,7 @@ public sealed class CreditPurchase : AuditableEntity
                 ErrorType.Validation));
 
         if (subtotalMinor < 0 || discountMinor < 0 || totalMinor < 0 || subtotalMinor - discountMinor != totalMinor)
-            return Result<CreditPurchase>.Failure(new Error(
-                "Purchase.InvalidAmounts", "المبالغ غير صحيحة.", ErrorType.Validation));
+            return Result<CreditPurchase>.Failure(PurchaseErrors.InvalidAmounts);
 
         return Result<CreditPurchase>.Success(new CreditPurchase
         {

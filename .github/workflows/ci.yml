@@ -1,0 +1,35 @@
+name: Skill-Loop CI
+
+on:
+  push:
+    branches: ["main", "dev"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. سحب الكود
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 2. Setup .NET 10
+      - name: Setup .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      # 3. Restore
+      - name: Restore dependencies
+        run: dotnet restore Skill-Loop.slnx
+
+      # 4. Build
+      - name: Build
+        run: dotnet build Skill-Loop.slnx --configuration Release --no-restore
+
+      # 5. Test
+      - name: Test
+        run: dotnet test Skill-Loop.slnx --configuration Release --no-build --verbosity normal

@@ -1,8 +1,11 @@
 ﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Features.Instructors.Share;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Instructors.Queries.GetInstructorProfileByUserId;
 
+[AuthenticatedOnly]
 public sealed record GetInstructorProfileByUserIdQuery(
     Guid UserId
 ) : ICacheableQuery<InstructorProfileResponse>

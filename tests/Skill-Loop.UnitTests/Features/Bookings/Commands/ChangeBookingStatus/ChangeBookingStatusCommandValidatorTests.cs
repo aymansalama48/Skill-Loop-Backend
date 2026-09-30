@@ -39,7 +39,7 @@ public class ChangeBookingStatusCommandValidatorTests
 
         // الـ RuleFor(x => x) بيرجع خطأ على الـ Command نفسه
         result.IsValid.Should().BeFalse();
-        result.Errors.Should().Contain(e => e.ErrorMessage == "سبب الرفض مطلوب.");
+        result.Errors.Should().Contain(e => e.ErrorMessage == "This field is required.");
     }
 
     [Fact]

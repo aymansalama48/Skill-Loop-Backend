@@ -7,14 +7,14 @@ public sealed class CancelBookingCommandValidator : AbstractValidator<CancelBook
     public CancelBookingCommandValidator()
     {
         RuleFor(x => x.BookingId)
-            .NotEmpty().WithMessage("معرف الحجز مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الحجز غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.RequestedByUserId)
-            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.Reason)
-            .MaximumLength(500).WithMessage("سبب الإلغاء لا يجب أن يتجاوز 500 حرف.");
+            .MaximumLength(500).WithMessage("Length exceeds the maximum allowed.");
     }
 }

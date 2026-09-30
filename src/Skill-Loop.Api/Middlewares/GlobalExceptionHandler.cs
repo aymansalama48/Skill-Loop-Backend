@@ -8,7 +8,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
 {
     private readonly IHostEnvironment _env;
     private readonly ILogger<GlobalExceptionHandler> _logger;
-    private const string InternalServerErrorMessage = "حدث خطأ غير متوقع في الخادم، يرجى المحاولة لاحقاً.";
+    private const string InternalServerErrorMessage = "An unexpected server error occurred. Please try again later.";
 
     public GlobalExceptionHandler(IHostEnvironment env, ILogger<GlobalExceptionHandler> logger)
     {
@@ -36,7 +36,7 @@ public sealed class GlobalExceptionHandler : IExceptionHandler
             {
                 Status = StatusCodes.Status409Conflict,
                 Title = "Conflict",
-                Detail = "تم تعديل هذه البيانات بواسطة مستخدم آخر في نفس الوقت، يرجى إعادة تحميل الصفحة والمحاولة مجدداً.",
+                Detail = "This record has been modified by another user concurrently. Please reload and try again.",
                 Instance = $"{httpContext.Request.Method} {httpContext.Request.Path}",
                 Type = "https://httpstatuses.com/409"
             };

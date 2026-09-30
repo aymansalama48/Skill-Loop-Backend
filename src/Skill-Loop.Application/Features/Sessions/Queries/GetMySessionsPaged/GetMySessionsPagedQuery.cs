@@ -3,12 +3,15 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Sessions.Queries.Share;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Sessions.Queries.GetMySessionsPaged;
 
 /// <summary>
 /// لوحة المحاضر: جلساتي (upcoming / past / by-status) — الجزء الأول من الـ Teach dashboard
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetMySessionsPagedQuery(
     Guid InstructorUserId,
     int PageNumber = 1,

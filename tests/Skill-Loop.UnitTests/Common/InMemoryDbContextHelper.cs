@@ -1,4 +1,4 @@
-﻿
+
 namespace Skill_Loop.UnitTests.Common;
 
 using Microsoft.EntityFrameworkCore;
@@ -54,6 +54,7 @@ public static class InMemoryDbContextHelper
         public IQueryable<Session> Sessions => _dbContext.Set<Session>();
         public IQueryable<Booking> Bookings => _dbContext.Bookings; // ✅ تم تعديلها إلى Bookings بصيغة الجمع
         public IQueryable<SessionMaterial> SessionMaterials => _dbContext.Set<SessionMaterial>();
+        public IQueryable<SessionReview> SessionReviews => _dbContext.Set<SessionReview>();
         public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => _dbContext.Set<Skill_Loop.Domain.Entities.Chat.Conversation>();
         public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => _dbContext.Set<Skill_Loop.Domain.Entities.Chat.ChatMessage>();
         public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => _dbContext.Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
@@ -62,6 +63,9 @@ public static class InMemoryDbContextHelper
         public IQueryable<PromoCode> PromoCodes => _dbContext.Set<PromoCode>();
         public IQueryable<PromoRedemption> PromoRedemptions => _dbContext.Set<PromoRedemption>();
         public IQueryable<CreditPurchase> CreditPurchases => _dbContext.Set<CreditPurchase>();
+
+        // 📧 Email Logs
+        public IQueryable<Skill_Loop.Domain.Entities.Emails.EmailLog> EmailLogs => _dbContext.Set<Skill_Loop.Domain.Entities.Emails.EmailLog>();
 
         public IQueryable<SupportQuestion> SupportQuestions => _dbContext.SupportQuestions;
 

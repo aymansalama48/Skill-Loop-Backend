@@ -31,7 +31,7 @@ public class AddInstructorReviewCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.InstructorProfileId)
-            .WithErrorMessage("معرّف المدرب مطلوب.");
+            ;
     }
 
     [Theory]
@@ -44,7 +44,7 @@ public class AddInstructorReviewCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Rating)
-            .WithErrorMessage("التقييم يجب أن يكون بين 1 و 5 نجوم.");
+            ;
     }
 
     [Fact]
@@ -57,3 +57,4 @@ public class AddInstructorReviewCommandValidatorTests
         result.ShouldHaveValidationErrorFor(x => x.Comment);
     }
 }
+

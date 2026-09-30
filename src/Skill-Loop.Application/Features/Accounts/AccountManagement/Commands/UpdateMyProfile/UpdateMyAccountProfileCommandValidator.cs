@@ -7,14 +7,14 @@ public sealed class UpdateMyAccountProfileCommandValidator : AbstractValidator<U
     public UpdateMyAccountProfileCommandValidator()
     {
         RuleFor(x => x.FirstName)
-            .NotEmpty().WithMessage("الاسم الأول مطلوب.")
-            .MaximumLength(50).WithMessage("الاسم الأول لا يمكن أن يتجاوز 50 حرفاً.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(50).WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x.LastName)
-            .NotEmpty().WithMessage("الاسم الأخير مطلوب.")
-            .MaximumLength(50).WithMessage("الاسم الأخير لا يمكن أن يتجاوز 50 حرفاً.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(50).WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x.PhoneNumber)
-            .MaximumLength(20).WithMessage("رقم الهاتف طويل جداً.");
+            .MaximumLength(20).WithMessage("Invalid value.");
     }
 }

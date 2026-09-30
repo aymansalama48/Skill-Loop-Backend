@@ -1,4 +1,5 @@
-﻿using Skill_Loop.Domain.Common.Entities;
+using Skill_Loop.Domain.Common.Errors.InstructorReview;
+using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Domain.Entities.Instructors;
@@ -20,7 +21,7 @@ public sealed class InstructorReview : SoftDeleteEntity
         string? comment)
     {
         if (rating < 1 || rating > 5)
-            return Result<InstructorReview>.Failure(new Error("InstructorReview.InvalidRating", "Rating must be between 1 and 5.", ErrorType.Validation));
+            return Result<InstructorReview>.Failure(InstructorReviewErrors.InvalidRating);
 
         var review = new InstructorReview
         {

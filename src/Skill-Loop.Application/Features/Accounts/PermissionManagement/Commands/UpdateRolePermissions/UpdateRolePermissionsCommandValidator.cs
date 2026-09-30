@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -10,10 +10,10 @@ public sealed class UpdateRolePermissionsCommandValidator : AbstractValidator<Up
     public UpdateRolePermissionsCommandValidator()
     {
         RuleFor(x => x.RoleId)
-            .NotEmpty().WithMessage("معرف الدور (RoleId) مطلوب ولا يمكن أن يكون فارغاً.");
+            .NotEmpty().WithMessage("This field is required.");
 
         RuleFor(x => x.PermissionIds)
-            .NotNull().WithMessage("قائمة الصلاحيات مطلوبة (حتى لو كانت فارغة يجب إرسال مصفوفة فارغة).")
-            .Must(x => x.Distinct().Count() == x.Count).WithMessage("لا يمكن تكرار نفس معرف الصلاحية في القائمة.");
+            .NotNull().WithMessage("This field is required.")
+            .Must(x => x.Distinct().Count() == x.Count).WithMessage("Invalid value.");
     }
 }

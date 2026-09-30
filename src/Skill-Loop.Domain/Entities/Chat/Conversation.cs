@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Chat;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 
@@ -33,10 +34,10 @@ public sealed class Conversation : AuditableEntity
     public static Result<Conversation> Create(Guid userId, Guid otherUserId)
     {
         if (userId == Guid.Empty || otherUserId == Guid.Empty)
-            return Result<Conversation>.Failure(new Error("Chat.InvalidParticipant", "المستخدم مطلوب.", ErrorType.Validation));
+            return Result<Conversation>.Failure(ChatErrors.InvalidParticipant);
 
         if (userId == otherUserId)
-            return Result<Conversation>.Failure(new Error("Chat.SelfConversation", "لا يمكنك بدء محادثة مع نفسك.", ErrorType.Validation));
+            return Result<Conversation>.Failure(ChatErrors.SelfConversation);
 
         var (one, two) = NormalizePair(userId, otherUserId);
 

@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.Storage;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
@@ -35,7 +36,7 @@ public sealed class UploadCourseMaterialCommandHandler : ICommandHandler<UploadC
             cancellationToken);
 
         if (course is null)
-            return Result<Guid>.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(CourseErrors.NotFound);
 
         var folderName = $"course-{request.CourseId}";
         var uploadResult = await _storage.UploadAsync(request.FileStream, request.FileName, folderName, cancellationToken);

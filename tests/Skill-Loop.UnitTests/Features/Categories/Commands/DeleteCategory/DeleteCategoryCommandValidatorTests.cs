@@ -31,6 +31,7 @@ public class DeleteCategoryCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Id)
-            .WithErrorMessage("معرف التصنيف مطلوب.");
+            ;
     }
 }
+

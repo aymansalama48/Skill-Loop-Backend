@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.InstructorReview;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Instructors;
@@ -24,7 +25,7 @@ public sealed class AddInstructorReviewCommandHandler(
         // لو عاوز تمنع المدرب يقيم نفسه
         if (profile.UserId == request.LearnerUserId)
         {
-            return Result<Guid>.Failure(new Error("InstructorReview.CannotReviewSelf", "لا يمكنك تقييم نفسك.", ErrorType.Conflict));
+            return Result<Guid>.Failure(InstructorReviewErrors.CannotReviewSelf);
         }
 
         // إضافة التقييم عبر الـ Domain Logic

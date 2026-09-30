@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Session;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Sessions.Queries.Share;
@@ -24,7 +25,7 @@ public sealed class GetSessionByIdQueryHandler : IQueryHandler<GetSessionByIdQue
 
         if (session is null)
         {
-            return Result<SessionResponse>.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
+            return Result<SessionResponse>.Failure(SessionErrors.NotFound);
         }
 
         // عدد الحجوزات النشطة عشان نحسب المقاعد المتاحة

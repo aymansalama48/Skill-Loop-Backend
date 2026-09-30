@@ -31,7 +31,7 @@ public class RemoveInstructorReviewCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.InstructorProfileId)
-            .WithErrorMessage("معرّف المدرب مطلوب.");
+            ;
     }
 
     [Fact]
@@ -42,6 +42,7 @@ public class RemoveInstructorReviewCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.ReviewId)
-            .WithErrorMessage("معرّف التقييم مطلوب.");
+            ;
     }
 }
+

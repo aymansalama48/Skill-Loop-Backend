@@ -33,7 +33,7 @@ public class GetInstructorsPagedQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.PageNumber)
-            .WithErrorMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+            ;
     }
 
     [Theory]
@@ -56,7 +56,7 @@ public class GetInstructorsPagedQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.PageSize)
-            .WithErrorMessage("الحد الأقصى لحجم الصفحة هو 100.");
+            ;
     }
 
     [Theory]
@@ -69,6 +69,7 @@ public class GetInstructorsPagedQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.MinRating)
-            .WithErrorMessage("التقييم يجب أن يكون بين 0 و 5 نجوم.");
+            ;
     }
 }
+

@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Sessions.Commands.UpdateSession;
 
@@ -7,20 +7,20 @@ public sealed class UpdateSessionCommandValidator : AbstractValidator<UpdateSess
     public UpdateSessionCommandValidator()
     {
         RuleFor(x => x.Id)
-            .NotEmpty().WithMessage("معرف الجلسة مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الجلسة غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.Title)
-            .NotEmpty().WithMessage("عنوان الجلسة مطلوب.")
-            .MaximumLength(SessionDefaults.MaxTitleLength).WithMessage("عنوان الجلسة لا يجب أن يتجاوز 200 حرف.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(SessionDefaults.MaxTitleLength).WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x.Description)
             .MaximumLength(SessionDefaults.MaxDescriptionLength)
-            .WithMessage("وصف الجلسة لا يجب أن يتجاوز 2000 حرف.");
+            .WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x.ScheduledAtUtc)
             .Must(d => !d.HasValue || d.Value > DateTime.UtcNow)
-            .WithMessage("موعد الجلسة لازم يكون في المستقبل.");
+            .WithMessage("Invalid value.");
 
         RuleFor(x => x.DurationMinutes)
             .Must(d => !d.HasValue || (d >= 15 && d <= SessionDefaults.MaxDurationMinutes))
@@ -28,11 +28,11 @@ public sealed class UpdateSessionCommandValidator : AbstractValidator<UpdateSess
 
         RuleFor(x => x.CreditsPrice)
             .Must(c => !c.HasValue || c >= 0)
-            .WithMessage("سعر الجلسة لا يمكن أن يكون سالب.");
+            .WithMessage("Invalid value.");
 
         RuleFor(x => x.LocationDetails)
             .MaximumLength(SessionDefaults.MaxLocationDetailsLength)
-            .WithMessage("تفاصيل المكان لا يجب أن تتجاوز 500 حرف.");
+            .WithMessage("Invalid value.");
 
         RuleFor(x => x.MaxParticipants)
             .Must(m => !m.HasValue || (m >= 1 && m <= SessionDefaults.MaxParticipants))
@@ -40,6 +40,6 @@ public sealed class UpdateSessionCommandValidator : AbstractValidator<UpdateSess
 
         RuleFor(x => x.LocationType)
             .Must(l => !l.HasValue || Enum.IsDefined(l.Value))
-            .WithMessage("نوع المكان غير صالح.");
+            .WithMessage("Invalid value.");
     }
 }

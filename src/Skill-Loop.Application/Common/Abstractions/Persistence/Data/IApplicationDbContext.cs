@@ -15,7 +15,7 @@ using Skill_Loop.Domain.Entities.Wallets;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 using Skill_Loop.Domain.Entities.Support;
-using Skill_Loop.Domain.Entities.Wallets;
+
 using System.Linq.Expressions;
 
 namespace Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -48,6 +48,7 @@ public interface IApplicationDbContext
     public IQueryable<Session> Sessions { get; }
     public IQueryable<Booking> Bookings { get; }
     public IQueryable<SessionMaterial> SessionMaterials { get; }
+    public IQueryable<SessionReview> SessionReviews { get; }
 
     // 💬 الشات
     public IQueryable<Conversation> Conversations { get; }
@@ -65,6 +66,8 @@ public interface IApplicationDbContext
     public IQueryable<PromoRedemption> PromoRedemptions { get; }
     public IQueryable<CreditPurchase> CreditPurchases { get; }
 
+    // 📧 Email Logs
+    public IQueryable<Skill_Loop.Domain.Entities.Emails.EmailLog> EmailLogs { get; }
 
     // ==============================
     // 2. عمليات الكتابة والإضافة والحذف

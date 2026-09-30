@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Common.Errors.Promo;
 using System.Text.RegularExpressions;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
@@ -45,26 +46,19 @@ public sealed class PromoCode : AuditableEntity
         var normalized = NormalizeCode(code);
 
         if (!CodeFormat.IsMatch(normalized))
-            return Result<PromoCode>.Failure(new Error(
-                "Promo.InvalidCode",
-                "الكود لازم يكون من 3 لـ 50 حرف (حروف إنجليزي وأرقام و - و _ فقط).",
-                ErrorType.Validation));
+            return Result<PromoCode>.Failure(PromoErrors.InvalidCode);
 
         if (discountType == DiscountType.Percentage && discountValue is < 1 or > 100)
-            return Result<PromoCode>.Failure(new Error(
-                "Promo.InvalidPercentage", "النسبة لازم تكون بين 1 و 100.", ErrorType.Validation));
+            return Result<PromoCode>.Failure(PromoErrors.InvalidPercentage);
 
         if (discountType == DiscountType.FixedAmount && discountValue < 1)
-            return Result<PromoCode>.Failure(new Error(
-                "Promo.InvalidAmount", "قيمة الخصم لازم تكون أكبر من صفر.", ErrorType.Validation));
+            return Result<PromoCode>.Failure(PromoErrors.InvalidAmount);
 
         if (maxRedemptions is < 1)
-            return Result<PromoCode>.Failure(new Error(
-                "Promo.InvalidMaxRedemptions", "أقصى عدد استخدامات لازم يكون 1 أو أكتر.", ErrorType.Validation));
+            return Result<PromoCode>.Failure(PromoErrors.InvalidMaxRedemptions);
 
         if (expiresAt is not null && expiresAt <= DateTime.UtcNow)
-            return Result<PromoCode>.Failure(new Error(
-                "Promo.InvalidExpiry", "تاريخ الانتهاء لازم يكون في المستقبل.", ErrorType.Validation));
+            return Result<PromoCode>.Failure(PromoErrors.InvalidExpiry);
 
         return Result<PromoCode>.Success(new PromoCode
         {
@@ -81,13 +75,13 @@ public sealed class PromoCode : AuditableEntity
     public Result CheckUsable(DateTime nowUtc)
     {
         if (!IsActive)
-            return Result.Failure(new Error("Promo.Inactive", "كود الخصم غير مفعّل.", ErrorType.Validation));
+            return Result.Failure(PromoErrors.Inactive);
 
         if (ExpiresAt is not null && ExpiresAt <= nowUtc)
-            return Result.Failure(new Error("Promo.Expired", "كود الخصم منتهي الصلاحية.", ErrorType.Validation));
+            return Result.Failure(PromoErrors.Expired);
 
         if (MaxRedemptions is not null && RedemptionsCount >= MaxRedemptions)
-            return Result.Failure(new Error("Promo.Exhausted", "كود الخصم وصل للحد الأقصى من الاستخدامات.", ErrorType.Validation));
+            return Result.Failure(PromoErrors.Exhausted);
 
         return Result.Success();
     }

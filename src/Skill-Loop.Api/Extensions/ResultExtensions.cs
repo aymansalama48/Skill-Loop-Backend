@@ -17,7 +17,7 @@ public static class ResultExtensions
         {
             return string.IsNullOrWhiteSpace(result.Message)
                 ? Results.NoContent()
-                : Results.Ok(new { message = result.Message });
+                : Results.Ok(new { data = (object?)null, message = result.Message });
         }
 
         return MapError(result.Errors, httpContext);
@@ -27,7 +27,7 @@ public static class ResultExtensions
     {
         if (result.Succeeded)
         {
-            return Results.Ok(new { data = result.Data });
+            return Results.Ok(new { data = result.Data, message = result.Message });
         }
 
         return MapError(result.Errors, httpContext);
@@ -41,13 +41,13 @@ public static class ResultExtensions
 
         var (statusCode, title, defaultDetail) = errorType switch
         {
-            ErrorType.Validation => (StatusCodes.Status400BadRequest, "Validation Error", "حدث خطأ في البيانات المدخلة."),
-            ErrorType.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized", "يلزم تسجيل الدخول أولاً."),
-            ErrorType.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden", "ليس لديك صلاحية للوصول."),
-            ErrorType.NotFound => (StatusCodes.Status404NotFound, "Not Found", "العنصر المطلوب غير موجود."),
-            ErrorType.Conflict => (StatusCodes.Status409Conflict, "Conflict", "حدث تعارض في البيانات."),
-            ErrorType.Unexpected => (StatusCodes.Status500InternalServerError, "Server Error", "حدث خطأ غير متوقع في الخادم."),
-            _ => (StatusCodes.Status400BadRequest, "Bad Request", "فشلت العملية.")
+            ErrorType.Validation => (StatusCodes.Status400BadRequest, "Validation Error", "A validation error occurred."),
+            ErrorType.Unauthorized => (StatusCodes.Status401Unauthorized, "Unauthorized", "You must be authenticated to access this resource."),
+            ErrorType.Forbidden => (StatusCodes.Status403Forbidden, "Forbidden", "You do not have permission to access this resource."),
+            ErrorType.NotFound => (StatusCodes.Status404NotFound, "Not Found", "The requested resource was not found."),
+            ErrorType.Conflict => (StatusCodes.Status409Conflict, "Conflict", "A conflict occurred."),
+            ErrorType.Unexpected => (StatusCodes.Status500InternalServerError, "Server Error", "An unexpected server error occurred."),
+            _ => (StatusCodes.Status400BadRequest, "Bad Request", "The operation failed.")
         };
 
         var problemDetails = new ProblemDetails

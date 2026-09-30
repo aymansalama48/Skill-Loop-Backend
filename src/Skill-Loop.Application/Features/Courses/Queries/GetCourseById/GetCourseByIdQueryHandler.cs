@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -32,7 +33,7 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
         if (course is null)
         {
             return Result<CourseDetailDto>.Failure(
-                new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+                CourseErrors.NotFound);
         }
 
         bool isAdmin = _currentUser.IsInRole("Admin") || _currentUser.IsInRole("SuperAdmin");

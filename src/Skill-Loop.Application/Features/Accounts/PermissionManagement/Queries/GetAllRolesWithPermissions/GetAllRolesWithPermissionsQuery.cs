@@ -1,8 +1,10 @@
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization.Models;
 
 namespace Skill_Loop.Application.Features.Accounts.PermissionManagement.Queries.GetAllRolesWithPermissions;
 
+[AuthenticatedOnly]
 public sealed record GetAllRolesWithPermissionsQuery() : ICacheableQuery<List<RoleWithPermissionsDto>> //[cite: 26]
 {
     public string CacheKey => "Roles:AllWithPermissions"; //[cite: 26]

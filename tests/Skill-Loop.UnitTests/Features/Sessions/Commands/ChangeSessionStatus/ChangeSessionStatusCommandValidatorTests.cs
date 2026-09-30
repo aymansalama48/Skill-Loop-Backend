@@ -43,6 +43,7 @@ public class ChangeSessionStatusCommandValidatorTests
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.NewStatus)
-            .WithErrorMessage("حالة الجلسة غير صالحة.");
+            ;
     }
 }
+

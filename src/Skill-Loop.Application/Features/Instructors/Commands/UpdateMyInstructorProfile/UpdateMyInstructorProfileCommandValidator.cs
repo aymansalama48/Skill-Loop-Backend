@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.UpdateMyInstructorProfile;
 
@@ -7,11 +7,11 @@ public sealed class UpdateMyInstructorProfileCommandValidator : AbstractValidato
     public UpdateMyInstructorProfileCommandValidator()
     {
         RuleFor(x => x.Headline)
-            .NotEmpty().WithMessage("العنوان التعريفي مطلوب.")
-            .MaximumLength(200).WithMessage("العنوان التعريفي لا يمكن أن يتجاوز 200 حرف.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(200).WithMessage("Length exceeds the maximum allowed.");
 
         RuleFor(x => x.Bio)
-            .NotEmpty().WithMessage("النبذة التعريفية مطلوبة.")
-            .MaximumLength(2000).WithMessage("النبذة التعريفية لا يمكن أن تتجاوز 2000 حرف.");
+            .NotEmpty().WithMessage("This field is required.")
+            .MaximumLength(2000).WithMessage("Invalid value.");
     }
 }

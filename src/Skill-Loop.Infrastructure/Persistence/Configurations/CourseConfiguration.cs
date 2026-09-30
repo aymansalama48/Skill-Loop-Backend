@@ -41,10 +41,11 @@ public sealed class CourseConfiguration : IEntityTypeConfiguration<Course>
             .HasColumnName("TotalReviews")
             .HasDefaultValue(0);
 
-        // CourseMaterials
+        // CourseMaterials — العلاقة optional عشان Course عليه SoftDelete filter بس CourseMaterial لأ
         builder.HasMany(c => c.Attachments)
             .WithOne(m => m.Course)
             .HasForeignKey(m => m.CourseId)
+            .IsRequired(false)
             .OnDelete(DeleteBehavior.Cascade);
 
         // Relationships

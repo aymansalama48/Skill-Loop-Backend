@@ -7,11 +7,11 @@ public sealed class CreateBookingCommandValidator : AbstractValidator<CreateBook
     public CreateBookingCommandValidator()
     {
         RuleFor(x => x.SessionId)
-            .NotEmpty().WithMessage("معرف الجلسة مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف الجلسة غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
 
         RuleFor(x => x.LearnerUserId)
-            .NotEmpty().WithMessage("معرف المستخدم مطلوب.")
-            .NotEqual(Guid.Empty).WithMessage("معرف المستخدم غير صالح.");
+            .NotEmpty().WithMessage("This field is required.")
+            .NotEqual(Guid.Empty).WithMessage("Invalid value.");
     }
 }

@@ -3,6 +3,8 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Support.Share;
 using Skill_Loop.Domain.Enums;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionsPaged;
 
@@ -10,6 +12,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionsPag
 /// قائمة الاستفسارات الكاملة — لفريق الدعم والـ Admin بس.
 /// الـ Endpoint العام بيستخدم <see cref="GetPublishedSupportQuestionsPagedQuery"/> اللي بيرجّع المنشور فقط.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetSupportQuestionsPagedQuery(
     PaginationParameters Pagination,
     string? SearchTerm = null,

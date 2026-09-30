@@ -1,3 +1,7 @@
+using Skill_Loop.Domain.Common.Errors.Review;
+using Skill_Loop.Domain.Common.Errors.Lesson;
+using Skill_Loop.Domain.Common.Errors.Section;
+using Skill_Loop.Domain.Common.Errors.Course;
 using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Courses.Events;
@@ -53,19 +57,19 @@ public sealed class Course : SoftDeleteEntity
         Guid categoryId)
     {
         if (string.IsNullOrWhiteSpace(title))
-            return Result<Course>.Failure(new Error("Course.TitleEmpty", "Title is required.", ErrorType.Validation));
+            return Result<Course>.Failure(CourseErrors.TitleEmpty);
 
         if (string.IsNullOrWhiteSpace(description))
-            return Result<Course>.Failure(new Error("Course.DescriptionEmpty", "Description is required.", ErrorType.Validation));
+            return Result<Course>.Failure(CourseErrors.DescriptionEmpty);
 
         if (instructorId == Guid.Empty)
-            return Result<Course>.Failure(new Error("Course.InvalidInstructor", "Instructor is required.", ErrorType.Validation));
+            return Result<Course>.Failure(CourseErrors.InvalidInstructor);
 
         if (categoryId == Guid.Empty)
-            return Result<Course>.Failure(new Error("Course.InvalidCategory", "Category is required.", ErrorType.Validation));
+            return Result<Course>.Failure(CourseErrors.InvalidCategory);
 
         if (credits < 0)
-            return Result<Course>.Failure(new Error("Course.NegativeCredits", "Course credits cannot be negative.", ErrorType.Validation));
+            return Result<Course>.Failure(CourseErrors.NegativeCredits);
 
         var course = new Course
         {
@@ -98,10 +102,10 @@ public sealed class Course : SoftDeleteEntity
         Guid categoryId)
     {
         if (string.IsNullOrWhiteSpace(title))
-            return Result.Failure(new Error("Course.TitleEmpty", "Title is required.", ErrorType.Validation));
+            return Result.Failure(CourseErrors.TitleEmpty);
 
         if (credits < 0)
-            return Result.Failure(new Error("Course.NegativeCredits", "Course credits cannot be negative.", ErrorType.Validation));
+            return Result.Failure(CourseErrors.NegativeCredits);
 
         Title = title.Trim();
         Description = description.Trim();
@@ -117,7 +121,7 @@ public sealed class Course : SoftDeleteEntity
     public Result AddSection(string title, int orderIndex)
     {
         if (string.IsNullOrWhiteSpace(title))
-            return Result.Failure(new Error("Section.EmptyTitle", "Section title is required.", ErrorType.Validation));
+            return Result.Failure(SectionErrors.EmptyTitle);
 
         var section = Section.Create(Id, title.Trim(), orderIndex);
         _sections.Add(section);
@@ -130,13 +134,13 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Target section does not exist in this course.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         if (string.IsNullOrWhiteSpace(videoUrl))
-            return Result.Failure(new Error("Lesson.EmptyVideoUrl", "Video URL is required.", ErrorType.Validation));
+            return Result.Failure(LessonErrors.EmptyVideoUrl);
 
         if (duration <= TimeSpan.Zero)
-            return Result.Failure(new Error("Lesson.InvalidDuration", "Duration must be greater than zero.", ErrorType.Validation));
+            return Result.Failure(LessonErrors.InvalidDuration);
 
         var lesson = Lesson.Create(sectionId, title, videoUrl, duration, streamingResolution, externalProviderId, orderIndex, isPreviewable);
         section.AddLesson(lesson);
@@ -152,10 +156,10 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         if (string.IsNullOrWhiteSpace(title))
-            return Result.Failure(new Error("Section.EmptyTitle", "Section title is required.", ErrorType.Validation));
+            return Result.Failure(SectionErrors.EmptyTitle);
 
         section.UpdateDetails(title, orderIndex);
         
@@ -167,7 +171,7 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         // Decrease totals
         foreach (var lesson in section.Lessons)
@@ -202,17 +206,17 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         var lesson = section.Lessons.FirstOrDefault(l => l.Id == lessonId);
         if (lesson is null)
-            return Result.Failure(new Error("Lesson.NotFound", "Lesson does not exist.", ErrorType.NotFound));
+            return Result.Failure(LessonErrors.NotFound);
 
         if (string.IsNullOrWhiteSpace(videoUrl))
-            return Result.Failure(new Error("Lesson.EmptyVideoUrl", "Video URL is required.", ErrorType.Validation));
+            return Result.Failure(LessonErrors.EmptyVideoUrl);
 
         if (duration <= TimeSpan.Zero)
-            return Result.Failure(new Error("Lesson.InvalidDuration", "Duration must be greater than zero.", ErrorType.Validation));
+            return Result.Failure(LessonErrors.InvalidDuration);
 
         // Update totals
         TotalDuration = TotalDuration - lesson.Duration + duration;
@@ -227,11 +231,11 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         var lesson = section.Lessons.FirstOrDefault(l => l.Id == lessonId);
         if (lesson is null)
-            return Result.Failure(new Error("Lesson.NotFound", "Lesson does not exist.", ErrorType.NotFound));
+            return Result.Failure(LessonErrors.NotFound);
 
         section.RemoveLesson(lesson);
         
@@ -246,7 +250,7 @@ public sealed class Course : SoftDeleteEntity
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section does not exist.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         foreach (var lesson in section.Lessons)
         {
@@ -269,7 +273,13 @@ public sealed class Course : SoftDeleteEntity
     public Result AddReview(Guid userId, int stars, string? comment)
     {
         if (stars is < 1 or > 5)
-            return Result.Failure(new Error("Review.InvalidStars", "Rating must be between 1 and 5.", ErrorType.Validation));
+            return Result.Failure(ReviewErrors.InvalidStars);
+
+        if (userId == InstructorId)
+            return Result.Failure(ReviewErrors.InstructorCannotReview);
+
+        if (_reviews.Any(r => r.UserId == userId))
+            return Result.Failure(ReviewErrors.Duplicate);
 
         var review = CourseReview.Create(Id, userId, stars, comment);
         _reviews.Add(review);
@@ -285,13 +295,13 @@ public sealed class Course : SoftDeleteEntity
     public Result Publish()
     {
         if (string.IsNullOrWhiteSpace(ThumbnailUrl))
-            return Result.Failure(new Error("Course.MissingThumbnail", "Cannot publish a course without a thumbnail.", ErrorType.Validation));
+            return Result.Failure(CourseErrors.MissingThumbnail);
 
         if (_sections.Count == 0)
-            return Result.Failure(new Error("Course.NoSections", "Cannot publish a course without any sections.", ErrorType.Validation));
+            return Result.Failure(CourseErrors.NoSections);
 
         if (_sections.Any(s => s.Lessons.Count == 0))
-            return Result.Failure(new Error("Course.EmptySections", "Cannot publish a course with empty sections.", ErrorType.Validation));
+            return Result.Failure(CourseErrors.EmptySections);
 
         if (Status != CourseStatus.Published)
         {

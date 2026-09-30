@@ -1,3 +1,4 @@
+using Skill_Loop.Application.Common.Errors.Enrollment;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -40,7 +41,7 @@ public sealed class UpdateLessonProgressCommandHandler : ICommandHandler<UpdateL
 
         if (enrollment is null)
         {
-            return Result<double>.Failure(new Error("Enrollment.NotFound", "Enrollment record was not found.", ErrorType.NotFound));
+            return Result<double>.Failure(EnrollmentErrors.NotFound);
         }
 
         var course = await _context.FirstOrDefaultAsync(
@@ -55,7 +56,6 @@ public sealed class UpdateLessonProgressCommandHandler : ICommandHandler<UpdateL
             return Result<double>.Failure(progressResult.Errors.First());
         }
 
-        _context.Update(enrollment);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<double>.Success(enrollment.ProgressPercentage);

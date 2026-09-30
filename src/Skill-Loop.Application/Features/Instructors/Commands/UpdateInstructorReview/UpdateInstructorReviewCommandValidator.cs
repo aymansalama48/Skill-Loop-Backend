@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.UpdateInstructorReview;
 
@@ -6,9 +6,9 @@ public sealed class UpdateInstructorReviewCommandValidator : AbstractValidator<U
 {
     public UpdateInstructorReviewCommandValidator()
     {
-        RuleFor(x => x.InstructorProfileId).NotEmpty().WithMessage("معرّف المدرب مطلوب.");
-        RuleFor(x => x.ReviewId).NotEmpty().WithMessage("معرّف التقييم مطلوب.");
-        RuleFor(x => x.Rating).InclusiveBetween(1, 5).WithMessage("التقييم يجب أن يكون بين 1 و 5 نجوم.");
-        RuleFor(x => x.Comment).MaximumLength(1000).WithMessage("التعليق يجب ألا يتجاوز 1000 حرف.");
+        RuleFor(x => x.InstructorProfileId).NotEmpty().WithMessage("This field is required.");
+        RuleFor(x => x.ReviewId).NotEmpty().WithMessage("This field is required.");
+        RuleFor(x => x.Rating).InclusiveBetween(1, 5).WithMessage("Value is out of range.");
+        RuleFor(x => x.Comment).MaximumLength(1000).WithMessage("Length exceeds the maximum allowed.");
     }
 }

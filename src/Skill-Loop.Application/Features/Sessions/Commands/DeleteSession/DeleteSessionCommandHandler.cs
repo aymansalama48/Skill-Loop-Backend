@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Session;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -22,13 +23,13 @@ public sealed class DeleteSessionCommandHandler : ICommandHandler<DeleteSessionC
 
         if (session is null)
         {
-            return Result.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
+            return Result.Failure(SessionErrors.NotFound);
         }
 
         // حماية لمنع مسح جلسة بها ملفات حتى لا تظل الملفات معلقة في Google Drive
         if (session.Materials.Any())
         {
-            return Result.Failure(new Error("Session.HasMaterials", "لا يمكن حذف جلسة تحتوي على ملفات. يرجى حذف الملفات أولاً.", ErrorType.Conflict));
+            return Result.Failure(SessionErrors.HasMaterials);
         }
 
         _dbContext.Remove(session);

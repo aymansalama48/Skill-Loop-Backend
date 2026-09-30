@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.AddInstructorAvailability;
 
@@ -6,8 +6,8 @@ public sealed class AddInstructorAvailabilityCommandValidator : AbstractValidato
 {
     public AddInstructorAvailabilityCommandValidator()
     {
-        RuleFor(x => x.InstructorProfileId).NotEmpty().WithMessage("معرّف المدرب مطلوب.");
-        RuleFor(x => x.DayOfWeek).IsInEnum().WithMessage("اليوم غير صالح.");
-        RuleFor(x => x.StartTime).LessThan(x => x.EndTime).WithMessage("وقت البداية يجب أن يكون قبل وقت النهاية.");
+        RuleFor(x => x.InstructorProfileId).NotEmpty().WithMessage("This field is required.");
+        RuleFor(x => x.DayOfWeek).IsInEnum().WithMessage("Invalid value.");
+        RuleFor(x => x.StartTime).LessThan(x => x.EndTime).WithMessage("Invalid value.");
     }
 }

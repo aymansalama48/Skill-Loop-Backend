@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Session;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
@@ -22,7 +23,7 @@ public sealed class UpdateSessionCommandHandler : ICommandHandler<UpdateSessionC
 
         if (session is null)
         {
-            return Result.Failure(new Error("Session.NotFound", "الجلسة غير موجودة.", ErrorType.NotFound));
+            return Result.Failure(SessionErrors.NotFound);
         }
 
         // 1. لو فيه حجوزات نشطة، ممنوع نغير الموعد أو السعر (الحجوزات محسوبة بالسعر القديم)
@@ -34,10 +35,7 @@ public sealed class UpdateSessionCommandHandler : ICommandHandler<UpdateSessionC
 
         if (activeBookings > 0 && (request.ScheduledAtUtc.HasValue || request.CreditsPrice.HasValue))
         {
-            return Result.Failure(new Error(
-                "Session.HasActiveBookings",
-                "لا يمكن تغيير الموعد أو السعر ل جلسة بها حجوزات نشطة.",
-                ErrorType.Conflict));
+            return Result.Failure(SessionErrors.HasActiveBookings);
         }
 
         // 2. التحديث (Description بتبقى null معناها "سيبها زي ما هي")

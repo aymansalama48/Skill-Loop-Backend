@@ -22,7 +22,7 @@ public sealed class SendMessageCommandValidator : AbstractValidator<SendMessageC
         RuleFor(x => x.SenderId).NotEmpty().WithMessage("Sender ID is required.");
         RuleFor(x => x.ConversationId).NotEmpty().WithMessage("Conversation ID is required.");
         RuleFor(x => x.Content)
-            .NotEmpty().WithMessage("لا يمكن إرسال رسالة فارغة.")
+            .NotEmpty().WithMessage("Invalid value.")
             .MaximumLength(ChatMessage.MaxContentLength)
             .WithMessage($"الرسالة أطول من الحد المسموح ({ChatMessage.MaxContentLength} حرف).");
     }

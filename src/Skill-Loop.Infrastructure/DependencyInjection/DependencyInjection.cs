@@ -45,6 +45,7 @@ public static partial class DependencyInjection
                .AddFileStorage(configuration)        // تخزين الملفات
                .AddGoogleDriveStorage(configuration) // تخزين Google Drive
                .AddBaseUrl(configuration)            // الروابط الأساسية
+               .AddPayments(configuration)           // الدفع
                .AddOtpService(configuration);        // إضافة OTP Service
 
         return services;
@@ -88,6 +89,8 @@ public static partial class DependencyInjection
 
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ISiteSettingsService, SiteSettingsService>();
+
+
 
         return services;
     }

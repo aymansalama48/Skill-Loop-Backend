@@ -1,3 +1,5 @@
+using Skill_Loop.Application.Common.Errors.Course;
+using Skill_Loop.Application.Common.Errors.Category;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -24,7 +26,7 @@ public sealed class UpdateCourseDetailsCommandHandler : ICommandHandler<UpdateCo
             
         if (!categoryExists)
         {
-            return Result.Failure(new Error("Category.NotFound", "The specified category was not found.", ErrorType.NotFound));
+            return Result.Failure(CategoryErrors.NotFound);
         }
 
         var course = await _context.FirstOrDefaultAsync(
@@ -33,7 +35,7 @@ public sealed class UpdateCourseDetailsCommandHandler : ICommandHandler<UpdateCo
 
         if (course is null)
         {
-            return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result.Failure(CourseErrors.NotFound);
         }
 
         var updateResult = course.UpdateDetails(

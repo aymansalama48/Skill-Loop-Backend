@@ -457,6 +457,12 @@ public class Permissions
         public const string ReorderMaterials = "Sessions.ReorderMaterials";
     }
 
+    public static class Dashboards
+    {
+        public const string ViewAdmin = "Dashboards.ViewAdmin";
+        public const string ViewInstructor = "Dashboards.ViewInstructor";
+    }
+
     // دالة Reflection لجلب جميع الصلاحيات تلقائياً
     public static IReadOnlyList<string> GetAllPermissions() { ... }
 }
@@ -745,6 +751,7 @@ Features/
 | **Sessions/Materials** | UploadSessionMaterial, DeleteSessionMaterial, ReorderSessionMaterials                                                                                                                                                                                                                                                     | GetSessionMaterials, GetSessionMaterialDownloadInfo                                                              | SessionMaterialUploaded                         | —    |
 | **Bookings**           | CreateBooking, CancelBooking, ChangeBookingStatus, CompleteBooking (بدون endpoint في الكنترولر)                                                                                                                                                                                                                            | GetBookingById, GetMyBookings, GetSessionBookings                                                                | —                                               | —    |
 | **Chat**               | StartConversation, SendMessage, MarkConversationRead                                                                                                                                                                                                                                                                      | GetMyConversations, GetConversationMessages                                                                      | ChatMessageSent (ينشئ In-app Notification)      | ✅   |
+| **Dashboards**         | —                                                                                                                                                                                                                                                                                                                         | GetAdminDashboardSummary, GetInstructorDashboardSummary, GetStudentDashboardSummary                              | —                                               | —    |
 | **Notifications**      | MarkNotificationRead, MarkAllNotificationsRead                                                                                                                                                                                                                                                                             | GetMyNotifications, GetUnreadNotificationCount                                                                     | —                                               | ✅   |
 | **Support**            | SubmitContactForm, SendFaqAnswerEmail, CreateSupportQuestion, UpdateSupportQuestion, AnswerSupportQuestion, SetSupportQuestionPublication, DeleteSupportQuestion                                                                                                                                                       | GetPublishedSupportQuestionsPaged, GetSupportQuestionById, GetSupportQuestionsPaged, GetSupportQuestionDetails, GetMySupportQuestions | —                              | ✅ (`Share/`) |
 | **SiteSettings**       | UpdateSiteSettings                                                                                                                                                                                                                                                                                                        | GetSiteSettings                                                                                                  | —                                               | —    |

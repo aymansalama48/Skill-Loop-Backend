@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitationWithGoogle;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitationWithGoogle;
 
 using FluentValidation;
 
@@ -7,9 +7,9 @@ public sealed class AcceptInvitationWithGoogleCommandValidator : AbstractValidat
     public AcceptInvitationWithGoogleCommandValidator()
     {
         RuleFor(x => x.InvitationToken)
-            .NotEmpty().WithMessage("رمز الدعوة مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
 
         RuleFor(x => x.GoogleIdToken)
-            .NotEmpty().WithMessage("رمز مصادقة جوجل مطلوب.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

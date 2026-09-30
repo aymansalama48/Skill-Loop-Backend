@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Sessions.Queries.GetSessionsPaged;
 
@@ -7,16 +7,16 @@ public sealed class GetSessionsPagedQueryValidator : AbstractValidator<GetSessio
     public GetSessionsPagedQueryValidator()
     {
         RuleFor(x => x.Pagination)
-            .NotNull().WithMessage("إعدادات الصفحات مطلوبة.");
+            .NotNull().WithMessage("This field is required.");
 
         When(x => x.Pagination != null, () =>
         {
             RuleFor(x => x.Pagination.PageNumber)
-                .GreaterThan(0).WithMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+                .GreaterThan(0).WithMessage("Value must be greater than 0.");
 
             RuleFor(x => x.Pagination.PageSize)
-                .GreaterThan(0).WithMessage("حجم الصفحة يجب أن يكون أكبر من الصفر.")
-                .LessThanOrEqualTo(100).WithMessage("حجم الصفحة لا يمكن أن يتجاوز 100.");
+                .GreaterThan(0).WithMessage("Value must be greater than 0.")
+                .LessThanOrEqualTo(100).WithMessage("Length exceeds the maximum allowed.");
         });
     }
 }

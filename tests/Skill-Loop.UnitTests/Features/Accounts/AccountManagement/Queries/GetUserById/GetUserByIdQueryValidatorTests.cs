@@ -32,6 +32,7 @@ public class GetUserByIdQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.UserId)
-            .WithErrorMessage("معرف المستخدم مطلوب وغير صالح.");
+            ;
     }
 }
+

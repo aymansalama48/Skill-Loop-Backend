@@ -7,9 +7,9 @@ public sealed class RemovePermissionFromRoleCommandValidator : AbstractValidator
     public RemovePermissionFromRoleCommandValidator()
     {
         RuleFor(x => x.RoleId)
-            .NotEmpty().WithMessage("معرف الدور (RoleId) مطلوب ولا يمكن أن يكون فارغاً.");
+            .NotEmpty().WithMessage("This field is required.");
 
         RuleFor(x => x.PermissionId)
-            .NotEmpty().WithMessage("معرف الصلاحية (PermissionId) مطلوب ولا يمكن أن يكون فارغاً.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

@@ -1,3 +1,7 @@
+using Skill_Loop.Application.Common.Errors.LessonMaterial;
+using Skill_Loop.Application.Common.Errors.Lesson;
+using Skill_Loop.Application.Common.Errors.Section;
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.Storage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -31,19 +35,19 @@ public sealed class RemoveLessonMaterialCommandHandler : ICommandHandler<RemoveL
             cancellationToken);
 
         if (course is null)
-            return Result.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result.Failure(CourseErrors.NotFound);
 
         var section = course.Sections.FirstOrDefault(s => s.Id == request.SectionId);
         if (section is null)
-            return Result.Failure(new Error("Section.NotFound", "Section not found.", ErrorType.NotFound));
+            return Result.Failure(SectionErrors.NotFound);
 
         var lesson = section.Lessons.FirstOrDefault(l => l.Id == request.LessonId);
         if (lesson is null)
-            return Result.Failure(new Error("Lesson.NotFound", "Lesson not found.", ErrorType.NotFound));
+            return Result.Failure(LessonErrors.NotFound);
 
         var material = lesson.Resources.FirstOrDefault(m => m.Id == request.MaterialId);
         if (material is null)
-            return Result.Failure(new Error("LessonMaterial.NotFound", "Material not found.", ErrorType.NotFound));
+            return Result.Failure(LessonMaterialErrors.NotFound);
 
         await _storage.DeleteAsync(material.DriveFileId, cancellationToken);
         

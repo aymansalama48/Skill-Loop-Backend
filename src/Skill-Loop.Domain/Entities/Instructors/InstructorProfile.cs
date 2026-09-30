@@ -1,4 +1,6 @@
-﻿using Skill_Loop.Domain.Common.Entities;
+using Skill_Loop.Domain.Common.Errors.InstructorReview;
+using Skill_Loop.Domain.Common.Errors.InstructorProfile;
+using Skill_Loop.Domain.Common.Entities;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Booking;
 
@@ -34,7 +36,7 @@ public sealed class InstructorProfile : AuditableEntity
     public static Result<InstructorProfile> Create(Guid userId, string headline, string bio)
     {
         if (userId == Guid.Empty)
-            return Result<InstructorProfile>.Failure(new Error("InstructorProfile.InvalidUser", "User ID cannot be empty.", ErrorType.Validation));
+            return Result<InstructorProfile>.Failure(InstructorProfileErrors.InvalidUser);
 
         var profile = new InstructorProfile
         {
@@ -69,7 +71,7 @@ public sealed class InstructorProfile : AuditableEntity
     {
         if (_reviews.Any(r => r.LearnerUserId == learnerUserId))
         {
-            return Result.Failure(new Error("InstructorProfile.AlreadyReviewed", "لقد قمت بتقييم هذا المدرب مسبقاً.", ErrorType.Conflict));
+            return Result.Failure(InstructorProfileErrors.AlreadyReviewed);
         }
 
         var reviewResult = InstructorReview.Create(Id, learnerUserId, rating, comment);
@@ -89,17 +91,17 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (review is null)
         {
-            return Result.Failure(new Error("InstructorReview.NotFound", "التقييم غير موجود.", ErrorType.NotFound));
+            return Result.Failure(InstructorReviewErrors.NotFound);
         }
 
         if (review.LearnerUserId != learnerUserId)
         {
-            return Result.Failure(new Error("InstructorReview.Unauthorized", "غير مصرح لك بتعديل هذا التقييم.", ErrorType.Unauthorized));
+            return Result.Failure(InstructorReviewErrors.Unauthorized);
         }
 
         if (rating < 1 || rating > 5)
         {
-            return Result.Failure(new Error("InstructorReview.InvalidRating", "التقييم يجب أن يكون بين 1 و 5.", ErrorType.Validation));
+            return Result.Failure(InstructorReviewErrors.InvalidRating);
         }
 
         review.Update(rating, comment);
@@ -116,12 +118,12 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (review is null)
         {
-            return Result.Failure(new Error("InstructorReview.NotFound", "التقييم غير موجود.", ErrorType.NotFound));
+            return Result.Failure(InstructorReviewErrors.NotFound);
         }
 
         if (review.LearnerUserId != learnerUserId)
         {
-            return Result.Failure(new Error("InstructorReview.Unauthorized", "غير مصرح لك بحذف هذا التقييم.", ErrorType.Unauthorized));
+            return Result.Failure(InstructorReviewErrors.Unauthorized);
         }
 
         _reviews.Remove(review);
@@ -143,7 +145,7 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (hasOverlap)
         {
-            return Result.Failure(new Error("InstructorProfile.AvailabilityOverlap", "يوجد تداخل مع موعد آخر في نفس اليوم.", ErrorType.Conflict));
+            return Result.Failure(InstructorProfileErrors.AvailabilityOverlap);
         }
 
         var availabilityResult = InstructorAvailability.Create(Id, dayOfWeek, startTime, endTime);
@@ -163,7 +165,7 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (availability is null)
         {
-            return Result.Failure(new Error("InstructorProfile.AvailabilityNotFound", "الموعد غير موجود.", ErrorType.NotFound));
+            return Result.Failure(InstructorProfileErrors.AvailabilityNotFound);
         }
 
         _availabilities.Remove(availability);

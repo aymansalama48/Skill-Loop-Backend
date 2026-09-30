@@ -3,9 +3,12 @@ using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
 using System;
 using System.Collections.Generic;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.UpdateSection;
 
+[AuthenticatedOnly]
 public sealed record UpdateSectionCommand(Guid CourseId, Guid SectionId, string Title, int OrderIndex) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

@@ -44,6 +44,7 @@ public static partial class DependencyInjection
 
         services.AddScoped<IJobScheduler, HangfireJobScheduler>();
         services.AddTransient<RefreshDriveQuotaJob>();
+        services.AddTransient<ProcessPendingEmailsJob>();
 
         return services;
     }

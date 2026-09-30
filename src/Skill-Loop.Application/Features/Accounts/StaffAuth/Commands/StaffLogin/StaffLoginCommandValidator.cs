@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffLogin;
 
@@ -7,10 +7,10 @@ public sealed class StaffLoginCommandValidator : AbstractValidator<StaffLoginCom
     public StaffLoginCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-            .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.");
+            .NotEmpty().WithMessage("This field is required.")
+            .EmailAddress().WithMessage("Invalid email address format.");
 
         RuleFor(x => x.Password)
-            .NotEmpty().WithMessage("كلمة المرور مطلوبة.");
+            .NotEmpty().WithMessage("This field is required.");
     }
 }

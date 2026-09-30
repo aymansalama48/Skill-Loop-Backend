@@ -1,3 +1,6 @@
+using Skill_Loop.Application.Common.Errors.Lesson;
+using Skill_Loop.Application.Common.Errors.Section;
+using Skill_Loop.Application.Common.Errors.Course;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.Storage;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
@@ -39,15 +42,15 @@ public sealed class UploadLessonMaterialCommandHandler : ICommandHandler<UploadL
             cancellationToken);
 
         if (course is null)
-            return Result<Guid>.Failure(new Error("Course.NotFound", "Course was not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(CourseErrors.NotFound);
 
         var section = course.Sections.FirstOrDefault(s => s.Id == request.SectionId);
         if (section is null)
-            return Result<Guid>.Failure(new Error("Section.NotFound", "Section not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(SectionErrors.NotFound);
 
         var lesson = section.Lessons.FirstOrDefault(l => l.Id == request.LessonId);
         if (lesson is null)
-            return Result<Guid>.Failure(new Error("Lesson.NotFound", "Lesson not found.", ErrorType.NotFound));
+            return Result<Guid>.Failure(LessonErrors.NotFound);
 
         var folderName = $"lesson-{request.LessonId}";
         var uploadResult = await _storage.UploadAsync(request.FileStream, request.FileName, folderName, cancellationToken);

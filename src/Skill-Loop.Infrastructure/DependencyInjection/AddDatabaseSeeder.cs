@@ -27,12 +27,13 @@ public static partial class DependencyInjection
 
             // 👈 استدعاء الـ UserManager الخاص بإنشاء حساب السوبر آدمن
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
+            var dateTimeProvider = services.GetRequiredService<Skill_Loop.Application.Common.Abstractions.Core.IDateTime>();
 
             // 1. تطبيق أي Migrations معلقة تلقائياً
             await dbContext.Database.MigrateAsync();
 
             // 2. تشغيل الـ Seed الخاص بالـ Roles والـ Permissions
-            await ContextSeed.SeedRolesAndPermissionsAsync(roleManager, dbContext);
+            await ContextSeed.SeedRolesAndPermissionsAsync(roleManager, dbContext, dateTimeProvider);
 
             // 3. 👈 تشغيل الـ Seed الخاص بحساب السوبر آدمن الافتراضي
             await ContextSeed.SeedSuperAdminAsync(userManager);

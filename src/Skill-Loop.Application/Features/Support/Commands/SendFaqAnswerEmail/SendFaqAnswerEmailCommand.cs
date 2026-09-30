@@ -1,6 +1,8 @@
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Support.Share;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Support.Commands.SendFaqAnswerEmail;
 
@@ -8,6 +10,7 @@ namespace Skill_Loop.Application.Features.Support.Commands.SendFaqAnswerEmail;
 /// المستخدم لقى إجابته في الـ FAQ وطلب إرسالها ليه على الإيميل.
 /// بيشتغل على سؤال منشور بس (عشان مفيش حد يطلب إجابة سؤال لسه متجاوبش عليه).
 /// </summary>
+[AuthenticatedOnly]
 public sealed record SendFaqAnswerEmailCommand(Guid Id) : ICommand, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => [SupportCacheKeys.QuestionById + Id];

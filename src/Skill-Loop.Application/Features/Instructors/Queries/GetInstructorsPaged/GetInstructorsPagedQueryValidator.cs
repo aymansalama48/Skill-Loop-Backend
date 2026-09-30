@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Instructors.Queries.GetInstructorsPaged;
 
@@ -7,14 +7,14 @@ public sealed class GetInstructorsPagedQueryValidator : AbstractValidator<GetIns
     public GetInstructorsPagedQueryValidator()
     {
         RuleFor(x => x.PageNumber)
-            .GreaterThan(0).WithMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+            .GreaterThan(0).WithMessage("Value must be greater than 0.");
 
         RuleFor(x => x.PageSize)
-            .GreaterThan(0).WithMessage("حجم الصفحة يجب أن يكون أكبر من الصفر.")
-            .LessThanOrEqualTo(100).WithMessage("الحد الأقصى لحجم الصفحة هو 100.");
+            .GreaterThan(0).WithMessage("Value must be greater than 0.")
+            .LessThanOrEqualTo(100).WithMessage("Invalid value.");
 
         RuleFor(x => x.MinRating)
-            .InclusiveBetween(0, 5).WithMessage("التقييم يجب أن يكون بين 0 و 5 نجوم.")
+            .InclusiveBetween(0, 5).WithMessage("Value is out of range.")
             .When(x => x.MinRating.HasValue);
     }
 }

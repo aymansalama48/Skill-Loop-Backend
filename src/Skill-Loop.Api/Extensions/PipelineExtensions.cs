@@ -59,6 +59,16 @@ public static class PipelineExtensions
             job => job.ProcessAsync(),
             "*/5 * * * * *"); // Cron Expression للتكرار كل 5 ثوانٍ
 
+        RecurringJob.AddOrUpdate<RefreshDriveQuotaJob>(
+            "refresh-drive-quota",
+            job => job.RefreshAsync(),
+            "0 */12 * * *"); // كل 12 ساعة
+
+        RecurringJob.AddOrUpdate<ProcessPendingEmailsJob>(
+            "process-pending-emails",
+            job => job.ProcessAsync(),
+            "* * * * *"); // كل دقيقة
+
 
         // 8. ربط الـ Controllers
         app.MapControllers();

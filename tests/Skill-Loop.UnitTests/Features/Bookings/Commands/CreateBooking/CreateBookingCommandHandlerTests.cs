@@ -23,8 +23,8 @@ public class CreateBookingCommandHandlerTests
     public CreateBookingCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new CreateBookingCommandHandler(_dbContext, _dateTime);
         _dateTime = new DateTimeProvider();
+        _handler = new CreateBookingCommandHandler(_dbContext, _dateTime);
     }
 
     private async Task<Session> SeedPublishedSessionAsync(

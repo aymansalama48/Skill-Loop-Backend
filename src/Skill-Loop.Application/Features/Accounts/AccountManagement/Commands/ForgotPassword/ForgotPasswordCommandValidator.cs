@@ -7,7 +7,7 @@ public class ForgotPasswordCommandValidator : AbstractValidator<ForgotPasswordCo
     public ForgotPasswordCommandValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("البريد الإلكتروني مطلوب.")
-            .EmailAddress().WithMessage("صيغة البريد الإلكتروني غير صحيحة.");
+            .NotEmpty().WithMessage("This field is required.")
+            .EmailAddress().WithMessage("Invalid email address format.");
     }
 }

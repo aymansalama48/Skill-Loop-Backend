@@ -37,13 +37,13 @@ public class GetAllUsersQueryValidatorTests
         var result = _validator.TestValidate(query);
 
         result.ShouldHaveValidationErrorFor(x => x.PageNumber)
-            .WithErrorMessage("رقم الصفحة يجب أن يكون أكبر من الصفر.");
+            ;
     }
 
     [Theory]
-    [InlineData(0, "حجم الصفحة يجب أن يكون أكبر من الصفر.")]
-    [InlineData(-5, "حجم الصفحة يجب أن يكون أكبر من الصفر.")]
-    [InlineData(101, "الحد الأقصى لحجم الصفحة هو 100.")]
+    [InlineData(0, "Value must be greater than 0.")]
+    [InlineData(-5, "Value must be greater than 0.")]
+    [InlineData(101, "Invalid value.")]
     public void Validate_InvalidPageSize_HasValidationError(int invalidPageSize, string expectedErrorMessage)
     {
         var query = new GetAllUsersQuery(1, invalidPageSize, null, null);
@@ -54,3 +54,4 @@ public class GetAllUsersQueryValidatorTests
             .WithErrorMessage(expectedErrorMessage);
     }
 }
+

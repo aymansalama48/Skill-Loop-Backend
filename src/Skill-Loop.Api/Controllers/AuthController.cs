@@ -1,5 +1,4 @@
-﻿namespace Skill_Loop.Api.Controllers;
-
+namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -17,14 +16,15 @@ using Skill_Loop.Application.Features.Accounts.UserAuth.Commands.VerifyEmailOtp;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ForgotPassword;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ResetPassword;
 using Skill_Loop.Api.Contracts.Auth;
-
+/// <summary>
+/// إدارة المصادقة وتسجيل الدخول للمستخدمين
+/// </summary>
 [Route("api/v1/[controller]")]
 public class AuthController : BaseApiController
 {
     // =========================================================================
     // 1. Staff Authentication (لوحة التحكم)
     // =========================================================================
-
     [HttpPost("staff/login")]
     [AllowAnonymous]
     public async Task<IResult> StaffLogin(
@@ -35,7 +35,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("staff/login/google")]
     [AllowAnonymous]
     public async Task<IResult> StaffGoogleLogin(
@@ -46,11 +45,9 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     // =========================================================================
     // 2. User Authentication (الموبايل / المستخدم العادي)
     // =========================================================================
-
     [HttpPost("user/login")]
     [AllowAnonymous]
     public async Task<IResult> UserLogin(
@@ -61,7 +58,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("user/login/google")]
     [AllowAnonymous]
     public async Task<IResult> UserGoogleLogin(
@@ -72,7 +68,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("user/register")]
     [AllowAnonymous]
     public async Task<IResult> RegisterUser(
@@ -84,37 +79,12 @@ public class AuthController : BaseApiController
             request.LastName,
             request.Email,
             request.Password);
-
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
-    [HttpPost("user/verify-email")]
-    [AllowAnonymous]
-    public async Task<IResult> VerifyEmail(
-        [FromBody] VerifyEmailRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new VerifyEmailOtpCommand(request.Email, request.OtpCode);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
-    [HttpPost("user/resend-verification-code")]
-    [AllowAnonymous]
-    public async Task<IResult> ResendVerificationCode(
-        [FromBody] ResendVerificationCodeRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ResendEmailOtpCommand(request.Email);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
     // =========================================================================
     // 3. Token Management
     // =========================================================================
-
     [HttpPost("refresh-token")]
     [AllowAnonymous]
     public async Task<IResult> RefreshToken(
@@ -125,7 +95,6 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("logout")]
     [Authorize]
     public async Task<IResult> Logout(
@@ -136,34 +105,5 @@ public class AuthController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     // =========================================================================
-    // 4. Password Management (استعادة كلمة المرور)
-    // =========================================================================
-
-    [HttpPost("password/forgot")]
-    [AllowAnonymous]
-    public async Task<IResult> ForgotPassword(
-        [FromBody] ForgotPasswordRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ForgotPasswordCommand(request.Email);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
-    [HttpPost("password/reset")]
-    [AllowAnonymous]
-    public async Task<IResult> ResetPassword(
-        [FromBody] ResetPasswordRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ResetPasswordCommand(
-            request.Email,
-            request.OtpCode,
-            request.NewPassword,
-            request.ConfirmPassword);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
 }

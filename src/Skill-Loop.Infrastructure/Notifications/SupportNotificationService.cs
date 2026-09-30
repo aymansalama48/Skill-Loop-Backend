@@ -1,10 +1,11 @@
+using Skill_Loop.Infrastructure.Common.Errors.SupportNotification;
 using Microsoft.Extensions.Options;
 using Skill_Loop.Application.Common.Abstractions.External.Email;
 using Skill_Loop.Application.Common.Abstractions.External.Email.Models;
 using Skill_Loop.Application.Common.Abstractions.Notifications;
 using Skill_Loop.Application.Common.Abstractions.Settings;
 using Skill_Loop.Domain.Common.Results;
-using Skill_Loop.Infrastructure.External.Email;
+
 using Skill_Loop.Infrastructure.Options;
 
 namespace Skill_Loop.Infrastructure.Notifications;
@@ -12,7 +13,7 @@ namespace Skill_Loop.Infrastructure.Notifications;
 public sealed class SupportNotificationService : ISupportRequestNotifier, ISupportAnswerNotifier
 {
     private readonly IEmailSender _emailSender;
-    private readonly EmailTemplateEngine _templateEngine;
+    private readonly IEmailTemplateEngine _templateEngine;
     private readonly ISiteSettingsService _siteSettingsService;
     private readonly BaseUrlOptions _baseUrlOptions;
 
@@ -20,7 +21,7 @@ public sealed class SupportNotificationService : ISupportRequestNotifier, ISuppo
 
     public SupportNotificationService(
         IEmailSender emailSender,
-        EmailTemplateEngine templateEngine,
+        IEmailTemplateEngine templateEngine,
         IOptions<BaseUrlOptions> baseUrlOptions,
         ISiteSettingsService siteSettingsService)
     {
@@ -149,7 +150,7 @@ public sealed class SupportNotificationService : ISupportRequestNotifier, ISuppo
     {
         if (string.IsNullOrWhiteSpace(toEmail))
         {
-            return Result.Failure(new Error("SupportNotification.MissingRecipient", "لا يوجد بريد إلكتروني لإرسال الرد إليه.", ErrorType.Validation));
+            return Result.Failure(SupportNotificationErrors.MissingRecipient);
         }
 
         try

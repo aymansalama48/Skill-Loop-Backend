@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Errors.Category;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -18,7 +19,7 @@ public sealed class UpdateCategoryCommandHandler(
 
         if (category is null)
         {
-            return Result.Failure(new Error("Category.NotFound", "التصنيف غير موجود.", ErrorType.NotFound));
+            return Result.Failure(CategoryErrors.NotFound);
         }
 
         var isSlugUnique = !await _dbContext.Categories
@@ -26,7 +27,7 @@ public sealed class UpdateCategoryCommandHandler(
 
         if (!isSlugUnique)
         {
-            return Result.Failure(new Error("Category.DuplicateSlug", "هذا الرابط (Slug) مستخدم بالفعل لتصنيف آخر.", ErrorType.Conflict));
+            return Result.Failure(CategoryErrors.DuplicateSlug);
         }
 
         string? iconUrl = category.IconUrl;

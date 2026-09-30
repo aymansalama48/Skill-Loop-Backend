@@ -1,5 +1,4 @@
-﻿namespace Skill_Loop.Api.Controllers;
-
+namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -10,9 +9,11 @@ using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.Assign
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.DeactivateUser;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.RemoveRoleFromUser;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetAllUsers;
-
+/// <summary>
+/// إدارة مستخدمي النظام بشكل عام
+/// </summary>
 [Route("api/v1/[controller]")]
-//[Authorize(Roles = "Admin,SuperAdmin")] // حماية مركزية للآدمنز فقط
+//[Authorize] // ����� ������ ������� ���
 public class UsersController : BaseApiController
 {
     [HttpGet]
@@ -25,11 +26,9 @@ public class UsersController : BaseApiController
             request.PageSize,
             request.Role,
             request.SearchTerm);
-
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPatch("{userId:guid}/deactivate")]
     public async Task<IResult> DeactivateUser(
         Guid userId,
@@ -39,7 +38,6 @@ public class UsersController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPatch("{userId:guid}/activate")]
     public async Task<IResult> ActivateUser(
         Guid userId,
@@ -49,7 +47,6 @@ public class UsersController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpPost("{userId:guid}/roles")]
     public async Task<IResult> AssignRoleToUser(
         [FromRoute] Guid userId,
@@ -60,7 +57,6 @@ public class UsersController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
-
     [HttpDelete("{userId:guid}/roles/{roleName}")]
     public async Task<IResult> RemoveRoleFromUser(
         [FromRoute] Guid userId,
