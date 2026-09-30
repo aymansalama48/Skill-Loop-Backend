@@ -1,6 +1,8 @@
 namespace Skill_Loop.UnitTests.Features.Bookings.Queries.GetSessionBookings;
 
 using FluentAssertions;
+using Moq;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Queries.GetSessionBookings;
 using Skill_Loop.Domain.Entities.Booking;
@@ -15,12 +17,19 @@ using Xunit;
 public class GetSessionBookingsQueryHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly Mock<ICurrentUser> _currentUser;
     private readonly GetSessionBookingsQueryHandler _handler;
+
+    // Read lazily by the Moq setup below so each test can switch the acting user.
+    private Guid _actingUserId;
 
     public GetSessionBookingsQueryHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new GetSessionBookingsQueryHandler(_dbContext);
+        _currentUser = new Mock<ICurrentUser>();
+        _currentUser.Setup(c => c.UserId).Returns(() => _actingUserId);
+        _currentUser.Setup(c => c.HasPermission(It.IsAny<string>())).Returns(false);
+        _handler = new GetSessionBookingsQueryHandler(_dbContext, _currentUser.Object);
     }
 
     private async Task<Session> SeedSessionAsync()
@@ -35,6 +44,9 @@ public class GetSessionBookingsQueryHandlerTests
         session.Publish();
         _dbContext.Add(session);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+        // Default acting user is the session's instructor.
+        _actingUserId = instructorId;
 
         return session;
     }
@@ -82,5 +94,36 @@ public class GetSessionBookingsQueryHandlerTests
         result.IsSuccess.Should().BeTrue();
         result.Data!.Items.Should().ContainSingle();
         result.Data.Items[0].Status.Should().Be(BookingStatus.Cancelled);
+    }
+
+    [Fact]
+    public async Task Handle_WhenCallerIsNotInstructorOrManager_ReturnsNotLearnerFailure()
+    {
+        var session = await SeedSessionAsync();
+        _dbContext.Add(Booking.Create(session.Id, Guid.NewGuid(), 15).Data!);
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+        _actingUserId = Guid.NewGuid();
+
+        var result = await _handler.Handle(new GetSessionBookingsQuery(session.Id), CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(e => e.Code == "BOOKING_NOT_LEARNER");
+    }
+
+    [Fact]
+    public async Task Handle_WhenCallerHasManageAllPermission_ReturnsBookings()
+    {
+        var session = await SeedSessionAsync();
+        _dbContext.Add(Booking.Create(session.Id, Guid.NewGuid(), 15).Data!);
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+        _actingUserId = Guid.NewGuid();
+        _currentUser.Setup(c => c.HasPermission("Bookings.ManageAll")).Returns(true);
+
+        var result = await _handler.Handle(new GetSessionBookingsQuery(session.Id), CancellationToken.None);
+
+        result.IsSuccess.Should().BeTrue();
+        result.Data!.Items.Should().ContainSingle();
     }
 }

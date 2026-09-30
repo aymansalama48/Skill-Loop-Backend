@@ -88,7 +88,7 @@ public class CoursesController : BaseApiController
     [Authorize]
     public async Task<IResult> CreateCourse([FromBody] CreateCourseRequest request, CancellationToken cancellationToken)
     {
-        var instructorId = _currentUser.UserId ?? Guid.Empty;
+        var instructorId = RequireUserId();
         var instructorName = _currentUser.FullName ?? "Instructor";
         var command = new CreateCourseCommand(
             request.Title,
@@ -114,7 +114,7 @@ public class CoursesController : BaseApiController
     [Authorize]
     public async Task<IResult> ToggleBookmark(Guid courseId, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new ToggleCourseBookmarkCommand(userId, courseId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);

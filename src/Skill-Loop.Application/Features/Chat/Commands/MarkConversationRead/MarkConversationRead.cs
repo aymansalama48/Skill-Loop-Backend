@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Realtime;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -11,6 +13,7 @@ namespace Skill_Loop.Application.Features.Chat.Commands.MarkConversationRead;
 /// <summary>
 /// علّم كل الرسايل اللي جتلي في المحادثة دي إنها اتقرت.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record MarkConversationReadCommand(Guid UserId, Guid ConversationId) : ICommand;
 
 public sealed class MarkConversationReadCommandValidator : AbstractValidator<MarkConversationReadCommand>

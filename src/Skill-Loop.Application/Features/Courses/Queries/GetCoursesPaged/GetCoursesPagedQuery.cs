@@ -17,7 +17,7 @@ public enum CourseSortOption
     PriceHighToLow = 4
 }
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed class GetCoursesPagedQuery : PaginationParameters, ICacheableQuery<PagedResult<CourseSummaryDto>>
 {
     public string? SearchTerm { get; init; }

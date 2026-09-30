@@ -7,7 +7,9 @@ var builder = WebApplication.CreateBuilder(args);
 builder.AddSerilogLogging();
 
 // 2. تسجيل كافة خدمات الطبقات (Infrastructure, Application, CORS, Controllers, Scalar)
-builder.Services.AddApplicationServices(builder.Configuration);
+//    التحقق من الإعدادات الحساسة بيحصل هنا: التطبيق مش هيقوم أصلاً لو فيه secret ناقص
+//    أو placeholder متسرب من الـ repository.
+builder.Services.AddApplicationServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

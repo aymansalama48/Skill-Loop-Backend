@@ -41,6 +41,10 @@ public static class DependencyInjection
 
             // 7. Transaction أخيراً لإدارة المعاملة أثناء تنفيذ الـ Handler
             cfg.AddOpenBehavior(typeof(TransactionBehavior<,>));
+
+            // 7b. نفس المعاملة للأوامر غير المُرجِعة لقيمة (ICommand بدون TResponse).
+            //     TransactionBehavior قيوده على ICommand<TResponse> فكان بيتجاهلها بالكامل.
+            cfg.AddOpenBehavior(typeof(NonGenericCommandTransactionBehavior<,>));
         });
 
         // 2. فحص الـ Assembly وتنسيق كافة كلاسات الـ FluentValidation تلقائياً

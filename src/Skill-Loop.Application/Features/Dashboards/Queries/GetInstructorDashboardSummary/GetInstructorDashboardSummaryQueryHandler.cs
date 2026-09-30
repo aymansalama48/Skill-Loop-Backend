@@ -27,7 +27,9 @@ internal sealed class GetInstructorDashboardSummaryQueryHandler : IRequestHandle
         var instructor = await _context.FirstOrDefaultAsync(_context.InstructorProfiles, i => i.UserId == userId, cancellationToken);
         if (instructor == null) return Result<GetInstructorDashboardSummaryResponse>.Failure(new Error("Instructor.NotFound", "Instructor not found", ErrorType.NotFound));
 
-        var courseIds = await _context.Courses.Where(c => c.InstructorId == instructor.Id).Select(c => c.Id).ToListAsync(cancellationToken);
+        // Course.InstructorId and Session.InstructorId both hold ApplicationUser ids (UserId),
+        // not the InstructorProfile primary key, so they must be matched on instructor.UserId.
+        var courseIds = await _context.Courses.Where(c => c.InstructorId == instructor.UserId).Select(c => c.Id).ToListAsync(cancellationToken);
         var totalCourses = courseIds.Count;
         
         var totalEnrollments = 0;
@@ -35,7 +37,7 @@ internal sealed class GetInstructorDashboardSummaryQueryHandler : IRequestHandle
             totalEnrollments = await _context.CountAsync(_context.Enrollments.Where(e => courseIds.Contains(e.CourseId)), cancellationToken);
         }
 
-        var sessionIds = await _context.Sessions.Where(s => s.InstructorId == instructor.Id).Select(s => s.Id).ToListAsync(cancellationToken);
+        var sessionIds = await _context.Sessions.Where(s => s.InstructorId == instructor.UserId).Select(s => s.Id).ToListAsync(cancellationToken);
         var totalSessions = sessionIds.Count;
 
         var totalBookings = 0;

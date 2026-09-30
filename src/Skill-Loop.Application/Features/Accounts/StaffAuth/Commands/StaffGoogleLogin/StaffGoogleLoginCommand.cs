@@ -6,5 +6,5 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffGoogleLogin;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record StaffGoogleLoginCommand(string IdToken) : ICommand<StaffAuthResponse>;

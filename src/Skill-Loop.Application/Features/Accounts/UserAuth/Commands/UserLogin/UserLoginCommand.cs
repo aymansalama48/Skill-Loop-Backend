@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.UserAuth.Commands.LoginUser;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record UserLoginCommand(
     string Email,
     string Password) : ICommand<UserAuthResponse>;

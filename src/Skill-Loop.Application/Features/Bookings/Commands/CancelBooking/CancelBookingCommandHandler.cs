@@ -13,7 +13,10 @@ public sealed class CancelBookingCommandHandler(
 {
     public async Task<Result> Handle(CancelBookingCommand request, CancellationToken cancellationToken)
     {
-        var utcNow = _dateTime.Now;
+        // UtcNow, not Now: Cancel(reason, utcNow) persists this as CancelledAtUtc, and it is
+        // compared against ScheduledAtUtc. Using display-local time wrote a two-hour skew
+        // onto every cancelled booking.
+        var utcNow = _dateTime.UtcNow;
 
         var booking = await _dbContext.Bookings
             .FirstOrDefaultAsync(b => b.Id == request.BookingId, cancellationToken);

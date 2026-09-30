@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Errors.Enrollment;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using FluentValidation;
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
@@ -7,6 +9,7 @@ using Skill_Loop.Domain.Common.Results;
 
 namespace Skill_Loop.Application.Features.Enrollments.Commands.UpdateLessonProgress;
 
+[AuthenticatedOnly]
 public sealed record UpdateLessonProgressCommand(
     Guid UserId,
     Guid CourseId,

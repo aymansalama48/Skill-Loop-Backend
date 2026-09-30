@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Queries.GetCourseById;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetCourseByIdQuery(Guid CourseId) : ICacheableQuery<CourseDetailDto>
 {
     public string CacheKey => $"courses:detail:{CourseId}";

@@ -5,5 +5,5 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.UserAuth.Commands.UserGoogleLogin;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record UserGoogleLoginCommand(string IdToken) : ICommand<UserAuthResponse>;

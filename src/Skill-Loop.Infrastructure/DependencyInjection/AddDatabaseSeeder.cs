@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Skill_Loop.Infrastructure.Persistence.Data;
@@ -36,7 +37,11 @@ public static partial class DependencyInjection
             await ContextSeed.SeedRolesAndPermissionsAsync(roleManager, dbContext, dateTimeProvider);
 
             // 3. 👈 تشغيل الـ Seed الخاص بحساب السوبر آدمن الافتراضي
-            await ContextSeed.SeedSuperAdminAsync(userManager);
+            //    (بيقرأ الإيميل والباسورد من الإعدادات — مفيش credentials ثابتة في الكود)
+            await ContextSeed.SeedSuperAdminAsync(
+                userManager,
+                services.GetRequiredService<IConfiguration>(),
+                logger);
 
             // 4. 👈 تشغيل الـ Seed الخاص بإعدادات الموقع الافتراضية
             await ContextSeed.SeedSiteSettingsAsync(dbContext);

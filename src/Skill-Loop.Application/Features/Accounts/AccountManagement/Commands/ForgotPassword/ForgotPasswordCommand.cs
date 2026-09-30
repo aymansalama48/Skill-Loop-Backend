@@ -4,5 +4,5 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ForgotPassword;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public record ForgotPasswordCommand(string Email) : ICommand;

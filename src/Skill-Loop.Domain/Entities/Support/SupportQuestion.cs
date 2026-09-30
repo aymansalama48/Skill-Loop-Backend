@@ -115,6 +115,10 @@ public sealed class SupportQuestion : AuditableEntity
         if (string.IsNullOrWhiteSpace(category))
             return Result.Failure(SupportQuestionErrors.EmptyCategory);
 
+        // Same rule Publish() enforces: a question cannot go out without an answer.
+        if (isPublished && string.IsNullOrWhiteSpace(answer))
+            return Result.Failure(SupportQuestionErrors.NoAnswer);
+
         Question = question.Trim();
         Answer = answer?.Trim();
         Category = category.Trim();
@@ -123,6 +127,12 @@ public sealed class SupportQuestion : AuditableEntity
         // التحديث بيسيب تاريخ أول إجابة زي ما هو — التعديلات اللاحقة مش بتنغيّره.
         if (!string.IsNullOrWhiteSpace(answer))
             MarkAnswered(overwriteAnsweredAt: false);
+        else
+        {
+            // The answer was cleared, so the question is no longer answered.
+            IsAnswered = false;
+            AnsweredAt = null;
+        }
 
         return Result.Success();
     }

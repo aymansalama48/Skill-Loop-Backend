@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Create)]
 public sealed record CreateCourseCommand(
     string Title,
     string Description,

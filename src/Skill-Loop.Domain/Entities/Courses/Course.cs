@@ -76,12 +76,12 @@ public sealed class Course : SoftDeleteEntity
             Id = Guid.CreateVersion7(),
             Title = title.Trim(),
             Description = description.Trim(),
-            ThumbnailUrl = thumbnailUrl.Trim(),
+            ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty,
             Credits = credits,
             Level = level,
             Status = CourseStatus.Draft,
             InstructorId = instructorId,
-            InstructorName = instructorName.Trim(),
+            InstructorName = instructorName?.Trim() ?? string.Empty,
             CategoryId = categoryId,
             AverageRating = 0.0,
             TotalReviews = 0,
@@ -104,12 +104,18 @@ public sealed class Course : SoftDeleteEntity
         if (string.IsNullOrWhiteSpace(title))
             return Result.Failure(CourseErrors.TitleEmpty);
 
+        if (string.IsNullOrWhiteSpace(description))
+            return Result.Failure(CourseErrors.DescriptionEmpty);
+
         if (credits < 0)
             return Result.Failure(CourseErrors.NegativeCredits);
 
+        if (categoryId == Guid.Empty)
+            return Result.Failure(CourseErrors.InvalidCategory);
+
         Title = title.Trim();
         Description = description.Trim();
-        ThumbnailUrl = thumbnailUrl.Trim();
+        ThumbnailUrl = thumbnailUrl?.Trim() ?? string.Empty;
         Credits = credits;
         Level = level;
         CategoryId = categoryId;

@@ -12,23 +12,38 @@ public class RefreshTokenConfiguration : IEntityTypeConfiguration<RefreshToken>
 
         builder.HasKey(rt => rt.Id);
 
-        builder.Property(rt => rt.Token)
-            .HasMaxLength(255)
+        // SHA-256 produces 32 bytes -> 44 Base64 characters. Bounded so the value cannot
+        // be silently truncated by a misconfigured column and start colliding.
+        builder.Property(rt => rt.TokenHash)
+            .HasMaxLength(64)
             .IsRequired();
+
+        builder.Property(rt => rt.ReplacedByTokenHash)
+            .HasMaxLength(64);
 
         builder.Property(rt => rt.UserId)
             .IsRequired();
 
-        // فهرس فريد لمنع تكرار الـ Token نفسه
-        builder.HasIndex(rt => rt.Token)
+        builder.Property(rt => rt.TokenFamilyId)
+            .IsRequired();
+
+        // Lookup path: hash the presented token and find the matching row. The unique
+        // index is what makes that a single seek instead of a table scan, and it also
+        // guarantees a digest can never map to two rows (which would make
+        // RevokeFamilyAsync ambiguous).
+        builder.HasIndex(rt => rt.TokenHash)
             .IsUnique()
-            .HasDatabaseName("IX_RefreshTokens_Token");
+            .HasDatabaseName("IX_RefreshTokens_TokenHash");
+
+        // Reuse detection revokes a whole family in one UPDATE.
+        builder.HasIndex(rt => rt.TokenFamilyId)
+            .HasDatabaseName("IX_RefreshTokens_TokenFamilyId");
 
         // فهرس لتسريع البحث عن Tokens الخاصة بمستخدم معين
         builder.HasIndex(rt => rt.UserId)
             .HasDatabaseName("IX_RefreshTokens_UserId");
 
-        // العلاقة مع ApplicationUser
+        // Relationship with ApplicationUser
         builder.HasOne(rt => rt.User)
             .WithMany() // لو عاوز تعكس العلاقة من ApplicationUser لـ RefreshTokens
             .HasForeignKey(rt => rt.UserId)

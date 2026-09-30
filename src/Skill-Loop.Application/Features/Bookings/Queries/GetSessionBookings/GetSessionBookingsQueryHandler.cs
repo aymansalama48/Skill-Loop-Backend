@@ -1,10 +1,12 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Bookings.Shared;
 using Skill_Loop.Domain.Common.Results;
+using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Bookings.Queries.GetSessionBookings;
 
@@ -12,23 +14,39 @@ public sealed class GetSessionBookingsQueryHandler
     : IQueryHandler<GetSessionBookingsQuery, PagedResult<BookingResponse>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly ICurrentUser _currentUser;
 
-    public GetSessionBookingsQueryHandler(IApplicationDbContext dbContext)
+    public GetSessionBookingsQueryHandler(
+        IApplicationDbContext dbContext,
+        ICurrentUser currentUser)
     {
         _dbContext = dbContext;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<PagedResult<BookingResponse>>> Handle(
         GetSessionBookingsQuery request,
         CancellationToken cancellationToken)
     {
-        var sessionExists = await _dbContext.Sessions
+        var session = await _dbContext.Sessions
             .AsNoTracking()
-            .AnyAsync(s => s.Id == request.SessionId, cancellationToken);
+            .FirstOrDefaultAsync(s => s.Id == request.SessionId, cancellationToken);
 
-        if (!sessionExists)
+        if (session is null)
         {
             return Result<PagedResult<BookingResponse>>.Failure(BookingErrors.SessionNotFound);
+        }
+
+        // A session's roster is only visible to its own instructor/owner or a global booking manager.
+        var currentUserId = _currentUser.UserId;
+        var isInstructor = currentUserId.HasValue &&
+                           (session.InstructorId == currentUserId.Value || session.OwnerId == currentUserId.Value);
+        var canManageAll = _currentUser.HasPermission(Permissions.Bookings.ViewAll)
+                           || _currentUser.HasPermission(Permissions.Bookings.ManageAll);
+
+        if (!isInstructor && !canManageAll)
+        {
+            return Result<PagedResult<BookingResponse>>.Failure(BookingErrors.NotLearner);
         }
 
         var query = _dbContext.Bookings

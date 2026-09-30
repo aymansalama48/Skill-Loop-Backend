@@ -49,14 +49,45 @@ public class JwtTokenGenerator(
     // بناء التوكن النهائي بالـ Claims ومدة الصلاحية
     private string BuildToken(List<Claim> claims, int expiryMinutes)
     {
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(options.Value.Key));
+        // Fail fast rather than sign with a missing/short key. HMAC-SHA256 requires a key
+        // of at least 256 bits; anything shorter silently weakens the signature.
+        var keyMaterial = options.Value.Key;
+
+        if (string.IsNullOrWhiteSpace(keyMaterial) ||
+            System.Text.Encoding.UTF8.GetByteCount(keyMaterial) < 32)
+        {
+            throw new InvalidOperationException(
+                "Jwt:Key must be supplied (environment variable or user-secrets) and be at " +
+                "least 32 bytes. Refusing to sign tokens with a weak or missing key.");
+        }
+
+        var key = new SymmetricSecurityKey(System.Text.Encoding.UTF8.GetBytes(keyMaterial));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+
+        // RFC 7519 numeric-date claims (exp, nbf, iat) are UTC seconds since the epoch.
+        // The old code passed `dateTime.Now`, which returns Egypt local time — so every
+        // token's real lifetime was shifted by the UTC offset, and by an extra hour during
+        // Egypt DST. `UtcNow` is the only correct value here.
+        var issuedAt = dateTime.UtcNow;
+        var expires = issuedAt.AddMinutes(expiryMinutes);
+
+        // `iat` is added as an explicit claim: the JwtSecurityToken constructor overload that
+        // takes it is not available in all supported versions of the token library, and
+        // omitting `iat` loses the audit signal that the token was minted at a known time.
+        if (!claims.Exists(c => c.Type == JwtRegisteredClaimNames.Iat))
+        {
+            claims.Add(new Claim(
+                JwtRegisteredClaimNames.Iat,
+                EpochTime.GetIntDate(issuedAt).ToString(),
+                ClaimValueTypes.Integer64));
+        }
 
         var token = new JwtSecurityToken(
             issuer: options.Value.Issuer,
             audience: options.Value.Audience,
             claims: claims,
-            expires: dateTime.Now.AddMinutes(expiryMinutes), // أو dateTime.UtcNow
+            notBefore: issuedAt,
+            expires: expires,
             signingCredentials: credentials);
 
         return new JwtSecurityTokenHandler().WriteToken(token);

@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 
@@ -7,6 +9,7 @@ namespace Skill_Loop.Application.Features.Notifications.Queries.GetUnreadNotific
 /// <summary>
 /// عدد الإشعارات غير المقروءة، عشان الرقم الأحمر الصغير فوق أيقونة الجرس.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record GetUnreadNotificationCountQuery(Guid UserId) : IQuery<int>;
 
 public sealed class GetUnreadNotificationCountQueryHandler : IQueryHandler<GetUnreadNotificationCountQuery, int>

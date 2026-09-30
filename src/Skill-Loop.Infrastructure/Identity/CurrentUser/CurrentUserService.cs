@@ -10,13 +10,17 @@ namespace Skill_Loop.Infrastructure.Identity.CurrentUser;
 /// </summary>
 public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUser
 {
-    private readonly ClaimsPrincipal? _user = httpContextAccessor.HttpContext?.User;
+    // Resolved per access, not captured at construction: this service is registered Scoped and is
+    // also consumed by the SaveChanges interceptors during startup seeding, where there is no
+    // HttpContext yet. Caching the principal in a field would latch an anonymous user for the
+    // whole scope and silently blank out the audit columns.
+    private ClaimsPrincipal? User => httpContextAccessor.HttpContext?.User;
 
     /// <summary>
     /// هل اليوزر مسجل دخوله أصلاً؟
     /// </summary>
     public bool IsAuthenticated =>
-        _user?.Identity?.IsAuthenticated ?? false;
+        User?.Identity?.IsAuthenticated ?? false;
 
     // === مشتركة بين المريض والـ Staff ===
 
@@ -24,13 +28,13 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
     /// معرف الـ ApplicationUser (موجود في توكن الـ Staff)
     /// </summary>
     public Guid? UserId =>
-        ParseGuid(_user?.FindFirstValue(CustomClaims.UserId));
+        ParseGuid(User?.FindFirstValue(CustomClaims.UserId));
 
     /// <summary>
     /// الاسم الكامل
     /// </summary>
     public string? FullName =>
-        _user?.FindFirstValue(ClaimTypes.Name);
+        User?.FindFirstValue(ClaimTypes.Name);
 
     // === خاصة بالمريض فقط ===
 
@@ -40,38 +44,38 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
     /// الإيميل
     /// </summary>
     public string? Email =>
-        _user?.FindFirstValue(ClaimTypes.Email);
+        User?.FindFirstValue(ClaimTypes.Email);
 
     /// <summary>
     /// أول دور لليوزر
     /// </summary>
     public string? Role =>
-        _user?.FindFirstValue(ClaimTypes.Role);
+        User?.FindFirstValue(ClaimTypes.Role);
 
     /// <summary>
     /// كل الأدوار
     /// </summary>
     public IReadOnlyList<string> Roles =>
-        _user?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
+        User?.FindAll(ClaimTypes.Role).Select(c => c.Value).ToList()
         ?? new List<string>();
 
     /// <summary>
     /// هل اليوزر في دور معين؟
     /// </summary>
     public bool IsInRole(string role) =>
-        _user?.IsInRole(role) ?? false;
+        User?.IsInRole(role) ?? false;
 
     /// <summary>
     /// هل اليوزر معاه صلاحية معينة؟
     /// </summary>
     public bool HasPermission(string permission) =>
-        _user?.FindAll(CustomClaims.Permission).Any(c => c.Value == permission) ?? false;
+        User?.FindAll(CustomClaims.Permission).Any(c => c.Value == permission) ?? false;
 
     /// <summary>
     /// كل صلاحيات اليوزر
     /// </summary>
     public IEnumerable<string> GetPermissions() =>
-        _user?.FindAll(CustomClaims.Permission).Select(c => c.Value)
+        User?.FindAll(CustomClaims.Permission).Select(c => c.Value)
         ?? Enumerable.Empty<string>();
 
     private static Guid? ParseGuid(string? value) =>

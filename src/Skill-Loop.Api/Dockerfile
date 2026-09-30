@@ -30,4 +30,12 @@ RUN dotnet publish "./Skill-Loop.Api.csproj" -c $BUILD_CONFIGURATION -o /app/pub
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
+
+# Create the upload root up front and hand it to the non-root app user.
+# docker-compose mounts a named volume at /app/UploadedFiles; an empty volume is
+# created root-owned, so without this the app cannot write uploads.
+USER root
+RUN mkdir -p /app/UploadedFiles && chown -R $APP_UID:$APP_UID /app/UploadedFiles
+USER $APP_UID
+
 ENTRYPOINT ["dotnet", "Skill-Loop.Api.dll"]

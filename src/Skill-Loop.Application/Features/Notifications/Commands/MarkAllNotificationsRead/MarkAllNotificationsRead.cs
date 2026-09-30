@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 
@@ -7,6 +9,7 @@ namespace Skill_Loop.Application.Features.Notifications.Commands.MarkAllNotifica
 /// <summary>
 /// زرار "علّم الكل كمقروء" في شاشة الإشعارات.
 /// </summary>
+[AuthenticatedOnly]
 public sealed record MarkAllNotificationsReadCommand(Guid UserId) : ICommand;
 
 public sealed class MarkAllNotificationsReadCommandHandler : ICommandHandler<MarkAllNotificationsReadCommand>

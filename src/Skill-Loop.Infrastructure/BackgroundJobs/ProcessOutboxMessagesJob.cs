@@ -80,7 +80,7 @@ public class ProcessOutboxMessagesJob
                 }
 
                 // 4. تحديث حالة الرسالة
-                message.ProcessedOnUtc = _dateTime.Now;
+                message.ProcessedOnUtc = _dateTime.UtcNow;
                 message.Error = null;
             }
             catch (Exception ex)

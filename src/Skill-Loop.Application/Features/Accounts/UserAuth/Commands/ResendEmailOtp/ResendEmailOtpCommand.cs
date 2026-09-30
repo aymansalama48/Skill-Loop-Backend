@@ -5,5 +5,5 @@ using Skill_Loop.Domain.Constants;
 namespace Skill_Loop.Application.Features.Accounts.UserAuth.Commands.ResendEmailOtp;
 
 // لا يحتاج مسح كاش
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record ResendEmailOtpCommand(string Email) : ICommand<bool>;

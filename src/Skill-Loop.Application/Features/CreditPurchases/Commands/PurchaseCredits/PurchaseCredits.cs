@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Payments;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -12,6 +14,7 @@ using Skill_Loop.Domain.Entities.Wallets;
 namespace Skill_Loop.Application.Features.CreditPurchases.Commands.PurchaseCredits;
 
 /// <summary>شحن المحفظة: اشترِ X كريديت (اختياري: بكود خصم).</summary>
+[AuthenticatedOnly]
 public sealed record PurchaseCreditsCommand(Guid UserId, int Credits, string? PromoCode) : ICommand<CreditPurchaseDto>;
 
 public sealed class PurchaseCreditsCommandValidator : AbstractValidator<PurchaseCreditsCommand>

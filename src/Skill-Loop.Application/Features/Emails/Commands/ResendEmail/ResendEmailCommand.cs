@@ -8,8 +8,30 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Emails.Commands.ResendEmail;
 
-[AuthenticatedOnly]
-public record ResendEmailCommand(Guid EmailLogId) : IRequest<Result<bool>>;
+/// <summary>
+/// Re-queues a previously logged email for delivery.
+///
+/// Security: resending must be restricted to non-transactional message types. A
+/// PasswordReset log row contains a live OTP, so a blanket "resend by id" turns the
+/// endpoint into a way to exfiltrate another user's reset code and to mail arbitrary
+/// recipients. <see cref="ResendAllowedTypes"/> is the allowlist.
+/// </summary>
+[Permission(Permissions.Emails.Resend)]
+public record ResendEmailCommand(Guid EmailLogId) : IRequest<Result<bool>>
+{
+    /// <summary>
+    /// Only operator diagnostics may be replayed. Security-sensitive types (password reset,
+    /// email verification) are deliberately excluded.
+    /// </summary>
+    public static readonly IReadOnlySet<string> ResendAllowedTypes =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase)
+        {
+            "TestEmail"
+        };
+
+    public static bool IsResendableType(string? type) =>
+        type is not null && ResendAllowedTypes.Contains(type);
+}
 
 public class ResendEmailCommandHandler : IRequestHandler<ResendEmailCommand, Result<bool>>
 {
@@ -23,10 +45,15 @@ public class ResendEmailCommandHandler : IRequestHandler<ResendEmailCommand, Res
     public async Task<Result<bool>> Handle(ResendEmailCommand request, CancellationToken cancellationToken)
     {
         var emailLog = await _context.EmailLogs
+            .AsNoTracking()
             .FirstOrDefaultAsync(e => e.Id == request.EmailLogId, cancellationToken);
 
         if (emailLog == null)
-            return Result<bool>.Failure("Email not found");
+            return Result<bool>.Failure("Email not found.");
+
+        if (!ResendEmailCommand.IsResendableType(emailLog.Type))
+            return Result<bool>.Failure(
+                $"Emails of type '{emailLog.Type}' cannot be resent through this endpoint.");
 
         var newEmailLog = EmailLog.Create(
             type: emailLog.Type,

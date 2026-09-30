@@ -22,11 +22,4 @@ public sealed record SessionMaterialResponse(
 [AuthenticatedOnly]
 public sealed record GetSessionMaterialsQuery(
     Guid SessionId,
-    PaginationParameters Pagination) : ICacheableQuery<PagedResult<SessionMaterialResponse>>
-{
-    public string CacheKey => CacheKeys.SessionMaterialsPaged(SessionId, Pagination.PageNumber, Pagination.PageSize);
-
-    public TimeSpan? SlidingExpiration => TimeSpan.FromMinutes(5);
-
-    public TimeSpan? AbsoluteExpiration => TimeSpan.FromMinutes(30);
-}
+    PaginationParameters Pagination) : IQuery<PagedResult<SessionMaterialResponse>>;

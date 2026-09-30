@@ -20,20 +20,42 @@ public static class PipelineExtensions
         // 1. تشغيل Correlation ID في أسرع نقطة دخول للطلب لتتبع الـ Requests
         app.UseMiddleware<CorrelationIdMiddleware>();
 
-        // 2. معالجة الاستثناءات وتسجيل الـ Requests عبر Serilog بالخيارات المخصصة
+        // 2. هيدرات الأمان: nosniff / frame-options / CSP على كل الاستجابات
+        app.UseMiddleware<SecurityHeadersMiddleware>();
+
+        // 3. استخراج هوية الطلب (الإيميل) من الـ Body قبل الـ Rate Limiter
+        //    لازم يسبق الـ Rate Limiter لأن الـ Limiter بيقسم الـ Buckets على أساسه،
+        //    ولازم يعمل buffering عشان الـ Model Binding يفضل يقرأ الـ Body عادي.
+        app.UseMiddleware<RateLimitIdentityMiddleware>();
+
+        // 4. Rate Limiting: بعد الـ Identity, وقبل الـ Routing/Authorization
+        //    لأن الـ Policies المطبقة على الـ Endpoints محتاجة الـ Endpoint metadata.
+        app.UseRateLimiter();
+
+        // 5. معالجة الاستثناءات وتسجيل الـ Requests عبر Serilog بالخيارات المخصصة
         app.UseExceptionHandler();
         app.UseSerilogLogging(); // 👈 استبدال app.UseSerilogRequestLogging() هنا
 
-        // 3. التوجيه الآمن والـ CORS
+        // 6. التوجيه الآمن والـ CORS
+        app.UseHsts(); // 👈 مطلوب مع UseHttpsRedirection في الإنتاج
         app.UseHttpsRedirection();
         app.UseCors("AllowFrontend");
 
-        // 4. إدارة الملفات المرفوعة المباشرة (Static Files)
-        var uploadsPath = Path.Combine(app.Environment.ContentRootPath, "uploads");
-        if (!Directory.Exists(uploadsPath))
+        // 7. إدارة الملفات المرفوعة المباشرة (Static Files)
+        // الـ Root لازم يكون نفس المجلد اللي LocalFileStorage بيكتب فيه
+        // (FileStorage:RootFolder)، وإلا الملفات اللي LocalFileStorage حفظها مش هتتقدم عبر /uploads.
+        var storageRootFolder = app.Configuration["FileStorage:RootFolder"];
+        if (string.IsNullOrWhiteSpace(storageRootFolder))
         {
-            Directory.CreateDirectory(uploadsPath);
+            storageRootFolder = "UploadedFiles";
         }
+
+        var uploadsPath = Path.GetFullPath(
+            Path.IsPathRooted(storageRootFolder)
+                ? storageRootFolder
+                : Path.Combine(app.Environment.ContentRootPath, storageRootFolder));
+
+        Directory.CreateDirectory(uploadsPath);
 
         app.UseStaticFiles(new StaticFileOptions
         {
@@ -41,15 +63,15 @@ public static class PipelineExtensions
             RequestPath = "/uploads"
         });
 
-        // 5. توثيق OpenAPI/Scalar
+        // 8. توثيق OpenAPI/Scalar
         app.UseOpenApiDocumentation();
 
-        // 6. التوثيق والصلاحيات
+        // 9. التوثيق والصلاحيات
         app.UseAuthentication();
         app.UseAuthorization();
 
 
-        // 7. تفعيل شاشة Hangfire للمراقبة
+        // 10. تفعيل شاشة Hangfire للمراقبة
         app.UseHangfireDashboard("/hangfire", new DashboardOptions
         {
             Authorization = new[] { new HangfireCustomAuthorizationFilter() }
@@ -70,10 +92,10 @@ public static class PipelineExtensions
             "* * * * *"); // كل دقيقة
 
 
-        // 8. ربط الـ Controllers
+        // 11. ربط الـ Controllers
         app.MapControllers();
 
-        // 9. الشات اللحظي (SignalR Hub) على /hubs/chat
+        // 12. الشات اللحظي (SignalR Hub) على /hubs/chat
         app.MapChatHub();
 
         return app;

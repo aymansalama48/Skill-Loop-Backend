@@ -7,7 +7,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.SiteSettings.Queries.GetSiteSettings
 {
-    [AuthenticatedOnly]
+    [AllowAnonymous]
 public sealed record GetSiteSettingsQuery
         : ICacheableQuery<SiteSettingsRespone>
     {

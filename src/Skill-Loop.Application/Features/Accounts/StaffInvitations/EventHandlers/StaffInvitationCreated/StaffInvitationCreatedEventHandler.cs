@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.EventHandlers.StaffInvitationCreated;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.EventHandlers.StaffInvitationCreated;
 
 using MediatR;
 using Skill_Loop.Application.Common.Abstractions.Core;
@@ -21,21 +21,21 @@ public sealed class StaffInvitationCreatedEventHandler(IJobScheduler jobSchedule
     {
         var invitation = notification.DomainEvent.Invitation;  
 
-        // حساب عدد الساعات المتبقية للصلاحية بناءً على الكيان الأصلي
-        var expiryHours = (int)Math.Max(1, (invitation.ExpiresAtUtc - dateTime.Now).TotalHours);  
+        // ???? ??? ??????? ???????? ???????? ????? ??? ?????? ??????
+        var expiryHours = (int)Math.Max(1, (invitation.ExpiresAtUtc - dateTime.UtcNow).TotalHours);  
 
-        // تجهيز الموديل بما يطابق جدولك تماماً
+        // ????? ??????? ??? ????? ????? ??????
         var templateModel = new StaffInvitationTemplateModel
         {
-            UserEmail = invitation.Email, // 👈 الخاصية الأساسية للقالب
+            UserEmail = invitation.Email, // ?? ??????? ???????? ??????
             InvitedEmail = invitation.Email,  
             AdminName = invitation.AdminName,  
-            Token = invitation.Token, // السيرفس ستقوم بتحويله لرابط كامل
+            Token = invitation.Token, // ??????? ????? ??????? ????? ????
             RoleName = TranslateRole(invitation.Role),  
             ExpiryHours = expiryHours 
         };
 
-        // رمي المَهمة لـ Hangfire باستخدام الخدمة الموحدة للإشعارات
+        // ??? ??????? ?? Hangfire ???????? ?????? ??????? ?????????
         jobScheduler.Enqueue<IIdentityNotificationService>(notificationService =>  
             notificationService.SendStaffInvitationEmailAsync(  
                 invitation.Email,  
@@ -44,15 +44,15 @@ public sealed class StaffInvitationCreatedEventHandler(IJobScheduler jobSchedule
         return Task.CompletedTask; 
     }
 
-    // دالة مساعدة لترجمة الـ Roles لتظهر في الإيميل بشكل جميل
+    // ???? ?????? ?????? ??? Roles ????? ?? ??????? ???? ????
     private static string TranslateRole(string role) => role switch
     {
-        Roles.SuperAdmin => "المدير العام",
-        Roles.Admin => "مدير النظام",
-        Roles.FinanceManager => "المسؤول المالي",
-        Roles.Support => "مسؤول الدعم",
-        Roles.Instructor => "معلم",
-        Roles.User => "مستخدم",
+        Roles.SuperAdmin => "?????? ?????",
+        Roles.Admin => "???? ??????",
+        Roles.FinanceManager => "??????? ??????",
+        Roles.Support => "????? ?????",
+        Roles.Instructor => "????",
+        Roles.User => "??????",
         _ => role
     };
 }

@@ -4,7 +4,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Categories.Queries.GetCategories;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetCategoriesQuery : ICacheableQuery<IReadOnlyList<CategoryResponse>>
 {
     public string CacheKey => "categories:all";

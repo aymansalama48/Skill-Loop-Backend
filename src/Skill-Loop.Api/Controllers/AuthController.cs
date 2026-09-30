@@ -2,7 +2,9 @@ namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Skill_Loop.Api.Controllers.Base;
+using Skill_Loop.Api.Extensions;
 using Skill_Loop.Application.Features.Accounts.Authentication.Commands.Logout;
 using Skill_Loop.Application.Features.Accounts.Authentication.Commands.RefreshToken;
 using Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffGoogleLogin;
@@ -27,6 +29,7 @@ public class AuthController : BaseApiController
     // =========================================================================
     [HttpPost("staff/login")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.LoginPolicy)]
     public async Task<IResult> StaffLogin(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -37,6 +40,7 @@ public class AuthController : BaseApiController
     }
     [HttpPost("staff/login/google")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.LoginPolicy)]
     public async Task<IResult> StaffGoogleLogin(
         [FromBody] GoogleLoginRequest request,
         CancellationToken cancellationToken)
@@ -50,6 +54,7 @@ public class AuthController : BaseApiController
     // =========================================================================
     [HttpPost("user/login")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.LoginPolicy)]
     public async Task<IResult> UserLogin(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -60,6 +65,7 @@ public class AuthController : BaseApiController
     }
     [HttpPost("user/login/google")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.LoginPolicy)]
     public async Task<IResult> UserGoogleLogin(
         [FromBody] GoogleLoginRequest request,
         CancellationToken cancellationToken)
@@ -70,6 +76,9 @@ public class AuthController : BaseApiController
     }
     [HttpPost("user/register")]
     [AllowAnonymous]
+    // Registration creates an account and sends an email per call, so it is throttled
+    // like the OTP resend flow to prevent mailbox/SMTP flooding and bulk account creation.
+    [EnableRateLimiting(RateLimitingExtensions.OtpResendPolicy)]
     public async Task<IResult> RegisterUser(
         [FromBody] RegisterUserRequest request,
         CancellationToken cancellationToken)
@@ -87,6 +96,7 @@ public class AuthController : BaseApiController
     // =========================================================================
     [HttpPost("refresh-token")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.RefreshPolicy)]
     public async Task<IResult> RefreshToken(
         [FromBody] RefreshTokenRequest request,
         CancellationToken cancellationToken)

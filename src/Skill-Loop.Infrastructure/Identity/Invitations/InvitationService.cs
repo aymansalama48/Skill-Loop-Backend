@@ -33,7 +33,7 @@ public sealed class InvitationService(
         if (existingUser is not null)
             return Result<string>.Failure(UserErrors.EmailAlreadyExists);
 
-        var now = dateTime.Now;
+        var now = dateTime.UtcNow;
 
         // 2. إبطال الدعوات المعلقة القديمة لنفس البريد
         var pendingInvitations = await context.StaffInvitations
@@ -77,7 +77,7 @@ public sealed class InvitationService(
         if (invitation.IsUsed)
             return Result<InvitationDetailsDto>.Failure(InvitationErrors.AlreadyUsed);
 
-        if (invitation.ExpiresAtUtc <= dateTime.Now)
+        if (invitation.ExpiresAtUtc <= dateTime.UtcNow)
             return Result<InvitationDetailsDto>.Failure(InvitationErrors.Expired);
 
         var details = new InvitationDetailsDto(
@@ -103,7 +103,7 @@ public sealed class InvitationService(
         if (invitation.IsUsed)
             return Result.Failure(InvitationErrors.AlreadyUsed);
 
-        invitation.ExpiresAtUtc = dateTime.Now;
+        invitation.ExpiresAtUtc = dateTime.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
 
@@ -125,7 +125,7 @@ public sealed class InvitationService(
         if (invitation is null)
             return Result<bool>.Failure(InvitationErrors.NotFound);
 
-        if (invitation.IsUsed || invitation.ExpiresAtUtc <= dateTime.Now)
+        if (invitation.IsUsed || invitation.ExpiresAtUtc <= dateTime.UtcNow)
             return Result<bool>.Failure(InvitationErrors.InvalidOrExpired);
 
         // 1. تقسيم الاسم الكامل إلى أجزائه
@@ -162,7 +162,7 @@ public sealed class InvitationService(
 
         // إغلاق الدعوة
         invitation.IsUsed = true;
-        invitation.UsedAtUtc = dateTime.Now;
+        invitation.UsedAtUtc = dateTime.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
 
@@ -182,7 +182,7 @@ public sealed class InvitationService(
         if (invitation is null)
             return Result<bool>.Failure(InvitationErrors.NotFound);
 
-        if (invitation.IsUsed || invitation.ExpiresAtUtc <= dateTime.Now)
+        if (invitation.IsUsed || invitation.ExpiresAtUtc <= dateTime.UtcNow)
             return Result<bool>.Failure(InvitationErrors.InvalidOrExpired);
 
         var googleProvider = externalAuthProviders.FirstOrDefault(p => p.ProviderName == "Google");
@@ -239,7 +239,7 @@ public sealed class InvitationService(
         }
 
         invitation.IsUsed = true;
-        invitation.UsedAtUtc = dateTime.Now;
+        invitation.UsedAtUtc = dateTime.UtcNow;
 
         await context.SaveChangesAsync(cancellationToken);
 

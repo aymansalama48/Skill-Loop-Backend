@@ -9,7 +9,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Queries.GetCourseReviews;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetCourseReviewsQuery(Guid CourseId, int PageNumber = 1, int PageSize = 10) : IQuery<PagedResult<CourseReviewDto>>, ICacheableQuery
 {
     public string CacheKey => $"course-reviews:{CourseId}:{PageNumber}:{PageSize}";

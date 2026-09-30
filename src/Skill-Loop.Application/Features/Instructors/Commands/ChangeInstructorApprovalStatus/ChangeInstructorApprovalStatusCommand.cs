@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.ChangeInstructorApprovalStatus;
 
-//[AuthenticatedOnly]
+[Permission(Permissions.Instructors.ManageAll)]
 public sealed record ChangeInstructorApprovalStatusCommand(
     Guid UserId,
     bool IsApproved

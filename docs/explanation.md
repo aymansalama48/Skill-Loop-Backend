@@ -211,8 +211,8 @@ Modular registration inside `AddInfrastructure()`: `AddPersistence`, `AddIdentit
 | `SupportController` | `/api/support` | Public FAQ search, contact form, my questions, email answer |
 | `SupportManagementController` | `/api/support/manage` | Staff support queue: answer, publish, update, delete |
 | `NotificationsController` | `/api/v1/notifications` | My notifications, unread count, mark read |
-| `SiteSettingsController` | `/api/SiteSettings` | Get/update site settings (no route attribute — inherited from `BaseApiController`) |
-| `DevController` | `/api/v1/dev` | Development-only helpers |
+| `SiteSettingsController` | `/api/SiteSettings` | Get/update site settings (no route attribute — inherited from `BaseApiController`; update requires `SuperAdmin`) |
+| `DevController` | `/api/v1/dev` | Development-only helpers — removed from the routing table and OpenAPI document outside Development |
 | `TestFilesController` | `/api/test/files` | Local file storage test endpoints |
 
 #### SignalR (`Hubs/`)
@@ -221,14 +221,56 @@ Modular registration inside `AddInfrastructure()`: `AddPersistence`, `AddIdentit
 - `ChatUserIdProvider` — Maps JWT claims to SignalR connection
 
 #### Middleware & Extensions
-- `CorrelationIdMiddleware` — Adds `X-Correlation-ID` to every request
-- `GlobalExceptionHandler` — Maps exceptions to ProblemDetails
+
+Middleware order in `PipelineExtensions.UseApplicationPipeline` is significant:
+
+| Order | Component | Responsibility |
+|---|---|---|
+| 1 | `CorrelationIdMiddleware` | Validated trace ID — accepts a client value only if ≤ 64 chars and alphanumeric (`-`, `_`, `.`), otherwise generates a GUID. Prevents log forging via CR/LF and unbounded log growth. |
+| 2 | `SecurityHeadersMiddleware` | `nosniff`, `X-Frame-Options: DENY`, CSP, `Referrer-Policy`; strips `X-Powered-By` |
+| 3 | `RateLimitIdentityMiddleware` | Buffers and rewinds the JSON body to extract the target identity (email) for rate-limit partitioning. Must run **before** the limiter. |
+| 4 | `UseRateLimiter` | Global per-IP limit plus per-endpoint policies partitioned by IP **and** identity |
+| 5 | `UseExceptionHandler` / `GlobalExceptionHandler` | `UnauthorizedAccessException` → 401, `DbUpdateConcurrencyException` → 409, else ProblemDetails |
+| 6 | `UseHsts` + `UseHttpsRedirection` | Transport security (HSTS outside Development) |
+| 7 | `UseCors("AllowFrontend")` | Explicit origin allowlist; wildcard rejected at startup |
+| 8–13 | Static files, OpenAPI, auth, controllers, SignalR hub | |
+
+Other extensions:
+- `ServiceCollectionExtensions` — DI wiring, Dev-controller removal convention, startup secret validation
+- `SecurityConfigurationExtensions` — Fail-fast validation of `Jwt:Key`, `OtpSettings:HashingSecret`, OTP cooldown, CORS allowlist, connection strings. **The application does not start if any of these are unsafe.**
+- `RateLimitingExtensions` — `login`, `otp-verify`, `otp-resend`, `email-test`, `contact-form`, `refresh-token` policies
 - `ResultExtensions` — Maps `ErrorType` → HTTP status (Validation→400, NotFound→404, etc.)
-- `PipelineExtensions` — Configures Hangfire recurring jobs, SignalR, CORS, Scalar/OpenAPI
 - `LoggingExtensions` — Serilog configuration (Console + File + Enrichers)
+
+#### Base controller
+
+`BaseApiController.RequireUserId()` resolves the authenticated user id or throws
+`UnauthorizedAccessException` (→ 401). This replaces the previous
+`_currentUser.UserId ?? Guid.Empty` pattern used across eight controllers, where `Guid.Empty`
+— a real, non-null value — flowed into commands and handlers ran queries and writes against a
+non-existent user.
 
 #### Contracts (`Contracts/`)
 Request DTOs per feature (e.g., `CreateCourseRequest`, `EnrollInCourseRequest`, `CreateBookingRequest`) — sealed records, used only in controllers
+
+---
+
+## 🔐 Security Model
+
+Full detail, including the secret-rotation runbook, lives in **[SECURITY.md](SECURITY.md)**.
+
+| Control | Implementation |
+|---|---|
+| **Token signing** | HMAC-SHA256 with a validated ≥ 32-byte key. `exp`/`nbf`/`iat` use `DateTime.UtcNow`, never display-local time (the Egypt-local clock previously shifted every token's real lifetime by the UTC offset, plus an hour during DST). |
+| **Refresh tokens** | Stored only as a SHA-256 digest. Rotation links tokens into a family; replaying a rotated token revokes that family (`TOKEN_REUSE_DETECTED`). Deactivated or unconfirmed accounts are rejected on refresh. |
+| **Session lifecycle** | Password reset and account deactivation both revoke every refresh token for the user. Without this, an attacker holding a stolen token could reset the victim's password and stay authenticated. |
+| **Rate limiting** | Global 300/min per IP, plus targeted policies. Partitions combine IP and target identity so lockout cannot be weaponised against a chosen victim. |
+| **OTP** | HMAC-hashed with a purpose-derived key, so a code issued for email confirmation cannot be replayed for password reset. Cooldown and max-attempt limits per identifier. |
+| **Authorization** | `[Permission]` on commands, plus role gates on admin controllers. `AdminEmailsController` requires `Admin`/`SuperAdmin`; its test-email recipient is restricted to the configured support address. |
+| **Secrets** | No secret is committed. `appsettings.json` ships empty and the app refuses to start without valid values, rejecting known previously-committed placeholders. |
+| **Bootstrap admin** | Opt-in via `Seed:SuperAdmin:*`. No default password exists in code; the seed is skipped with an error log when unconfigured. |
+| **Transport** | HSTS, HTTPS redirection, security headers, strict CORS allowlist. |
+| **Auditability** | Every request carries a validated correlation ID into Serilog's `LogContext` and error responses. |
 
 ---
 
@@ -383,17 +425,32 @@ Entity.AddDomainEvent(event)
 
 ## 🚀 Getting Started
 
+> ⚠️ **No secret goes in `appsettings.json`.** The file is tracked in Git and ships with
+> empty secret values. The application refuses to start if a required secret is missing, too
+> short, or matches a previously-committed value. See **[SECURITY.md](SECURITY.md)**.
+
 ```bash
-# 1. Configure appsettings.json (DB, JWT, SMTP, Google OAuth)
-# 2. Apply migrations
+# 1. Supply secrets via user-secrets (never appsettings.json)
 cd src/Skill-Loop.Api
+dotnet user-secrets init
+dotnet user-secrets set "Jwt:Key"                   "$(openssl rand -base64 48)"
+dotnet user-secrets set "OtpSettings:HashingSecret" "$(openssl rand -base64 48)"
+dotnet user-secrets set "MailSettings:Password"     "your-app-password"
+# Optional: create the first SuperAdmin (no default password exists)
+dotnet user-secrets set "Seed:SuperAdmin:Email"    "admin@your-domain.com"
+dotnet user-secrets set "Seed:SuperAdmin:Password" "$(openssl rand -base64 24)Aa1!"
+
+# 2. Set the non-secret connection strings in appsettings.json.
+#    HangfireConnection MUST be a separate database.
+
+# 3. Apply migrations
 dotnet ef database update --project ../Skill-Loop.Infrastructure
 
-# 3. Run
+# 4. Run
 dotnet run --project src/Skill-Loop.Api
 
-# API: https://localhost:7271
-# Docs: https://localhost:7271/scalar/v1
+# API:    https://localhost:7271
+# Docs:   https://localhost:7271/scalar/v1
 # Hangfire: https://localhost:7271/hangfire
 ```
 

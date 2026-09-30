@@ -17,14 +17,25 @@ public sealed class CreateSupportQuestionCommandHandler : ICommandHandler<Create
 
     public async Task<Result<Guid>> Handle(CreateSupportQuestionCommand request, CancellationToken cancellationToken)
     {
-        var result = string.IsNullOrWhiteSpace(request.Answer)
-            ? SupportQuestion.Create(request.Question, request.Category)
-            : SupportQuestion.CreatePublished(request.Question, request.Answer!, request.Category);
+        // Only publish when the caller explicitly asked for it AND an answer exists.
+        // A supplied answer with IsPublished=false stays an internal draft.
+        var hasAnswer = !string.IsNullOrWhiteSpace(request.Answer);
+
+        var result = request.IsPublished && hasAnswer
+            ? SupportQuestion.CreatePublished(request.Question, request.Answer!, request.Category)
+            : SupportQuestion.Create(request.Question, request.Category);
 
         if (result.IsFailure)
             return Result<Guid>.Failure(result.Errors);
 
         var question = result.Data!;
+
+        if (hasAnswer)
+        {
+            var answerResult = question.SetAnswer(request.Answer!);
+            if (answerResult.IsFailure)
+                return Result<Guid>.Failure(answerResult.Errors);
+        }
 
         _dbContext.Add(question);
         await _dbContext.SaveChangesAsync(cancellationToken);

@@ -13,7 +13,7 @@ using Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetAllU
 /// إدارة مستخدمي النظام بشكل عام
 /// </summary>
 [Route("api/v1/[controller]")]
-//[Authorize] // ����� ������ ������� ���
+[Authorize(Roles = "Admin,SuperAdmin")]
 public class UsersController : BaseApiController
 {
     [HttpGet]

@@ -1,7 +1,9 @@
 namespace Skill_Loop.Api.Controllers;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Skill_Loop.Api.Controllers.Base;
+using Skill_Loop.Api.Extensions;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ForgotPassword;
 using Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.ResetPassword;
 using Skill_Loop.Api.Contracts.Auth;
@@ -14,6 +16,7 @@ public class PasswordsController : BaseApiController
 {
     [HttpPost("forgot")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.OtpResendPolicy)]
     public async Task<IResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
         CancellationToken cancellationToken)
@@ -24,6 +27,7 @@ public class PasswordsController : BaseApiController
     }
     [HttpPost("reset")]
     [AllowAnonymous]
+    [EnableRateLimiting(RateLimitingExtensions.OtpVerifyPolicy)]
     public async Task<IResult> ResetPassword(
         [FromBody] ResetPasswordRequest request,
         CancellationToken cancellationToken)

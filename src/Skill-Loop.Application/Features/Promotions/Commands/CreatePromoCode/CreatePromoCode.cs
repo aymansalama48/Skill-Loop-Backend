@@ -1,4 +1,6 @@
 using FluentValidation;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Promotions;
@@ -11,6 +13,7 @@ namespace Skill_Loop.Application.Features.Promotions.Commands.CreatePromoCode;
 
 /// <param name="DiscountType">"Percentage" أو "FixedAmount".</param>
 /// <param name="DiscountValue">نسبة (1-100) أو مبلغ بأصغر وحدة عملة.</param>
+[Permission(Permissions.Finance.PromoCodesManage)]
 public sealed record CreatePromoCodeCommand(
     string Code,
     string DiscountType,

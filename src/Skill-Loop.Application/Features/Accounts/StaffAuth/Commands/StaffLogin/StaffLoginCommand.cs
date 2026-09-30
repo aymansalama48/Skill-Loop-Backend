@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.StaffAuth.Commands.StaffLogin;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record StaffLoginCommand(
     string Email,
     string Password) : ICommand<StaffAuthResponse>;

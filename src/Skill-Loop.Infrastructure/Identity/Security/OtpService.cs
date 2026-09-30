@@ -29,26 +29,27 @@ public class OtpService(
         OtpPurpose purpose,
         CancellationToken cancellationToken)
     {
+        var nowUtc = dateTime.UtcNow;
+
         var oldActiveOtps = await context.OtpVerifications
             .Where(o => o.Identifier == Identifier
                      && o.Purpose == purpose
                      && !o.IsConsumed
-                     && o.Expiry > dateTime.Now)
+                     && o.Expiry > nowUtc)
             .ToListAsync(cancellationToken);
 
         foreach (var old in oldActiveOtps)
             old.IsConsumed = true;
 
-        // توليد كود من 4 أرقام فقط
-        var code = GenerateSecure4DigitCode();
-        var nowUtc = dateTime.Now; 
+        // توليد كود بالطول المحدد في الإعدادات (OtpSettings:CodeLength)
+        var code = GenerateSecureCode(options.Value.CodeLength);
 
         var otp = new OtpVerification
         {
             Id = Guid.CreateVersion7(),
             Identifier = Identifier,
             Purpose = purpose,
-            CodeHash = HashCode(code, Identifier),
+            CodeHash = HashCode(code, Identifier, purpose),
             Expiry = nowUtc.Add(options.Value.Expiry),
             NextResendAllowedAtUtc = nowUtc.Add(options.Value.ResendCooldown),
             AttemptsCount = 0,
@@ -85,7 +86,13 @@ public class OtpService(
         if (otp is null)
             return Result.Failure(OtpErrors.NotFound);
 
-        if (otp.Expiry < dateTime.Now) 
+        // Expiry and NextResendAllowedAtUtc are both stored in UTC, so they must be
+        // compared against UtcNow. Comparing against the display-local clock shifts every
+        // window by the UTC offset — the resend cooldown below became a two-hour block
+        // instead of its configured two minutes.
+        var nowUtc = dateTime.UtcNow;
+
+        if (otp.Expiry < nowUtc)
             return Result.Failure(OtpErrors.Expired);
 
         // إذا كان الكود قد تجاوز المحاولات مسبقاً
@@ -96,7 +103,7 @@ public class OtpService(
             return Result.Failure(OtpErrors.MaxAttemptsExceeded);
         }
 
-        var expectedHash = HashCode(code, Identifier);
+        var expectedHash = HashCode(code, Identifier, purpose);
         var isMatch = CryptographicOperations.FixedTimeEquals(
             Convert.FromBase64String(expectedHash),
             Convert.FromBase64String(otp.CodeHash));
@@ -117,7 +124,7 @@ public class OtpService(
         }
 
         otp.IsConsumed = true;
-        otp.VerifiedAt = dateTime.Now;
+        otp.VerifiedAt = nowUtc;
         await context.SaveChangesAsync(cancellationToken);
 
         return Result.Success();
@@ -136,24 +143,40 @@ public class OtpService(
             .OrderByDescending(o => o.Expiry)
             .FirstOrDefaultAsync(cancellationToken);
 
-        if (lastOtp is not null && lastOtp.NextResendAllowedAtUtc > dateTime.Now) 
+        // NextResendAllowedAtUtc is persisted in UTC and must be compared against UtcNow.
+        // Using the display-local clock here (UTC+2) blocked resend for two hours
+        // regardless of the configured cooldown, which is a denial-of-service against the
+        // legitimate user trying to receive their own code.
+        if (lastOtp is not null && lastOtp.NextResendAllowedAtUtc > dateTime.UtcNow)
             return Result<OtpGenerationResult>.Failure(OtpErrors.ResendTooSoon);
 
         return await GenerateOtpAsync(Identifier, purpose, cancellationToken);
     }
 
-    private string HashCode(string code, string Identifier)
+    /// <summary>
+    /// HMAC over the code, bound to both the identifier and the purpose.
+    ///
+    /// Binding the purpose means a code issued for email confirmation cannot validate
+    /// against a password-reset row even if the two codes happen to collide. The row lookup
+    /// is already scoped by purpose, so this is defence in depth — but key separation is
+    /// cheap here, and a 6-digit code space makes collisions more plausible than they look.
+    /// </summary>
+    private string HashCode(string code, string Identifier, OtpPurpose purpose)
     {
         using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(options.Value.HashingSecret));
-        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes($"{Identifier}:{code}"));
+        var bytes = hmac.ComputeHash(Encoding.UTF8.GetBytes($"{purpose}:{Identifier}:{code}"));
         return Convert.ToBase64String(bytes);
     }
 
-    // توليد كود 4 أرقام آمن كريبتوجرافياً
-    private static string GenerateSecure4DigitCode()
+    // توليد كود أرقام آمن كريبتوجرافياً بالطول المطلوب في الإعدادات
+    private static string GenerateSecureCode(int codeLength)
     {
-        // يولد رقم عشوائي بين 0 و 9999 
-        // التنسيق "D4" يضمن أنه لو كان الرقم مثلاً 5، سيتحول إلى "0005"
-        return RandomNumberGenerator.GetInt32(0, 10000).ToString("D4");
+        // Guard the configured value so a misconfigured section cannot collapse the key space.
+        var length = Math.Clamp(codeLength, 4, 10);
+
+        // RandomNumberGenerator.GetInt32 is exclusive on the upper bound, hence 10^length.
+        var max = (int)Math.Pow(10, length);
+
+        return RandomNumberGenerator.GetInt32(0, max).ToString($"D{length}");
     }
 }

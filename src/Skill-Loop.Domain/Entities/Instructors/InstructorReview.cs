@@ -33,9 +33,14 @@ public sealed class InstructorReview : SoftDeleteEntity
 
         return Result<InstructorReview>.Success(review);
     }
-    public void Update(int rating, string? comment)
+    public Result Update(int rating, string? comment)
     {
+        if (rating < 1 || rating > 5)
+            return Result.Failure(InstructorReviewErrors.InvalidRating);
+
         Rating = rating;
         Comment = comment?.Trim() ?? string.Empty;
+
+        return Result.Success();
     }
 }

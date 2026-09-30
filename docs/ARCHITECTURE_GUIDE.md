@@ -49,6 +49,7 @@
    - 7.7 [New Permission](#77-new-permission)
 8. [Inconsistencies & Risks](#8-inconsistencies--risks)
 9. [Module Gap Analysis (Target vs Current)](#9-module-gap-analysis-target-vs-current)
+10. [Security Architecture](#10-security-architecture)
 
 ---
 
@@ -1203,6 +1204,11 @@ UnitTests/
 ├── Common/
 │   ├── InMemoryDbContextHelper.cs       ← Helper لـ InMemory DbContext (و InMemoryAppDbContext)
 │   └── MockCourseContentStorage.cs      ← Mock للـ Google Drive
+├── Api/                                 ← اختبارات طبقات الـ API (مرجع للمشروع في csproj)
+│   ├── Middlewares/
+│   │   └── CorrelationIdMiddlewareTests.cs     ← رفض CR/LF والقيم الضخمة
+│   └── Security/
+│       └── SecurityConfigurationExtensionsTests.cs ← رفض الأسرار الناقصة/المتسربة و CORS wildcard
 ├── BackgroundJobs/
 │   └── RefreshDriveQuotaJobTests.cs
 ├── External/
@@ -1217,7 +1223,8 @@ UnitTests/
 │   │   ├── NotificationServiceTests.cs
 │   │   └── SupportNotificationContractsTests.cs   ← ثوابت ISP/DIP (reflection)
 │   └── Security/
-│       └── OtpServiceTests.cs
+│       ├── OtpServiceTests.cs
+│       └── RefreshTokenServiceTests.cs  ← تخزين digest، rotation، reuse detection، حالة الحساب
 └── Features/
     ├── Accounts/                        ← AccountManagement, Authentication, PermissionManagement,
     │                                       StaffAuth, StaffInvitations
@@ -1459,31 +1466,52 @@ public static class Courses
 
 ## 8. Inconsistencies & Risks
 
-### 🔴 Critical
+> ✅ = مُعالَج في مراجعة الأمان. التفاصيل الكاملة — بما فيها الـ runbook لتدوير الأسرار —
+> في **[SECURITY.md](SECURITY.md)**.
 
-| #   | المشكلة                                      | الملف/المسار                 | التفاصيل                                                                                      |
-| --- | -------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------- |
-| 1   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | JWT Key, SMTP Password, Google ClientId — يجب نقلها لـ User Secrets أو Environment Variables. الملف نفسه **مُستثنى** في `.gitignore:488`، فالمشكلة هنا القيم في الـ working tree/local commits، لا تتبّع git. |
+### ✅ Critical — مُعالَجة
 
-### 🟡 Medium
+| #   | المشكلة                                      | الملف/المسار                 | الحل                                                                                                                                                            |
+| --- | -------------------------------------------- | ---------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **appsettings.json يحتوي أسرار (secrets)**   | `Api/appsettings.json`       | كل القيم الحساسة فاضية + تعليقات تشرح كل مفتاح. `SecurityConfigurationExtensions` بيفشل بدء التشغيل لو مفتاح ناقص/أقصر من 32 حرف/مطابق لقيمة كانت متسربة. الأسرار لازم تتدوّر — شوف SECURITY.md §1. |
+| 2   | **Refresh Tokens مخزّنة plain text**         | `Infrastructure/Identity/Tokens/RefreshTokenService.cs` | بقى SHA-256 digest + `TokenFamilyId` + reuse detection. الـ migration `HardenRefreshTokenStorage` بيمسح كل الـ tokens الموجودة (كل المستخدمين لازم يسجّلوا دخول تاني). |
+| 3   | **Password reset مش بيلغي الجلسات**          | `Application/.../ResetPasswordCommandHandler.cs` | بينادي `RevokeAllUserTokensAsync` بعد التغيير. من غير كده، مهاجم عنده refresh token مسروق يقدر يعمل reset ويضل authenticated. |
+| 4   | **مفيش Rate Limiting خالص**                  | `Api/Extensions/RateLimitingExtensions.cs` | global per-IP + policies لكل endpoint، مقسّمة بالـ IP **و** الـ identity المستهدَفة. |
+| 5   | **Open SMTP relay**                          | `Api/Controllers/AdminEmailsController.cs` | `[Authorize(Roles = "Admin,SuperAdmin")]` + permission + المستلم مقصور على `SiteSettings.SupportEmail`. |
+| 6   | **SuperAdmin بباسورد ثابت في الكود**         | `Infrastructure/Persistence/Seed/ContextSeed.cs` | بيمسح `Password@123`. بيبقى opt-in عبر `Seed:SuperAdmin:*`، ومتخطّاش من غير باسورد. |
+| 7   | **CORS wildcard ممكن + AllowCredentials**    | `Api/Extensions/CorsExtensions.cs` | `*` و allowlist فاضية مرفوضين عند بدء التشغيل. loopback/plain-HTTP مرفوضين خارج Development. |
+| 8   | **مفيش Security Headers / HSTS**             | `Api/Middlewares/SecurityHeadersMiddleware.cs` | `nosniff`, `X-Frame-Options`, CSP, `Referrer-Policy` + `UseHsts`. |
+
+### ✅ Medium — مُعالَجة
+
+| #   | المشكلة                                                                        | الحل                                                                                                                                                              |
+| --- | ------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 9   | **`TransactionBehavior` مش بيشتغل على `ICommand` (بدون TResponse)**             | `Application/Common/Behaviors/NonGenericCommandTransactionBehavior.cs` — سلوك تاني مسجّل في `DependencyInjection`. من غيره أوامر زي `AssignPermissionToRole` كانت هتشتغل من غير transaction. |
+| 10  | **`UsersController` و `StaffInvitationsController` بدون حماية**                  | ✅ اتحلّ — `[Authorize(Roles = "Admin,SuperAdmin")]` بقت شغالة.                                                                                                    |
+| 11  | **`_currentUser.UserId ?? Guid.Empty`**                                         | `BaseApiController.RequireUserId()` بيرمي `UnauthorizedAccessException` → 401. اتطبّق على 8 كنترولرز. `Guid.Empty` كان قيمة حقيقية بتعدّي للـ commands.        |
+| 12  | **JWT `exp` محسوب بتوقيت مصر مش UTC**                                          | `JwtTokenGenerator` بقى يستخدم `dateTime.UtcNow` + claim `iat` صريح. الفارق كان بيظبط عمر التوكن + ساعة في التوقيت الصيفي.                                        |
+| 13  | **`IDateTime` مفيهاش `UtcNow`**                                                 | اتضاف `UtcNow` (UTC) مع إبقاء `Now` للعرض بس. ده أصل المشكلة اللي سبّبت كل timestamp مخزّن غلط. تم تصحيح **11 موقع** متأثر (JWT expiry، OTP، الدعوات، الـ bookings، الـ audit interceptors، الـ outbox) — شوف [SECURITY.md §3.6](SECURITY.md#36-utc-discipline). |
+| 14  | **Correlation ID من العميل بيتقبل زي ما هو**                                   | `CorrelationIdMiddleware` بيقبله بس لو ≤ 64 حرف و alphanumerics — يمنع log forging بـ CR/LF.                                                                     |
+| 15  | **URL validation في `UpdateSiteSettings` كانت ميتة**                            | `Must(Expression)` بت FluentValidation **بتاخد Expression مش بتنفّذه**، فـ `not-a-valid-url` كان يعدّي. اتستبدل بفحص صريح لـ absolute http/https.                  |
+| 16  | **`DevController` بيستنى `IsDevelopment()` جوه الـ Action**                      | `DevControllerRemovalConvention` بيشيل أي كنترولر تحت نطاق `.Dev` من الـ Application Model — يعني مش في routing table ولا OpenAPI أصلاً.                              |
+| 17  | **Hangfire على نفس قاعدة بيانات التطبيق**                                      | `ConnectionStrings:HangfireConnection` مطلوب + لازم يكون DB مختلف. `AddHangfireJobs.cs` بيرمي لو ناقص.                                                          |
+
+### 🟡 Medium — متبقي
 
 | #   | المشكلة                                                           | الملف/المسار                                                                                                                                                                                |
 | --- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 2   | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. يجب إزالته أو تقييده ببيئة Development.                                                           |
-| 3   | **TransactionBehavior لا يُفعّل على ICommand (بدون TResponse)**   | `TransactionBehavior.cs` — العقد `where TRequest : ICommand<TResponse>` يستبعد `ICommand` (بدون generic). أوامر مثل `ChangePasswordCommand : ICommand` **لن تُلف بـ Transaction تلقائياً**. |
-| 4   | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
-| 5   | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
-| 6   | **`UsersController` و `StaffInvitationsController` بدون حماية**        | `//[Authorize(...)]` **مُعلّق** في `UsersController.cs:15` و `StaffInvitationsController.cs:21` → endpoints إدارة المستخدمين وإرسال الدعوات متاحة لـ anonymous لحد ما الحماية ترجع. |
-| 7   | **`RefreshDriveQuotaJob` مش مجدول**                              | `Infrastructure/BackgroundJobs/RefreshDriveQuotaJob.cs` مسجّل في DI بس مفيش `RecurringJob` بيشغّله (الـ recurring الوحيد هو `ProcessOutboxMessagesJob`) → مراقبة حصة Google Drive مش شغالة أصلاً. |
-| 8   | **`CompleteBookingCommand` مالهوش endpoint**                     | `BookingsController` بيعرض `PATCH /{id}/status` بس — الـ Command والـ Handler والـ Validator موجودين ومختبرين بس غير معرّفين في الـ API. |
+| 18  | **TestFilesController — كنترولر اختبار في production**            | `Api/Controllers/Test/TestFilesController.cs` — يتيح رفع/حذف ملفات بدون أي authorization. **متبقي** — لازم يتحذف أو يتقفل ببيئة Development بنفس طريقة `DevController`. |
+| 19  | **SessionMaterial entity uses public setters**                    | `Domain/Entities/Session/SessionMaterial.cs` — يستخدم `{ get; set; }` بدلاً من `{ get; private set; }` — يخالف نمط باقي الكيانات. `Session.cs` نفسه يستخدم `private set` بشكل صحيح.                 |
+| 20  | **Redis caching fallback bug**                                    | `Infrastructure/DependencyInjection/AddCaching.cs:40` — إذا فشل الاتصال بـ Redis، `MemoryCacheService` fallback مُعلّق (commented out) → لا يتم تسجيل أي `ICacheService` → فشل DI.                 |
+| 21  | **`CompleteBookingCommand` مالهوش endpoint**                     | `BookingsController` بيعرض `PATCH /{id}/status` بس — الـ Command والـ Handler والـ Validator موجودين ومختبرين بس غير معرّفين في الـ API. |
 
 ### 🟢 Minor / Convention
 
 | #   | المشكلة                                                                                                                        |
 | --- | ------------------------------------------------------------------------------------------------------------------------------ |
-| 9   | **`RefreshDriveQuotaJobConstants.CronExpression` مش مستخدم** — الـ constant معرّف بس مفيش أي كود بيستهلكه.                        |
-| 10  | **بقايا ملفات merge reject** لازم تتحذف: `src/Skill-Loop.Domain/Entities/Chat/ChatMessage.cs.rej` و `tests/Skill-Loop.UnitTests/Common/InMemoryDbContextHelper.cs.rej`. |
-| 11  | **مجلد `uploads/` غير مُضاف للـ `.gitignore`** — `Logs/` (سطر 486) و `UploadedFiles/` (سطر 485) و `appsettings.json` (سطر 488) و `*.user` (سطر 12) كلهم متغطّيين فعلاً؛ `uploads/` وحده هو الفاتح. |
+| 22  | **`RefreshDriveQuotaJobConstants.CronExpression` مش مستخدم** — الـ constant معرّف بس مفيش أي كود بيستهلكه.                        |
+| 23  | **بقايا ملفات merge reject** لازم تتحذف: `src/Skill-Loop.Domain/Entities/Chat/ChatMessage.cs.rej` و `tests/Skill-Loop.UnitTests/Common/InMemoryDbContextHelper.cs.rej`. |
+| 24  | **مجلد `uploads/` غير مُضاف للـ `.gitignore`** — `Logs/` و `UploadedFiles/` و `appsettings.json` و `*.user` كلهم متغطّيين فعلاً؛ `uploads/` وحده هو الفاتح. |
 
 ---
 
@@ -1563,3 +1591,63 @@ Email             |   —    |     —       |       ✅       |  —   |  ✅
 > - **Domain Events**: CourseEnrolledDomainEvent (مع خصم كريديت) أو SessionMaterialUploadedEvent
 > - **Aggregate Root**: Course (Rich Domain Model مع Value Objects)
 > - **Real-time**: Chat pattern (SignalR + IChatNotifier)
+
+---
+
+## 10. Security Architecture
+
+> كل التفاصيل التشغيلية — بما فيها **runbook تدوير الأسرار** — في **[SECURITY.md](SECURITY.md)**.
+> القسم ده بيشرح *إزاي* الضوابط موزّعة على الطبقات.
+
+### 10.1 طبقة الـ Domain
+
+| العنصر | الدور الأمني |
+|--------|--------------|
+| `Permissions.cs` | تعريفات granular. أضيفت `SiteSettings.View/Update` و `Emails.View/SendTest/Resend/ManageAll` — كانت ناقصة فأي command بيحمي نفسه كان بيخلّي أي مستخدم يمرّ. |
+| `Roles.cs` | `SuperAdmin` / `Admin` / `Staff` / `User` |
+
+### 10.2 طبقة الـ Application
+
+| العنصر | الدور الأمني |
+|--------|--------------|
+| `AuthorizationBehavior` | يفحص `[Permission]` على الـ command **قبل** أي handler. `[AllowAnonymous]` و `[AuthenticatedOnly]` بيستثنوه. |
+| `NonGenericCommandTransactionBehavior` | يغطي الـ commands اللي بترجّع `Result` فاضية. `TransactionBehavior` لوحده ما كانش بيلقطهم. |
+| `ResetPasswordCommandHandler` | بيلغي كل الجلسات بعد تغيير الباسورد. |
+| `TokenErrors.TokenReuseDetected` | خطأ مخصّص لاشتباه سرقة توكن → 403. |
+
+### 10.3 طبقة الـ Infrastructure
+
+| العنصر | الدور الأمني |
+|--------|--------------|
+| `JwtTokenGenerator` | HMAC-SHA256، يرمي بدل ما يوقّع بمفتاح ناقص/قصير. `exp`/`nbf`/`iat` من `DateTime.UtcNow` + claim `iat` صريح. |
+| `RefreshTokenService` | تخزين digest، rotation بـ token families، reuse detection، إعادة فحص حالة الحساب. |
+| `RefreshTokenConfiguration` | `IX_RefreshTokens_TokenHash` unique — بيخلي الـ lookup بـ seek ويضمن إن digest ما يشيلش صفّين. |
+| `OtpService` | HMAC بمفتاح مشتق من الغرض + constant-time comparison. |
+| `DateTimeProvider` | `UtcNow` للتخزين والمقارنات، `Now` للعرض بس. |
+| `ContextSeed` | مفيش باسورد admin ثابت. |
+
+### 10.4 طبقة الـ API
+
+| العنصر | الدور الأمني |
+|--------|--------------|
+| `SecurityConfigurationExtensions` | **fail-fast** عند بدء التشغيل — مفيش أسرار متسربة ولا CORS wildcard. |
+| `RateLimitingExtensions` + `RateLimitIdentityMiddleware` | throttling مقسّم بالـ IP والـ identity. |
+| `SecurityHeadersMiddleware` | `nosniff` و غيرها. |
+| `CorrelationIdMiddleware` | تحقّق من الـ trace ID (log-forging). |
+| `GlobalExceptionHandler` | `UnauthorizedAccessException` → 401، concurrency → 409. |
+| `BaseApiController.RequireUserId()` | fail-closed على الـ identity. |
+| `CorsExtensions` | allowlist صريح، مرفوض فيه `*`. |
+| `ServiceCollectionExtensions` | `DevControllerRemovalConvention` بيشيل كنترولرز `.Dev` من الـ routing. |
+
+### 10.5 قواعد لازم تتبَبع عند إضافة feature جديدة
+
+1. **أي endpoint anonymous لازم يكون rate-limited** — `[EnableRateLimiting(...)]` + policy في
+   `RateLimitingExtensions`.
+2. **أي endpoint بيكتب لازم يكون gated** — `[Permission(...)]` على الـ command، و
+   `[Authorize(Roles = ...)]` على الـ route لو حسّاس.
+3. **متحوّلش لـ `Guid.Empty`** — استخدم `RequireUserId()`.
+4. **أي timestamp للتخزين أو المقارنة** استخدم `UtcNow`. `Now` للعرض بس.
+5. **أي secret جديد** يروح على user-secrets / environment variable، ويتضاف لـ
+   `SecurityConfigurationExtensions` لو كان مطلوب لبدء التشغيل.
+6. **الـ migration** اللي بيغيّر شكل بيانات حساسة لازم يكون فيه قرار صريح: هل بنمسح ولا
+   بنهاجر؟ (شوف `HardenRefreshTokenStorage` كنموذج.)

@@ -47,13 +47,8 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
         // Build Paths
         // ===========================================
 
-        var uploadsRoot = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            _options.RootFolder);
-
-        var targetFolder = Path.Combine(
-            uploadsRoot,
-            folderName);
+        if (!TryResolveInStorage(folderName, out var targetFolder))
+            return Result<string>.Failure(FileErrors.InvalidFolder);
 
         if (!Directory.Exists(targetFolder))
         {
@@ -133,9 +128,8 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
         if (string.IsNullOrWhiteSpace(filePath))
             return Task.FromResult(Result<bool>.Success(false));
 
-        var fullPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            filePath);
+        if (!TryResolveInStorage(filePath, out var fullPath))
+            return Task.FromResult(Result<bool>.Success(false));
 
         return Task.FromResult(Result<bool>.Success(File.Exists(fullPath)));
     }
@@ -145,9 +139,8 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
         if (string.IsNullOrWhiteSpace(filePath))
             return Task.FromResult(Result.Failure(FileErrors.FileNotFound));
 
-        var fullPath = Path.Combine(
-            Directory.GetCurrentDirectory(),
-            filePath);
+        if (!TryResolveInStorage(filePath, out var fullPath))
+            return Task.FromResult(Result.Failure(FileErrors.FileNotFound));
 
         if (!File.Exists(fullPath))
             return Task.FromResult(Result.Failure(FileErrors.FileNotFound));
@@ -155,5 +148,70 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
         File.Delete(fullPath);
 
         return Task.FromResult(Result.Success());
+    }
+
+    private string StorageRoot =>
+        Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), _options.RootFolder));
+
+    /// <summary>
+    /// Resolves a caller-supplied relative path to an absolute path that is guaranteed to sit
+    /// inside <see cref="StorageRoot"/>. Accepts both root-relative paths ("categories/icon.png")
+    /// and paths already carrying the root folder name ("UploadedFiles/categories/icon.png"),
+    /// which is the form <see cref="UploadAsync"/> returns. Anything that escapes via "..",
+    /// a rooted path, or an invalid path character is rejected.
+    /// </summary>
+    private bool TryResolveInStorage(string relativePath, out string fullPath)
+    {
+        fullPath = string.Empty;
+
+        if (string.IsNullOrWhiteSpace(relativePath))
+            return false;
+
+        if (relativePath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
+            return false;
+
+        var currentDirectory = Path.GetFullPath(Directory.GetCurrentDirectory());
+        var root = StorageRoot;
+        var candidates = new List<string>();
+
+        if (Path.IsPathRooted(relativePath))
+        {
+            // Absolute path handed back by UploadAsync when RootFolder itself is absolute.
+            candidates.Add(relativePath);
+        }
+        else
+        {
+            var segments = relativePath.Split(
+                new[] { '/', '\\' },
+                StringSplitOptions.RemoveEmptyEntries);
+
+            if (segments.Length == 0 || segments.Any(s => s == "." || s == ".."))
+                return false;
+
+            var relative = Path.Combine(segments);
+            candidates.Add(Path.Combine(root, relative));
+            candidates.Add(Path.Combine(currentDirectory, relative));
+        }
+
+        foreach (var candidate in candidates)
+        {
+            string resolved;
+            try
+            {
+                resolved = Path.GetFullPath(candidate);
+            }
+            catch (Exception ex) when (ex is ArgumentException or NotSupportedException or PathTooLongException)
+            {
+                continue;
+            }
+
+            if (resolved.StartsWith(root + Path.DirectorySeparatorChar, StringComparison.Ordinal))
+            {
+                fullPath = resolved;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

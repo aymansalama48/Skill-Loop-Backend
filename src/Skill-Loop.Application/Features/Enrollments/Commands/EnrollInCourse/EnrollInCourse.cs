@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Errors.Wallet;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Errors.Enrollment;
 using Skill_Loop.Application.Common.Errors.Course;
 using FluentValidation;
@@ -11,6 +13,7 @@ using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Application.Features.Enrollments.Commands.EnrollInCourse;
 
+[AuthenticatedOnly]
 public sealed record EnrollInCourseCommand(Guid UserId, Guid CourseId) : ICommand<EnrollmentResultDto>;
 
 public sealed class EnrollInCourseCommandValidator : AbstractValidator<EnrollInCourseCommand>

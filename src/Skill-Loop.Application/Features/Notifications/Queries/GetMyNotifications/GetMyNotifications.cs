@@ -1,4 +1,6 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Notifications.DTOs;
@@ -9,6 +11,7 @@ namespace Skill_Loop.Application.Features.Notifications.Queries.GetMyNotificatio
 /// <summary>
 /// قايمة إشعاراتي، الأحدث فوق. دي اللي بتظهر في شاشة "الإشعارات".
 /// </summary>
+[AuthenticatedOnly]
 public sealed class GetMyNotificationsQuery : PaginationParameters, IQuery<PagedResult<NotificationDto>>
 {
     public Guid UserId { get; init; }

@@ -22,7 +22,7 @@ public class EnrollmentsController : BaseApiController
     [HttpPost("enroll")]
     public async Task<IResult> EnrollInCourse([FromBody] EnrollInCourseRequest request, CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new EnrollInCourseCommand(userId, request.CourseId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
@@ -30,7 +30,7 @@ public class EnrollmentsController : BaseApiController
     [HttpGet("my-courses")]
     public async Task<IResult> GetMyCourses(CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var query = new GetUserEnrolledCoursesQuery(userId);
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
@@ -41,7 +41,7 @@ public class EnrollmentsController : BaseApiController
         [FromBody] UpdateLessonProgressRequest request,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new UpdateLessonProgressCommand(userId, courseId, request.LessonId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
@@ -52,7 +52,7 @@ public class EnrollmentsController : BaseApiController
         Guid lessonId,
         CancellationToken cancellationToken)
     {
-        var userId = _currentUser.UserId ?? Guid.Empty;
+        var userId = RequireUserId();
         var command = new UpdateLessonProgressCommand(userId, courseId, lessonId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
