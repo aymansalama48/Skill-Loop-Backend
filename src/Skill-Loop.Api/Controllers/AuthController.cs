@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Api.Controllers;
+namespace Skill_Loop.Api.Controllers;
 
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -89,28 +89,6 @@ public class AuthController : BaseApiController
         return HandleResult(result);
     }
 
-    [HttpPost("user/verify-email")]
-    [AllowAnonymous]
-    public async Task<IResult> VerifyEmail(
-        [FromBody] VerifyEmailRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new VerifyEmailOtpCommand(request.Email, request.OtpCode);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
-    [HttpPost("user/resend-verification-code")]
-    [AllowAnonymous]
-    public async Task<IResult> ResendVerificationCode(
-        [FromBody] ResendVerificationCodeRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ResendEmailOtpCommand(request.Email);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
     // =========================================================================
     // 3. Token Management
     // =========================================================================
@@ -138,32 +116,4 @@ public class AuthController : BaseApiController
     }
 
     // =========================================================================
-    // 4. Password Management (استعادة كلمة المرور)
-    // =========================================================================
-
-    [HttpPost("password/forgot")]
-    [AllowAnonymous]
-    public async Task<IResult> ForgotPassword(
-        [FromBody] ForgotPasswordRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ForgotPasswordCommand(request.Email);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
-
-    [HttpPost("password/reset")]
-    [AllowAnonymous]
-    public async Task<IResult> ResetPassword(
-        [FromBody] ResetPasswordRequest request,
-        CancellationToken cancellationToken)
-    {
-        var command = new ResetPasswordCommand(
-            request.Email,
-            request.OtpCode,
-            request.NewPassword,
-            request.ConfirmPassword);
-        var result = await Mediator.Send(command, cancellationToken);
-        return HandleResult(result);
-    }
 }

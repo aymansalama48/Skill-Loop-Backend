@@ -114,21 +114,7 @@ public class BookingsController : BaseApiController
         return HandleResult(result);
     }
 
-    /// <summary>
-    /// حجوزات جلسة معينة (للمحاضر)
-    /// </summary>
-    [HttpGet("session/{sessionId:guid}")]
-    public async Task<IResult> GetSessionBookings(
-        Guid sessionId,
-        [FromQuery] PaginationRequest request,
-        [FromQuery] BookingStatus? status = null,
-        CancellationToken cancellationToken = default)
-    {
-        var query = new GetSessionBookingsQuery(sessionId, request.PageNumber, request.PageSize, status);
-        var result = await Mediator.Send(query, cancellationToken);
 
-        return HandleResult(result);
-    }
 
     /// <summary>
     /// تفاصيل حجز واحد
