@@ -2,7 +2,7 @@
   "info": {
     "name": "Skill Loop Backend - Full API Test Suite",
     "_postman_id": "77e8b03e-f6b2-5858-92d6-190629a64988",
-    "description": "GENERATED from docs/scalar-test-plan.json - do not edit by hand.\nRegenerate: python docs/generate_test_artifacts.py\n\nHOW TO RUN\n  1. Import this file into Postman (Import > Link/Disk).\n  2. Start the API: dotnet run --project src/Skill-Loop.Api\n  3. Set collection variable student1Otp / student2Otp / invitationToken manually.\n  4. Edit any file paths marked 'EDIT THIS PATH before running'.\n  5. Collection > Run (Ctrl+Alt+R). It executes all steps in order and each\n     response feeds the next request automatically.\n\nDocker is NOT required. Scalar is served in-process at /scalar/v1.\n",
+    "description": "GENERATED from docs/scalar-test-plan.json - do not edit by hand.\nRegenerate: python docs/generate_test_artifacts.py\n\nHOW TO RUN\n  1. Import this file into the Postman DESKTOP app (Import > Link/Disk).\n  2. Start the API and LEAVE THAT WINDOW OPEN:\n         powershell -ExecutionPolicy Bypass -File docs\\run-api-local.ps1\n     It resolves the secrets, creates both databases and disables Redis.\n  3. Use the LOCAL agent, never the CLOUD agent. A cloud agent runs on\n     Postman's servers, where localhost:7271 is the agent's own machine and\n     not yours - every request then fails before reaching the API.\n  4. Base URL must be https://localhost:7271 (HTTPS, port 7271). Port 7000\n     only issues a 307 redirect to HTTPS.\n  5. Set collection variables adminEmail / adminPassword to the values you\n     seeded (Seed:SuperAdmin:Email / Seed:SuperAdmin:Password). There is no\n     default password in the codebase any more.\n  6. Set student1Otp / student2Otp / invitationToken manually (they arrive\n     by email, not from the API).\n  7. Edit any file paths marked 'EDIT THIS PATH before running'.\n  8. Collection > Run (Ctrl+Alt+R). Each response feeds the next request.\n\nDocker and Redis are NOT required. Scalar is served in-process at /scalar/v1.\n",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -18,7 +18,7 @@
     },
     {
       "key": "adminPassword",
-      "value": "Password@123",
+      "value": "",
       "type": "string"
     },
     {
@@ -1439,10 +1439,10 @@
                 "login"
               ]
             },
-            "description": "StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps.",
+            "description": "StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps. There is no default admin password in the codebase any more - fill adminEmail and adminPassword with the Seed:SuperAdmin values you configured, or this returns 401.",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"email\": \"admin@skillloop.com\",\n  \"password\": \"Password@123\"\n}",
+              "raw": "{\n  \"email\": \"{{adminEmail}}\",\n  \"password\": \"{{adminPassword}}\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -3799,10 +3799,6 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{adminToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -3816,15 +3812,42 @@
                 "Courses"
               ]
             },
-            "description": "level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels. A string here returns 400. This is the [Permissions.Courses.Create]-gated step, so it needs the real staff token from S021.",
+            "description": "This endpoint takes multipart/form-data, NOT json - a JSON body returns 415. Level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels; a string returns 400. There is deliberately no InstructorId/InstructorName field: the handler derives the instructor from the caller's token, so you cannot publish a course as someone else unless the caller holds Courses.ManageAll. Gated by [Permissions.Courses.Create], so it needs the real staff token from S021.",
             "body": {
-              "mode": "raw",
-              "raw": "{\n  \"title\": \"C# Masterclass\",\n  \"description\": \"A complete guide to modern C#.\",\n  \"thumbnailUrl\": \"https://example.com/thumb.jpg\",\n  \"credits\": 50,\n  \"level\": 2,\n  \"categoryId\": \"{{categoryId}}\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "Title",
+                  "value": "C# Masterclass",
+                  "type": "text"
+                },
+                {
+                  "key": "Description",
+                  "value": "A complete guide to modern C#.",
+                  "type": "text"
+                },
+                {
+                  "key": "Credits",
+                  "value": 50,
+                  "type": "text"
+                },
+                {
+                  "key": "Level",
+                  "value": 2,
+                  "type": "text"
+                },
+                {
+                  "key": "CategoryId",
+                  "value": "{{categoryId}}",
+                  "type": "text"
+                },
+                {
+                  "key": "ThumbnailImage",
+                  "type": "file",
+                  "src": "C:/path/to/thumbnail.jpg",
+                  "description": "EDIT THIS PATH before running"
                 }
-              }
+              ]
             }
           },
           "response": []
@@ -7508,10 +7531,6 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{instructorToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -7527,16 +7546,7 @@
                 "status?status=Confirmed"
               ]
             },
-            "description": "Status travels as a QUERY parameter here, so the name 'Confirmed' is correct, while the optional body only carries a reason.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": null\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Status travels as a QUERY parameter here, so the name 'Confirmed' is correct. This endpoint binds no request body - send none."
           },
           "response": []
         },
@@ -7679,10 +7689,6 @@
               {
                 "key": "Authorization",
                 "value": "Bearer {{userToken}}"
-              },
-              {
-                "key": "Content-Type",
-                "value": "application/json"
               }
             ],
             "url": {
@@ -7698,16 +7704,7 @@
                 "cancel"
               ]
             },
-            "description": "Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response.",
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"reason\": \"Schedule conflict\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
-                }
-              }
-            }
+            "description": "Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response. This endpoint binds no request body - send none."
           },
           "response": []
         }

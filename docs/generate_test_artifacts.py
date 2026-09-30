@@ -114,12 +114,20 @@ def build_http(plan) -> str:
     out.append("//   3. Work down the file in order. Each step stores what it returns, so the")
     out.append("//      ids further down fill themselves in and you never copy one by hand.")
     out.append("//")
-    out.append("//   Seeded login:  admin@skillloop.com / Password@123")
+    out.append("//   Seeded admin login:  <the Seed:SuperAdmin:Email you set> / "
+               "<the Seed:SuperAdmin:Password you set>")
+    out.append("//   There is NO default password in the codebase any more - seeding is opt-in,")
+    out.append("//   so fill in adminEmail and adminPassword below with your own values.")
+    out.append("//")
     out.append("//   Every other account used below is created by the plan itself.")
     out.append("//")
     out.append("//   To run the whole thing automatically instead, import")
-    out.append("//   docs/skill-loop.postman_collection.json into Postman and use the")
-    out.append("//   collection runner.")
+    out.append("//   docs/skill-loop.postman_collection.json into the Postman DESKTOP app")
+    out.append("//   (or select the LOCAL agent). A Postman CLOUD agent runs on Postman's")
+    out.append("//   servers, where localhost:7271 is the agent's own machine, so every")
+    out.append("//   request fails before it reaches your API.")
+    out.append("//")
+    out.append("//   Base URL must be https://localhost:7271 - port 7000 only redirects.")
     out.append("//")
     out.append(f"// Scalar UI (for browsing, not for running): {scalar['ui']}")
     out.append("// " + "=" * 96)
@@ -170,9 +178,11 @@ def build_http(plan) -> str:
             merged.update(optional_form or {})
             out.append("Content-Type: multipart/form-data")
             out.append("")
-            out.append("// Attach a real file to the fields noted below in the REST Client panel.")
             for k, v in merged.items():
-                out.append(f"// file field: {k}")
+                # Only a path-shaped value is an actual file. Labelling plain text fields as
+                # "file field" told the reader to attach a file to e.g. "Title".
+                if isinstance(v, str) and PATHY_RE.match(v):
+                    out.append(f"// file field: attach a real file here in the REST Client panel")
                 out.append(f"{k} = {clean(v)}")
         elif body is not None:
             out.append("Content-Type: application/json")
@@ -311,13 +321,23 @@ def build_postman(plan) -> dict:
                 "GENERATED from docs/scalar-test-plan.json - do not edit by hand.\n"
                 "Regenerate: python docs/generate_test_artifacts.py\n\n"
                 "HOW TO RUN\n"
-                "  1. Import this file into Postman (Import > Link/Disk).\n"
-                "  2. Start the API: dotnet run --project src/Skill-Loop.Api\n"
-                "  3. Set collection variable student1Otp / student2Otp / invitationToken manually.\n"
-                "  4. Edit any file paths marked 'EDIT THIS PATH before running'.\n"
-                "  5. Collection > Run (Ctrl+Alt+R). It executes all steps in order and each\n"
-                "     response feeds the next request automatically.\n\n"
-                "Docker is NOT required. Scalar is served in-process at /scalar/v1.\n"
+                "  1. Import this file into the Postman DESKTOP app (Import > Link/Disk).\n"
+                "  2. Start the API and LEAVE THAT WINDOW OPEN:\n"
+                "         powershell -ExecutionPolicy Bypass -File docs\\run-api-local.ps1\n"
+                "     It resolves the secrets, creates both databases and disables Redis.\n"
+                "  3. Use the LOCAL agent, never the CLOUD agent. A cloud agent runs on\n"
+                "     Postman's servers, where localhost:7271 is the agent's own machine and\n"
+                "     not yours - every request then fails before reaching the API.\n"
+                "  4. Base URL must be https://localhost:7271 (HTTPS, port 7271). Port 7000\n"
+                "     only issues a 307 redirect to HTTPS.\n"
+                "  5. Set collection variables adminEmail / adminPassword to the values you\n"
+                "     seeded (Seed:SuperAdmin:Email / Seed:SuperAdmin:Password). There is no\n"
+                "     default password in the codebase any more.\n"
+                "  6. Set student1Otp / student2Otp / invitationToken manually (they arrive\n"
+                "     by email, not from the API).\n"
+                "  7. Edit any file paths marked 'EDIT THIS PATH before running'.\n"
+                "  8. Collection > Run (Ctrl+Alt+R). Each response feeds the next request.\n\n"
+                "Docker and Redis are NOT required. Scalar is served in-process at /scalar/v1.\n"
             ),
             "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
         },

@@ -1,6 +1,6 @@
 {
   "name": "Skill Loop Backend - Scalar Manual Test Plan",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Ordered, end-to-end manual test plan for every HTTP endpoint in the Skill Loop API, to be executed by hand against the Scalar UI. Steps are in strict dependency order: each step only depends on artifacts produced by earlier steps.",
 
   "scalar": {
@@ -11,15 +11,18 @@
     "dockerRequired": false,
     "notes": [
       "Scalar is served in-process by the Scalar.AspNetCore NuGet package (src/Skill-Loop.Api/Extensions/OpenApiExtensions.cs). No Docker needed for the docs UI.",
-      "Docker is only needed for the backing services: SQL Server and Redis.",
-      "Without Docker you must supply your own SQL Server and Redis via ConnectionStrings__DefaultConnection and Redis__ConnectionString, or via user-secrets / environment variables.",
-      "Both /scalar/v1 and /openapi/v1.json are registered only when ASPNETCORE_ENVIRONMENT=Development. Running with `dotnet run` (launchSettings.json sets Development) satisfies this."
+      "docs/run-api-local.ps1 points SQL Server at the locally installed instance, creates both databases, and sets Redis__ConnectionString to empty so the app falls back to the in-memory ICacheService. OTPs live in the database and rate limiting is in-process, so nothing else needs Redis.",
+      "If you run without that script you must supply your own SQL Server and Hangfire connection strings, since Hangfire never creates its own database.",
+      "Both /scalar/v1 and /openapi/v1.json are registered only when ASPNETCORE_ENVIRONMENT=Development. The script sets that for you."
     ]
   },
 
   "howToUse": {
     "steps": [
       "Open the Scalar UI URL above.",
+      "Start the API FIRST and leave that window open: powershell -ExecutionPolicy Bypass -File docs\\run-api-local.ps1. It resolves the secrets, creates the Skill-Loop and Skill-Loop-Hangfire databases, and disables Redis.",
+      "IMPORTANT - run a collection from the Postman DESKTOP app or the LOCAL agent. A Postman CLOUD agent executes on Postman's own servers, where localhost:7271 means the agent's machine and not yours, so every request fails before reaching the API.",
+      "The base URL is https://localhost:7271 (HTTPS, port 7271). Port 7000 only issues a 307 redirect to HTTPS, so pointing the collection at it makes every request look broken.",
       "Execute the steps below in ascending `order`, top to bottom.",
       "When a step declares `capture`, copy the value at the given JSON path from the response and store it in the matching variable (shown in `variables`).",
       "When a step declares `auth`, set the Scalar 'Authentication' selector to the named value, or paste the token manually via the Auth tab.",
@@ -95,8 +98,8 @@
   },
 
   "variables": {
-    "adminEmail": { "value": "admin@skillloop.com", "source": "ContextSeed.SeedSuperAdminAsync" },
-    "adminPassword": { "value": "Password@123", "source": "ContextSeed.SeedSuperAdminAsync" },
+    "adminEmail": { "value": "admin@skillloop.com", "source": "Seed:SuperAdmin:Email user-secret. Only exists if you seeded it." },
+    "adminPassword": { "value": "", "source": "YOU MUST FILL THIS IN - it is whatever you set in Seed:SuperAdmin:Password. There is no default password in the codebase any more." },
     "adminToken": { "value": "", "source": "S021 $.data.accessToken" },
     "adminRefreshToken": { "value": "", "source": "S021 $.data.refreshToken" },
     "adminUserId": { "value": "", "source": "S020 $.data.userId" },
@@ -384,8 +387,8 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "admin@skillloop.com",
-        "password": "Password@123"
+        "email": "{{adminEmail}}",
+        "password": "{{adminPassword}}"
       },
       "expectStatus": [200],
       "expectBody": "data.accessToken, data.refreshToken, data.roles",
@@ -394,7 +397,7 @@
         "adminRefreshToken": "$.data.refreshToken",
         "adminUserId": "$.data.userId"
       },
-      "notes": "StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps."
+      "notes": "StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps. There is no default admin password in the codebase any more - fill adminEmail and adminPassword with the Seed:SuperAdmin values you configured, or this returns 401."
     },
     {
       "order": 18,
@@ -1079,19 +1082,18 @@
       "method": "POST",
       "path": "/api/v1/Courses",
       "auth": "adminToken",
-      "contentType": "application/json",
-      "body": {
-        "title": "C# Masterclass",
-        "description": "A complete guide to modern C#.",
-        "thumbnailUrl": "https://example.com/thumb.jpg",
-        "credits": 50,
-        "level": 2,
-        "categoryId": "{{categoryId}}"
+      "form": {
+        "Title": "C# Masterclass",
+        "Description": "A complete guide to modern C#.",
+        "Credits": 50,
+        "Level": 2,
+        "CategoryId": "{{categoryId}}"
       },
+      "optionalForm": { "ThumbnailImage": "C:/path/to/thumbnail.jpg" },
       "expectStatus": [200],
       "expectBody": "data.id for the new course, status = Draft",
       "capture": { "courseId": "$.data.id" },
-      "notes": "level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels. A string here returns 400. This is the [Permissions.Courses.Create]-gated step, so it needs the real staff token from S021."
+      "notes": "This endpoint takes multipart/form-data, NOT json - a JSON body returns 415. Level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels; a string returns 400. There is deliberately no InstructorId/InstructorName field: the handler derives the instructor from the caller's token, so you cannot publish a course as someone else unless the caller holds Courses.ManageAll. Gated by [Permissions.Courses.Create], so it needs the real staff token from S021."
     },
     {
       "order": 62,
@@ -2074,11 +2076,9 @@
       "method": "PATCH",
       "path": "/api/v1/Bookings/{{bookingId}}/status?status=Confirmed",
       "auth": "instructorToken",
-      "contentType": "application/json",
-      "body": { "reason": null },
       "expectStatus": [200, 204],
       "expectBody": "Success; status becomes Confirmed (2) and the credits are consumed",
-      "notes": "Status travels as a QUERY parameter here, so the name 'Confirmed' is correct, while the optional body only carries a reason."
+      "notes": "Status travels as a QUERY parameter here, so the name 'Confirmed' is correct. This endpoint binds no request body - send none."
     },
     {
       "order": 131,
@@ -2116,11 +2116,9 @@
       "method": "POST",
       "path": "/api/v1/Bookings/{{bookingId}}/cancel",
       "auth": "userToken",
-      "contentType": "application/json",
-      "body": { "reason": "Schedule conflict" },
       "expectStatus": [200, 204, 409],
       "expectBody": "Success and a credit refund, or 409 if the cancellation window has passed",
-      "notes": "Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response."
+      "notes": "Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response. This endpoint binds no request body - send none."
     },
 
     {

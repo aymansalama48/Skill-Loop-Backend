@@ -19,12 +19,19 @@
 //   3. Work down the file in order. Each step stores what it returns, so the
 //      ids further down fill themselves in and you never copy one by hand.
 //
-//   Seeded login:  admin@skillloop.com / Password@123
+//   Seeded admin login:  <the Seed:SuperAdmin:Email you set> / <the Seed:SuperAdmin:Password you set>
+//   There is NO default password in the codebase any more - seeding is opt-in,
+//   so fill in adminEmail and adminPassword below with your own values.
+//
 //   Every other account used below is created by the plan itself.
 //
 //   To run the whole thing automatically instead, import
-//   docs/skill-loop.postman_collection.json into Postman and use the
-//   collection runner.
+//   docs/skill-loop.postman_collection.json into the Postman DESKTOP app
+//   (or select the LOCAL agent). A Postman CLOUD agent runs on Postman's
+//   servers, where localhost:7271 is the agent's own machine, so every
+//   request fails before it reaches your API.
+//
+//   Base URL must be https://localhost:7271 - port 7000 only redirects.
 //
 // Scalar UI (for browsing, not for running): https://localhost:7271/scalar/v1
 // ================================================================================================
@@ -228,15 +235,15 @@ Accept: application/json
 ################################################################################################
 ### [ 17] S021  Staff login as SuperAdmin - the real admin token
 ### phase: P2   auth: none   expect: [200]
-### note: StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps.
+### note: StaffAuthService embeds the resolved permission list, unlike the dev quick login. Use this token for all admin steps. There is no default admin password in the codebase any more - fill adminEmail and adminPassword with the Seed:SuperAdmin values you configured, or this returns 401.
 
 POST /api/v1/Auth/staff/login
 Accept: application/json
 Content-Type: application/json
 
 {
-  "email": "admin@skillloop.com",
-  "password": "Password@123"
+  "email": "{{adminEmail}}",
+  "password": "{{adminPassword}}"
 }
 
 > {% client.global.set("adminToken", pm.response.json().data.accessToken); %}
@@ -732,8 +739,7 @@ Accept: application/json
 Authorization: Bearer {{userToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: file
+// file field: attach a real file here in the REST Client panel
 file = C:/path/to/avatar.png
 
 ################################################################################################
@@ -778,16 +784,11 @@ Accept: application/json
 Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: name
 name = Programming
-// file field: slug
 slug = programming
-// file field: description
 description = Software development courses
-// file field: displayOrder
 displayOrder = 1
-// file field: iconFile
+// file field: attach a real file here in the REST Client panel
 iconFile = C:/path/to/icon.png
 
 > {% client.global.set("categoryId", pm.response.json().data.id); %}
@@ -801,16 +802,11 @@ Accept: application/json
 Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: name
 name = Programming & Software
-// file field: slug
 slug = programming-software
-// file field: description
 description = Updated description
-// file field: displayOrder
 displayOrder = 2
-// file field: iconFile
+// file field: attach a real file here in the REST Client panel
 iconFile = C:/path/to/icon-v2.png
 
 ################################################################################################
@@ -834,21 +830,20 @@ Authorization: Bearer {{adminToken}}
 ################################################################################################
 ### [ 61] S100  Create a course (draft)
 ### phase: P8   auth: adminToken   expect: [200]
-### note: level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels. A string here returns 400. This is the [Permissions.Courses.Create]-gated step, so it needs the real staff token from S021.
+### note: This endpoint takes multipart/form-data, NOT json - a JSON body returns 415. Level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels; a string returns 400. There is deliberately no InstructorId/InstructorName field: the handler derives the instructor from the caller's token, so you cannot publish a course as someone else unless the caller holds Courses.ManageAll. Gated by [Permissions.Courses.Create], so it needs the real staff token from S021.
 
 POST /api/v1/Courses
 Accept: application/json
 Authorization: Bearer {{adminToken}}
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-  "title": "C# Masterclass",
-  "description": "A complete guide to modern C#.",
-  "thumbnailUrl": "https://example.com/thumb.jpg",
-  "credits": 50,
-  "level": 2,
-  "categoryId": "{{categoryId}}"
-}
+Title = C# Masterclass
+Description = A complete guide to modern C#.
+Credits = 50
+Level = 2
+CategoryId = {{categoryId}}
+// file field: attach a real file here in the REST Client panel
+ThumbnailImage = C:/path/to/thumbnail.jpg
 
 > {% client.global.set("courseId", pm.response.json().data.id); %}
 
@@ -1049,10 +1044,8 @@ Accept: application/json
 Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: file
+// file field: attach a real file here in the REST Client panel
 file = C:/path/to/syllabus.pdf
-// file field: materialType
 materialType = PDF
 
 > {% client.global.set("courseMaterialId", pm.response.json().data.id); %}
@@ -1066,10 +1059,8 @@ Accept: application/json
 Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: file
+// file field: attach a real file here in the REST Client panel
 file = C:/path/to/lesson-slides.pdf
-// file field: materialType
 materialType = PDF
 
 > {% client.global.set("lessonMaterialId", pm.response.json().data.id); %}
@@ -1475,10 +1466,8 @@ Accept: application/json
 Authorization: Bearer {{instructorToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: file
+// file field: attach a real file here in the REST Client panel
 file = C:/path/to/workshop.zip
-// file field: materialType
 materialType = Other
 
 > {% client.global.set("sessionMaterialId", pm.response.json().data.id); %}
@@ -1727,16 +1716,12 @@ Authorization: Bearer {{instructorToken}}
 ################################################################################################
 ### [130] S204  Instructor confirms the booking
 ### phase: P13   auth: instructorToken   expect: [200, 204]
-### note: Status travels as a QUERY parameter here, so the name 'Confirmed' is correct, while the optional body only carries a reason.
+### note: Status travels as a QUERY parameter here, so the name 'Confirmed' is correct. This endpoint binds no request body - send none.
 
 PATCH /api/v1/Bookings/{{bookingId}}/status?status=Confirmed
 Accept: application/json
 Authorization: Bearer {{instructorToken}}
-Content-Type: application/json
 
-{
-  "reason": null
-}
 
 ################################################################################################
 ### [131] S205  Mark the session completed
@@ -1770,16 +1755,12 @@ Content-Type: application/json
 ################################################################################################
 ### [133] S207  Cancel the booking
 ### phase: P13   auth: userToken   expect: [200, 204, 409]
-### note: Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response.
+### note: Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response. This endpoint binds no request body - send none.
 
 POST /api/v1/Bookings/{{bookingId}}/cancel
 Accept: application/json
 Authorization: Bearer {{userToken}}
-Content-Type: application/json
 
-{
-  "reason": "Schedule conflict"
-}
 
 ################################################################################################
 ### [134] S220  Start a conversation with the other user
@@ -2170,8 +2151,7 @@ Accept: application/json
 Authorization: Bearer {{adminToken}}
 Content-Type: multipart/form-data
 
-// Attach a real file to the fields noted below in the REST Client panel.
-// file field: file
+// file field: attach a real file here in the REST Client panel
 file = C:/path/to/probe.txt
 
 > {% client.global.set("testFilePath", pm.response.json().data); %}
