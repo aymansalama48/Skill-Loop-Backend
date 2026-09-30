@@ -53,6 +53,7 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Booking> Bookings => Set<Booking>();
     public DbSet<SessionMaterial> SessionMaterials => Set<SessionMaterial>();
+    public DbSet<SessionReview> SessionReviews => Set<SessionReview>();
 
     public DbSet<Conversation> Conversations => Set<Conversation>();
     public DbSet<ChatMessage> ChatMessages => Set<ChatMessage>();
@@ -65,6 +66,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoCode> PromoCodes => Set<Skill_Loop.Domain.Entities.Promotions.PromoCode>();
     public DbSet<Skill_Loop.Domain.Entities.Promotions.PromoRedemption> PromoRedemptions => Set<Skill_Loop.Domain.Entities.Promotions.PromoRedemption>();
     public DbSet<Skill_Loop.Domain.Entities.Wallets.CreditPurchase> CreditPurchases => Set<Skill_Loop.Domain.Entities.Wallets.CreditPurchase>();
+
+    // 📧 Email Logs
+    public DbSet<Skill_Loop.Domain.Entities.Emails.EmailLog> EmailLogs => Set<Skill_Loop.Domain.Entities.Emails.EmailLog>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

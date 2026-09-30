@@ -271,6 +271,12 @@ public sealed class Course : SoftDeleteEntity
         if (stars is < 1 or > 5)
             return Result.Failure(new Error("Review.InvalidStars", "Rating must be between 1 and 5.", ErrorType.Validation));
 
+        if (userId == InstructorId)
+            return Result.Failure(new Error("Review.InstructorCannotReview", "Instructor cannot review their own course.", ErrorType.Validation));
+
+        if (_reviews.Any(r => r.UserId == userId))
+            return Result.Failure(new Error("Review.Duplicate", "User has already reviewed this course.", ErrorType.Validation));
+
         var review = CourseReview.Create(Id, userId, stars, comment);
         _reviews.Add(review);
         

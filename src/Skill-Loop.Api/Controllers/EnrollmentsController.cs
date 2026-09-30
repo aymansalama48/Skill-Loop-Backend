@@ -58,4 +58,19 @@ public class EnrollmentsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// تحديث نسبة إنجاز الدرس عند إتمامه (نفس UpdateProgress ولكن بمسار مختلف متوافق مع الموبايل)
+    /// </summary>
+    [HttpPost("{courseId:guid}/lessons/{lessonId:guid}/complete")]
+    public async Task<IResult> CompleteLesson(
+        Guid courseId,
+        Guid lessonId,
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId ?? Guid.Empty;
+        var command = new UpdateLessonProgressCommand(userId, courseId, lessonId);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
 }

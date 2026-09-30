@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تذكير بجلسة قادمة - Skill Loop</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f7f6; color: #333; line-height: 1.6; padding: 20px; }
+        .container { max-width: 600px; margin: 0 auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .header { background: #f39c12; color: #fff; padding: 20px; text-align: center; }
+        .content { padding: 30px; }
+        .footer { background: #eee; padding: 15px; text-align: center; font-size: 12px; color: #777; }
+        .btn { display: inline-block; padding: 10px 20px; background: #f39c12; color: #fff; text-decoration: none; border-radius: 5px; margin-top: 15px; }
+        .details { background: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; border: 1px solid #ddd; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>تذكير بجلسة قادمة</h2>
+        </div>
+        <div class="content">
+            <p>أهلاً بك،</p>
+            <p>نود تذكيرك بأن لديك جلسة قادمة قريباً. يرجى الاستعداد في الوقت المحدد:</p>
+            
+            <div class="details">
+                <p><strong>المتعلم:</strong> {{LearnerName}}</p>
+                <p><strong>التاريخ:</strong> {{SessionDate:yyyy-MM-dd}}</p>
+                <p><strong>الوقت:</strong> {{SessionTime:hh:mm tt}}</p>
+                <p><strong>رابط الجلسة:</strong> <a href="{{MeetingLink}}">انقر هنا للانضمام</a></p>
+            </div>
+            
+            <center>
+                <a href="{{DashboardUrl}}" class="btn">عرض الجلسة في لوحة التحكم</a>
+            </center>
+        </div>
+        <div class="footer">
+            <p>&copy; {{Year}} Skill Loop. جميع الحقوق محفوظة.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -59,4 +59,11 @@ public class PromoCodesController : BaseApiController
 
         return HandleResult(await Mediator.Send(new DeactivatePromoCodeCommand(promoCodeId), cancellationToken));
     }
+
+    [HttpGet("{code}/validate")]
+    [AllowAnonymous] // Anyone should be able to validate a promo code
+    public async Task<IResult> Validate(string code, CancellationToken cancellationToken)
+    {
+        return HandleResult(await Mediator.Send(new Skill_Loop.Application.Features.Promotions.Queries.ValidatePromoCode.ValidatePromoCodeQuery(code), cancellationToken));
+    }
 }

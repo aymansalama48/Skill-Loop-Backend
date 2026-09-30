@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using Skill_Loop.Infrastructure.Persistence.Data;
 namespace Skill_Loop.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260930001952_RestorePromoCodesTable")]
+    partial class RestorePromoCodesTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1234,11 +1237,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<double>("AverageRating")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("float")
-                        .HasDefaultValue(0.0);
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1294,11 +1292,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("TotalReviews")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -1316,44 +1309,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("Status", "ScheduledAtUtc");
 
                     b.ToTable("Sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.SessionReview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Stars")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("SessionReviews", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.SiteSettings.SiteSettings", b =>
@@ -2051,15 +2006,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.SessionReview", b =>
-                {
-                    b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", null)
-                        .WithMany("Reviews")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.WalletTransaction", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Wallets.UserWallet", null)
@@ -2140,8 +2086,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("Bookings");
 
                     b.Navigation("Materials");
-
-                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>

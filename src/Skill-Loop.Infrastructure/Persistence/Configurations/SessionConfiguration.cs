@@ -55,6 +55,19 @@ public sealed class SessionConfiguration : IEntityTypeConfiguration<Session>
             .IsRequired()
             .HasDefaultValue(1);
 
+        builder.Property(x => x.AverageRating)
+            .IsRequired()
+            .HasDefaultValue(0.0);
+
+        builder.Property(x => x.TotalReviews)
+            .IsRequired()
+            .HasDefaultValue(0);
+
+        builder.HasMany(x => x.Reviews)
+            .WithOne()
+            .HasForeignKey(x => x.SessionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         builder.Ignore(x => x.EndsAtUtc);
 
         builder.HasIndex(x => x.InstructorId);

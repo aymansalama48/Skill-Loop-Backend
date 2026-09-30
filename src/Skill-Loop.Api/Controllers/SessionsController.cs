@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skill_Loop.Api.Contracts.Sessions;
 using Skill_Loop.Api.Controllers.Base;
@@ -153,6 +153,19 @@ public class SessionsController : BaseApiController
 
         var query = new GetMySessionsPagedQuery(instructorId, pageNumber, pageSize, status, upcomingOnly, pastOnly);
         var result = await Mediator.Send(query, cancellationToken);
+
+        return HandleResult(result);
+    }
+
+    [HttpPost("{id:guid}/reviews")]
+    public async Task<IResult> AddReview(
+        Guid id,
+        [FromBody] AddSessionReviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = _currentUser.UserId ?? Guid.Empty;
+        var command = new Skill_Loop.Application.Features.Sessions.Commands.AddSessionReview.AddSessionReviewCommand(userId, id, request.Stars, request.Comment);
+        var result = await Mediator.Send(command, cancellationToken);
 
         return HandleResult(result);
     }

@@ -34,6 +34,12 @@ public sealed class Session : AuditableEntity
     private readonly List<BookingEntity> _bookings = new();
     public IReadOnlyCollection<BookingEntity> Bookings => _bookings.AsReadOnly();
 
+    public double AverageRating { get; private set; }
+    public int TotalReviews { get; private set; }
+
+    private readonly List<SessionReview> _reviews = new();
+    public IReadOnlyCollection<SessionReview> Reviews => _reviews.AsReadOnly();
+
     private Session() { } // مطلوب لـ EF Core
 
     public static Session Create(
@@ -190,6 +196,32 @@ public sealed class Session : AuditableEntity
     public void RemoveBooking(BookingEntity booking)
     {
         _bookings.Remove(booking);
+    }
+
+    public Result AddReview(Guid userId, int stars, string? comment)
+    {
+        if (stars is < 1 or > 5)
+            return Result.Failure(new Error("Review.InvalidStars", "Rating must be between 1 and 5.", ErrorType.Validation));
+
+        if (userId == InstructorId)
+            return Result.Failure(new Error("Review.InstructorCannotReview", "Instructor cannot review their own session.", ErrorType.Validation));
+
+        if (_reviews.Any(r => r.UserId == userId))
+            return Result.Failure(new Error("Review.Duplicate", "User has already reviewed this session.", ErrorType.Validation));
+
+        // Note: We could check if the user has a completed booking here, but we will do it in the command handler
+        // because the booking check requires querying the DB (or checking the _bookings collection if loaded).
+        // Since we only load bookings when needed, it's safer in the handler.
+
+        var review = SessionReview.Create(Id, userId, stars, comment);
+        _reviews.Add(review);
+        
+        var totalScore = (AverageRating * TotalReviews) + stars;
+        TotalReviews++;
+        AverageRating = Math.Round(totalScore / TotalReviews, 2);
+
+        // We can raise a SessionUpdatedDomainEvent if needed, but not strictly necessary for now.
+        return Result.Success();
     }
 
     private static string? Normalize(string? value) =>

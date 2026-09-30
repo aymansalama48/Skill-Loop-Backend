@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Skill_Loop.Infrastructure.Persistence.Data;
 
@@ -11,9 +12,11 @@ using Skill_Loop.Infrastructure.Persistence.Data;
 namespace Skill_Loop.Infrastructure.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260929232711_AddEmailLogsTable")]
+    partial class AddEmailLogsTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1083,90 +1086,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.ToTable("OtpVerifications", (string)null);
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Promotions.PromoCode", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Code")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("DiscountType")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<int>("DiscountValue")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("ExpiresAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.Property<int?>("MaxRedemptions")
-                        .HasColumnType("int");
-
-                    b.Property<int>("RedemptionsCount")
-                        .HasColumnType("int");
-
-                    b.Property<byte[]>("RowVersion")
-                        .IsConcurrencyToken()
-                        .IsRequired()
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("rowversion");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("Code")
-                        .IsUnique();
-
-                    b.ToTable("PromoCodes", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Promotions.PromoRedemption", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("DiscountMinor")
-                        .HasColumnType("int");
-
-                    b.Property<Guid>("PromoCodeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("PurchaseId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime>("RedeemedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PromoCodeId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("PromoRedemptions", (string)null);
-                });
-
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Session.SessionMaterial", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1234,11 +1153,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Property<Guid>("Id")
                         .HasColumnType("uniqueidentifier");
 
-                    b.Property<double>("AverageRating")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("float")
-                        .HasDefaultValue(0.0);
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1294,11 +1208,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("nvarchar(200)");
 
-                    b.Property<int>("TotalReviews")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasDefaultValue(0);
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
 
@@ -1316,44 +1225,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasIndex("Status", "ScheduledAtUtc");
 
                     b.ToTable("Sessions", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.SessionReview", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Comment")
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("SessionId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Stars")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("SessionId", "UserId")
-                        .IsUnique();
-
-                    b.ToTable("SessionReviews", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.SiteSettings.SiteSettings", b =>
@@ -1400,143 +1271,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("SiteSettings", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Support.SupportQuestion", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Answer")
-                        .HasMaxLength(5000)
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<DateTime?>("AnsweredAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("AskedByUserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("Category")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<bool>("EmailSent")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<DateTime?>("EmailSentAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsAnswered")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<bool>("IsPublished")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
-                        .HasDefaultValue(false);
-
-                    b.Property<string>("Question")
-                        .IsRequired()
-                        .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<string>("UserEmail")
-                        .HasMaxLength(256)
-                        .HasColumnType("nvarchar(256)");
-
-                    b.Property<string>("UserName")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("AskedByUserId");
-
-                    b.HasIndex("Category");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("IsAnswered");
-
-                    b.HasIndex("IsPublished");
-
-                    b.ToTable("SupportQuestions", (string)null);
-                });
-
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.CreditPurchase", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<DateTime?>("CompletedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("CreatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Credits")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Currency")
-                        .IsRequired()
-                        .HasMaxLength(3)
-                        .HasColumnType("nvarchar(3)");
-
-                    b.Property<int>("DiscountMinor")
-                        .HasColumnType("int");
-
-                    b.Property<string>("GatewayReference")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
-                    b.Property<Guid?>("PromoCodeId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<int>("SubtotalMinor")
-                        .HasColumnType("int");
-
-                    b.Property<int>("TotalMinor")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<Guid>("UserId")
-                        .HasColumnType("uniqueidentifier");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("GatewayReference");
-
-                    b.HasIndex("UserId", "CreatedAt");
-
-                    b.ToTable("CreditPurchases", (string)null);
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>
@@ -2051,15 +1785,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("Session");
                 });
 
-            modelBuilder.Entity("Skill_Loop.Domain.Entities.Sessions.SessionReview", b =>
-                {
-                    b.HasOne("Skill_Loop.Domain.Entities.Sessions.Session", null)
-                        .WithMany("Reviews")
-                        .HasForeignKey("SessionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.WalletTransaction", b =>
                 {
                     b.HasOne("Skill_Loop.Domain.Entities.Wallets.UserWallet", null)
@@ -2140,8 +1865,6 @@ namespace Skill_Loop.Infrastructure.Migrations
                     b.Navigation("Bookings");
 
                     b.Navigation("Materials");
-
-                    b.Navigation("Reviews");
                 });
 
             modelBuilder.Entity("Skill_Loop.Domain.Entities.Wallets.UserWallet", b =>

@@ -32,50 +32,23 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     public IQueryable<InstructorAvailability> InstructorAvailabilities => context.InstructorAvailabilities;
     public IQueryable<InstructorReview> InstructorReviews => context.InstructorReviews;
 
-    public IQueryable<SiteSettings> SiteSettings => context.Set<SiteSettings>();
-    public IQueryable<OtpVerification> OtpVerifications => context.Set<OtpVerification>();
-    public IQueryable<StaffInvitation> StaffInvitations => context.Set<StaffInvitation>();
-    public IQueryable<Course> Courses => context.Set<Course>();
-    public IQueryable<Category> Categories => context.Set<Category>();
-    public IQueryable<Enrollment> Enrollments => context.Set<Enrollment>();
-    public IQueryable<UserWallet> UserWallets => context.Set<UserWallet>();
-    public IQueryable<CourseBookmark> CourseBookmarks => context.Set<CourseBookmark>();
-    public IQueryable<CourseReview> CourseReviews => context.Set<CourseReview>();
-
-    public IQueryable<Session> Sessions => context.Set<Session>();
-    public IQueryable<Booking> Bookings => context.Set<Booking>();
-    public IQueryable<SessionMaterial> SessionMaterials => context.Set<SessionMaterial>();
-
-    // 💬 الشات
-    public IQueryable<Skill_Loop.Domain.Entities.Chat.Conversation> Conversations => context.Set<Skill_Loop.Domain.Entities.Chat.Conversation>();
-    public IQueryable<Skill_Loop.Domain.Entities.Chat.ChatMessage> ChatMessages => context.Set<Skill_Loop.Domain.Entities.Chat.ChatMessage>();
-
-    // 🔔 إشعارات جوه التطبيق (In-App)
-    public IQueryable<Skill_Loop.Domain.Entities.Notifications.Notification> Notifications => context.Set<Skill_Loop.Domain.Entities.Notifications.Notification>();
-
-    // 🏷️ الـ Promo Codes والـ Credit Purchases
-    public IQueryable<PromoCode> PromoCodes => context.Set<PromoCode>();
-    public IQueryable<PromoRedemption> PromoRedemptions => context.Set<PromoRedemption>();
-    public IQueryable<CreditPurchase> CreditPurchases => context.Set<CreditPurchase>();
     public IQueryable<SiteSettings> SiteSettings => context.SiteSettings;
     public IQueryable<OtpVerification> OtpVerifications => context.OtpVerifications;
     public IQueryable<StaffInvitation> StaffInvitations => context.StaffInvitations;
-
-    // الكورسات والمحتوى
-    public IQueryable<Category> Categories => context.Categories;
     public IQueryable<Course> Courses => context.Courses;
-    public IQueryable<Section> Sections => context.Sections;
-    public IQueryable<Lesson> Lessons => context.Lessons;
-    public IQueryable<CourseBookmark> CourseBookmarks => context.CourseBookmarks;
-    public IQueryable<CourseReview> CourseReviews => context.CourseReviews;
-
+    public IQueryable<Category> Categories => context.Categories;
     public IQueryable<Enrollment> Enrollments => context.Enrollments;
     public IQueryable<UserWallet> UserWallets => context.UserWallets;
     public IQueryable<WalletTransaction> WalletTransactions => context.WalletTransactions;
+    public IQueryable<CourseBookmark> CourseBookmarks => context.CourseBookmarks;
+    public IQueryable<CourseReview> CourseReviews => context.CourseReviews;
+    public IQueryable<Section> Sections => context.Sections;
+    public IQueryable<Lesson> Lessons => context.Lessons;
 
     public IQueryable<Session> Sessions => context.Sessions;
     public IQueryable<Booking> Bookings => context.Bookings;
     public IQueryable<SessionMaterial> SessionMaterials => context.SessionMaterials;
+    public IQueryable<SessionReview> SessionReviews => context.SessionReviews;
 
     // 💬 الشات
     public IQueryable<Conversation> Conversations => context.Conversations;
@@ -84,8 +57,16 @@ public class ApplicationDbContextAdapter(AppDbContext context) : IApplicationDbC
     // 🔔 إشعارات جوه التطبيق (In-App)
     public IQueryable<Notification> Notifications => context.Notifications;
 
+    // 🏷️ الـ Promo Codes والـ Credit Purchases
+    public IQueryable<PromoCode> PromoCodes => context.PromoCodes;
+    public IQueryable<PromoRedemption> PromoRedemptions => context.PromoRedemptions;
+    public IQueryable<CreditPurchase> CreditPurchases => context.CreditPurchases;
+
     // 📞 الدعم الفني
     public IQueryable<SupportQuestion> SupportQuestions => context.SupportQuestions;
+
+    // 📧 Email Logs
+    public IQueryable<Skill_Loop.Domain.Entities.Emails.EmailLog> EmailLogs => context.EmailLogs;
 
     // ==============================
     // 2. عمليات الكتابة (عنصر واحد ومجموعة)

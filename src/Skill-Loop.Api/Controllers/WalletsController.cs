@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Skill_Loop.Api.Contracts.Common;
 using Skill_Loop.Api.Controllers.Base;
@@ -33,6 +33,20 @@ public class WalletsController : BaseApiController
     {
         var query = new GetMyWalletTransactionsPagedQuery(request.PageNumber, request.PageSize);
         var result = await Mediator.Send(query, cancellationToken);
+
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// شراء رصيد إضافي
+    /// </summary>
+    [HttpPost("buy-credits")]
+    public async Task<IResult> BuyCredits(
+        [FromBody] Skill_Loop.Api.Contracts.Wallets.BuyCreditsRequest request,
+        CancellationToken cancellationToken)
+    {
+        var command = new Skill_Loop.Application.Features.Wallets.Commands.BuyCredits.BuyCreditsCommand(request.Amount, request.PromoCode);
+        var result = await Mediator.Send(command, cancellationToken);
 
         return HandleResult(result);
     }

@@ -55,7 +55,6 @@ public sealed class UpdateLessonProgressCommandHandler : ICommandHandler<UpdateL
             return Result<double>.Failure(progressResult.Errors.First());
         }
 
-        _context.Update(enrollment);
         await _context.SaveChangesAsync(cancellationToken);
 
         return Result<double>.Success(enrollment.ProgressPercentage);

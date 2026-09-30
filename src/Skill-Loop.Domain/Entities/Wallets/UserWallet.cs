@@ -62,8 +62,6 @@ public sealed class UserWallet : AuditableEntity
         AddDomainEvent(new WalletBalanceDeductedDomainEvent(UserId, amount, Balance));
         return Result.Success();
     }
-}
-
     /// <summary>
     /// استرجاع credits (إلغاء حجز / استرجاع purchase) — بيتسجل كـ CreditRefund
     /// عشان الـ transaction history يبقى واضح.
