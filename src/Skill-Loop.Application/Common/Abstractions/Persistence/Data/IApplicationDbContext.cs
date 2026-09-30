@@ -15,7 +15,7 @@ using Skill_Loop.Domain.Entities.Wallets;
 using System.Numerics;
 using static System.Net.Mime.MediaTypeNames;
 using Skill_Loop.Domain.Entities.Support;
-using Skill_Loop.Domain.Entities.Wallets;
+
 using System.Linq.Expressions;
 
 namespace Skill_Loop.Application.Common.Abstractions.Persistence.Data;

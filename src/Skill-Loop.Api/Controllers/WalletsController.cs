@@ -50,4 +50,19 @@ public class WalletsController : BaseApiController
 
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// ملخص أرباح المحاضر
+    /// </summary>
+    [HttpGet("me/earnings")]
+    public async Task<IResult> GetMyEarningsSummary(
+        [FromQuery] int? year,
+        [FromQuery] int? month,
+        CancellationToken cancellationToken)
+    {
+        var query = new Skill_Loop.Application.Features.Wallets.Queries.GetMyEarningsSummary.GetMyEarningsSummaryQuery(year, month);
+        var result = await Mediator.Send(query, cancellationToken);
+
+        return HandleResult(result);
+    }
 }

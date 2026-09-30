@@ -91,3 +91,57 @@ public class BookingEmailHandler : INotificationHandler<DomainEventNotification<
         _logger.LogInformation("Queued BookingConfirmed email for Learner {LearnerId}, Booking {BookingId}", domainEvent.LearnerUserId, domainEvent.BookingId);
     }
 }
+
+public class BookingCancelledEmailHandler : INotificationHandler<DomainEventNotification<BookingCancelledDomainEvent>>
+{
+    private readonly IApplicationDbContext _context;
+    private readonly IEmailTemplateEngine _templateEngine;
+    private readonly ILogger<BookingCancelledEmailHandler> _logger;
+    private readonly IUserManagementService _userManagementService;
+
+    public BookingCancelledEmailHandler(
+        IApplicationDbContext context,
+        IEmailTemplateEngine templateEngine,
+        ILogger<BookingCancelledEmailHandler> logger,
+        IUserManagementService userManagementService)
+    {
+        _context = context;
+        _templateEngine = templateEngine;
+        _logger = logger;
+        _userManagementService = userManagementService;
+    }
+
+    public async Task Handle(DomainEventNotification<BookingCancelledDomainEvent> notification, CancellationToken cancellationToken)
+    {
+        var domainEvent = notification.DomainEvent;
+        
+        var learnerUserResult = await _userManagementService.GetByIdAsync(domainEvent.LearnerUserId, cancellationToken);
+        if (!learnerUserResult.IsSuccess) return;
+
+        var learnerEmail = learnerUserResult.Data.Email;
+        if (string.IsNullOrEmpty(learnerEmail)) return;
+
+        var model = new
+        {
+            LearnerName = learnerUserResult.Data.FullName,
+            Reason = domainEvent.Reason ?? "لم يتم تحديد سبب",
+            DashboardUrl = $"https://skillloop.com/dashboard/bookings/{domainEvent.BookingId}",
+            Year = DateTime.UtcNow.Year
+        };
+
+        var htmlBody = await _templateEngine.RenderTemplateAsync("BookingCancelled", model);
+
+        var emailLog = EmailLog.Create(
+            type: "BookingCancelled",
+            recipientEmail: learnerEmail,
+            referenceId: $"{domainEvent.BookingId}-cancelled", // Idempotency
+            subject: "إلغاء حجز - Skill Loop",
+            body: htmlBody
+        );
+
+        _context.Add(emailLog);
+        await _context.SaveChangesAsync(cancellationToken);
+
+        _logger.LogInformation("Queued BookingCancelled email for Learner {LearnerId}, Booking {BookingId}", domainEvent.LearnerUserId, domainEvent.BookingId);
+    }
+}
