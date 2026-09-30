@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Sessions.Common;
 using Skill_Loop.Domain.Enums;
@@ -11,7 +11,7 @@ namespace Skill_Loop.Application.Features.Sessions.Commands.UpdateSession;
 /// تحديث بيانات الجلسة. كل الـ scheduling parameters اختيارية (Partial Update):
 /// أي معامل مش مبعوت هيفضل زي ما هو.
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Sessions.Update)]
 public sealed record UpdateSessionCommand(
     Guid Id,
     string Title,

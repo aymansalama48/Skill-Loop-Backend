@@ -1,3 +1,4 @@
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization.Models;
@@ -7,12 +8,12 @@ using System.Text;
 
 namespace Skill_Loop.Application.Features.Accounts.PermissionManagement.Queries.GetRolePermissions;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Access.RolesManage)]
 public sealed record GetRolePermissionsQuery(Guid RoleId) : ICacheableQuery<RoleWithPermissionsDto> 
 {
     public string CacheKey => $"Roles:{RoleId}:Permissions"; 
 
-    // ?? ÇáÊÚÏíá: ÅØÇáÉ ãÏÉ ÇáßÇÔ
+    // ?? ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½: ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
     public TimeSpan? SlidingExpiration => TimeSpan.FromHours(12);
     public TimeSpan? AbsoluteExpiration => TimeSpan.FromHours(24);
 }

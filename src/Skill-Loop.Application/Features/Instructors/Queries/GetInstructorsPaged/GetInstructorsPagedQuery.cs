@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Instructors.Share;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Instructors.Queries.GetInstructorsPaged;
 
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetInstructorsPagedQuery(
     int PageNumber,
     int PageSize,

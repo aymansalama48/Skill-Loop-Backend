@@ -5,5 +5,5 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Bookings.Queries.GetBookingById;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Bookings.ViewAll)]
 public sealed record GetBookingByIdQuery(Guid BookingId) : IQuery<BookingResponse>;

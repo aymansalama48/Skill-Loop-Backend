@@ -41,9 +41,11 @@ public static class PipelineExtensions
         app.UseHttpsRedirection();
         app.UseCors("AllowFrontend");
 
-        // 7. إدارة الملفات المرفوعة المباشرة (Static Files)
-        // الـ Root لازم يكون نفس المجلد اللي LocalFileStorage بيكتب فيه
-        // (FileStorage:RootFolder)، وإلا الملفات اللي LocalFileStorage حفظها مش هتتقدم عبر /uploads.
+        // 7. Serving the uploaded-files folder (Static Files)
+        // The root comes from FileStorage:RootFolder, defaulting to "UploadedFiles".
+        // It may be an absolute path (a Docker volume mount), so it is resolved with
+        // GetFullPath rather than combined blindly. Kept from the security branch during
+        // the merge: origin/main concatenated unconditionally, which mishandled rooted paths.
         var storageRootFolder = app.Configuration["FileStorage:RootFolder"];
         if (string.IsNullOrWhiteSpace(storageRootFolder))
         {
@@ -60,7 +62,7 @@ public static class PipelineExtensions
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(uploadsPath),
-            RequestPath = "/uploads"
+            RequestPath = "/uploads"  // الـ URL ثابت، مش بتغير
         });
 
         // 8. توثيق OpenAPI/Scalar

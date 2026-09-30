@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Sessions.Materials.Commands.ReorderSessionMaterials;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Sessions.ReorderMaterials)]
 public sealed record ReorderSessionMaterialsCommand(
     Guid SessionId,
     IReadOnlyList<Guid> OrderedMaterialIds) : ICommand, ICacheInvalidatorCommand

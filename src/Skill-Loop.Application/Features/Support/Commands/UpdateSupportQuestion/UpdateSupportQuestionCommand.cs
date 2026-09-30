@@ -9,7 +9,7 @@ namespace Skill_Loop.Application.Features.Support.Commands.UpdateSupportQuestion
 /// <summary>
 /// تعديل كامل لسؤال قايم (السؤال، الرد، التصنيف، حالة النشر).
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.Manage)]
 public sealed record UpdateSupportQuestionCommand(
     Guid Id,
     string Question,

@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Bookings.Commands.ChangeBookingStatus;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Bookings.ManageAll)]
 public sealed record ChangeBookingStatusCommand(
     Guid BookingId,
     Guid InstructorUserId,

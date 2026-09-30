@@ -1,13 +1,16 @@
 using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Errors.Category;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 using Skill_Loop.Domain.Constants;
+using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -18,17 +21,23 @@ namespace Skill_Loop.UnitTests.Features.Courses.Commands.CreateCourse;
 public class CreateCourseCommandHandlerTests : IDisposable
 {
     private readonly IApplicationDbContext _dbContext;
-    private readonly Mock<ICurrentUser> _currentUser;
+private readonly Mock<ICurrentUser> _currentUser;
+    private readonly Mock<IFileStorage> _fileStorage;
     private readonly CreateCourseCommandHandler _handler;
 
     public CreateCourseCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _currentUser = new Mock<ICurrentUser>();
+_currentUser = new Mock<ICurrentUser>();
         _currentUser.Setup(c => c.UserId).Returns(CurrentUserId);
         _currentUser.Setup(c => c.FullName).Returns("Actual Caller");
         _currentUser.Setup(c => c.HasPermission(Permissions.Courses.ManageAll)).Returns(false);
-        _handler = new CreateCourseCommandHandler(_dbContext, _currentUser.Object);
+
+        _fileStorage = new Mock<IFileStorage>();
+
+        // The handler takes both the caller (for the instructor ownership check) and the
+        // storage (for the optional thumbnail upload) after the two branches were merged.
+        _handler = new CreateCourseCommandHandler(_dbContext, _currentUser.Object, _fileStorage.Object);
     }
 
     private static readonly Guid CurrentUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -40,7 +49,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "Course Title",
             "Description",
-            "https://img.com/img.png",
+            null,
+            null,
             50,
             CourseLevel.Beginner,
             Guid.NewGuid(),
@@ -67,7 +77,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "New Course Title",
             "Description of the new course",
-            "https://img.com/img.png",
+            null,
+            null,
             100,
             CourseLevel.Intermediate,
             instructorId,
@@ -109,7 +120,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "Impostor Course",
             "Description",
-            "https://img.com/img.png",
+            null, // ThumbnailStream
+            null, // ThumbnailFileName
             100,
             CourseLevel.Beginner,
             victimId,
@@ -143,7 +155,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "Staff Created Course",
             "Description",
-            "https://img.com/img.png",
+            null, // ThumbnailStream
+            null, // ThumbnailFileName
             100,
             CourseLevel.Beginner,
             targetInstructorId,
@@ -164,6 +177,45 @@ public class CreateCourseCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WithThumbnail_UploadsThumbnailAndSetsUrl()
+    {
+        // Arrange
+        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        _dbContext.Add(category);
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+        var instructorId = Guid.NewGuid();
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+        const string expectedUrl = "https://storage.example.com/Courses/thumbnail.png";
+
+        _fileStorage
+            .Setup(f => f.UploadAsync(stream, "thumbnail.png", "Courses"))
+            .ReturnsAsync(Result<string>.Success(expectedUrl));
+
+        var command = new CreateCourseCommand(
+            "New Course With Thumbnail",
+            "Description of course with thumbnail",
+            stream,
+            "thumbnail.png",
+            150,
+            CourseLevel.Advanced,
+            instructorId,
+            "Jane Doe",
+            category.Id);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var createdCourse = await _dbContext.FirstOrDefaultAsync(
+            _dbContext.Courses, c => c.Id == result.Data);
+
+        createdCourse.Should().NotBeNull();
+        createdCourse!.ThumbnailUrl.Should().Be(expectedUrl);
+    }
+
+    [Fact]
     public async Task Handle_WithEmptyTitle_ReturnsFailure()
     {
         // Arrange
@@ -174,7 +226,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "", // Invalid title
             "Description",
-            "https://img.com/img.png",
+            null,
+            null,
             100,
             CourseLevel.Beginner,
             Guid.NewGuid(),

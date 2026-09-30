@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
@@ -10,7 +10,8 @@ namespace Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 public sealed record CreateCourseCommand(
     string Title,
     string Description,
-    string ThumbnailUrl,
+    Stream? ThumbnailStream,   // كفاية جداً
+    string? ThumbnailFileName, // عشان الامتداد
     int Credits,
     CourseLevel Level,
     Guid InstructorId,

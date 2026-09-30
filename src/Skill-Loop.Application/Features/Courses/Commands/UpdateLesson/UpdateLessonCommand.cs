@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.UpdateLesson;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record UpdateLessonCommand(
     Guid CourseId, 
     Guid SectionId, 

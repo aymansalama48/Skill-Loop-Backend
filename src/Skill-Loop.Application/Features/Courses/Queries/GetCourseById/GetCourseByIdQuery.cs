@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.DTOs;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;

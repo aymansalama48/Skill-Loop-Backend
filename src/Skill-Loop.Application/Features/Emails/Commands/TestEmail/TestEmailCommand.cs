@@ -14,10 +14,13 @@ namespace Skill_Loop.Application.Features.Emails.Commands.TestEmail;
 ///
 /// Security: this writes to the platform's own outbound relay. If the recipient is
 /// attacker-controlled, the API becomes an open spam relay that sends mail as the
-/// platform's domain and burns its sending reputation — which in turn breaks every
+/// platform's domain and burns its sending reputation - which in turn breaks every
 /// transactional message (password resets, booking confirmations). The recipient is
 /// therefore restricted to addresses the platform itself owns; see
 /// <see cref="TestEmailCommandHandler"/>.
+///
+/// Merge note: origin/main grouped this under SiteSettings.Manage, which is unrelated to
+/// email. Kept as Emails.SendTest.
 /// </summary>
 [Permission(Permissions.Emails.SendTest)]
 public record TestEmailCommand(string To, string Subject) : IRequest<Result<string>>;

@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.PublishCourse;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Publish)]
 public sealed record PublishCourseCommand(Guid CourseId) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitationWithGoogle;
+namespace Skill_Loop.Application.Features.Accounts.StaffInvitations.Commands.AcceptInvitationWithGoogle;
 
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;

@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Support.Commands.DeleteSupportQuestion;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Support.Manage)]
 public sealed record DeleteSupportQuestionCommand(Guid Id) : ICommand, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => SupportCacheKeys.All;

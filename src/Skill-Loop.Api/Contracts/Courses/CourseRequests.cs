@@ -6,11 +6,11 @@ namespace Skill_Loop.Api.Contracts.Courses;
 public sealed record CreateCourseRequest(
     string Title,
     string Description,
-    string ThumbnailUrl,
+    Microsoft.AspNetCore.Http.IFormFile ThumbnailImage, // تم التعديل هنا لاستقبال ملف
     int Credits,
     CourseLevel Level,
     Guid CategoryId);
-
+    
 public sealed record AddLessonRequest(
     string Title,
     string VideoUrl,

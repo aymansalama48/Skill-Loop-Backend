@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Sessions.Materials.Commands.DeleteSessionMaterial;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Sessions.DeleteMaterials)]
 public sealed record DeleteSessionMaterialCommand(
     Guid SessionId,
     Guid MaterialId) : ICommand, ICacheInvalidatorCommand

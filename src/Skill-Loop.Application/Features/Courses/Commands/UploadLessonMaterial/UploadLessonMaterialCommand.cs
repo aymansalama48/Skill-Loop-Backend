@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.UploadLessonMaterial;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record UploadLessonMaterialCommand(
     Guid CourseId,
     Guid SectionId,
