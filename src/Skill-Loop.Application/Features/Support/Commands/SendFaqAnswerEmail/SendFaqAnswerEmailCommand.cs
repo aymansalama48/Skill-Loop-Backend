@@ -10,7 +10,7 @@ namespace Skill_Loop.Application.Features.Support.Commands.SendFaqAnswerEmail;
 /// المستخدم لقى إجابته في الـ FAQ وطلب إرسالها ليه على الإيميل.
 /// بيشتغل على سؤال منشور بس (عشان مفيش حد يطلب إجابة سؤال لسه متجاوبش عليه).
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.Manage)]
 public sealed record SendFaqAnswerEmailCommand(Guid Id) : ICommand, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => [SupportCacheKeys.QuestionById + Id];

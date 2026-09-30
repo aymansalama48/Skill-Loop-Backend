@@ -8,7 +8,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionDeta
 /// <summary>
 /// تفاصيل الاستفسار كاملة (منها البريد واسم صاحب الاستفسار) — لفريق الدعم والـ Admin بس.
 /// </summary>
-[AuthenticatedOnly]
+[AllowAnonymous]
 public sealed record GetSupportQuestionDetailsQuery(Guid Id) : IQuery<SupportQuestionDetailsResponse>
 {
 }

@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Sessions.Materials.Commands.UploadSessionMaterial;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Sessions.UploadMaterials)]
 public sealed record UploadSessionMaterialCommand(
     Guid SessionId,
     Stream FileStream,

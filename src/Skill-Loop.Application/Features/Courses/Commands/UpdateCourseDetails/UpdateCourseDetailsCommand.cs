@@ -9,7 +9,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.UpdateCourseDetails;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record UpdateCourseDetailsCommand(
     Guid CourseId,
     string Title,

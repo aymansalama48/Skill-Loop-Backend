@@ -1,10 +1,14 @@
 using FluentAssertions;
+using Moq;
+using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 using Skill_Loop.Application.Common.Errors.Category;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
+using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
 using Skill_Loop.UnitTests.Common;
 using System;
+using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using Xunit;
@@ -15,12 +19,14 @@ namespace Skill_Loop.UnitTests.Features.Courses.Commands.CreateCourse;
 public class CreateCourseCommandHandlerTests : IDisposable
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly Mock<IFileStorage> _fileStorage;
     private readonly CreateCourseCommandHandler _handler;
 
     public CreateCourseCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new CreateCourseCommandHandler(_dbContext);
+        _fileStorage = new Mock<IFileStorage>();
+        _handler = new CreateCourseCommandHandler(_dbContext, _fileStorage.Object);
     }
 
     [Fact]
@@ -30,7 +36,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "Course Title",
             "Description",
-            "https://img.com/img.png",
+            null,
+            null,
             50,
             CourseLevel.Beginner,
             Guid.NewGuid(),
@@ -57,7 +64,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "New Course Title",
             "Description of the new course",
-            "https://img.com/img.png",
+            null,
+            null,
             100,
             CourseLevel.Intermediate,
             instructorId,
@@ -86,6 +94,45 @@ public class CreateCourseCommandHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WithThumbnail_UploadsThumbnailAndSetsUrl()
+    {
+        // Arrange
+        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        _dbContext.Add(category);
+        await _dbContext.SaveChangesAsync(CancellationToken.None);
+
+        var instructorId = Guid.NewGuid();
+        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
+        const string expectedUrl = "https://storage.example.com/Courses/thumbnail.png";
+
+        _fileStorage
+            .Setup(f => f.UploadAsync(stream, "thumbnail.png", "Courses"))
+            .ReturnsAsync(Result<string>.Success(expectedUrl));
+
+        var command = new CreateCourseCommand(
+            "New Course With Thumbnail",
+            "Description of course with thumbnail",
+            stream,
+            "thumbnail.png",
+            150,
+            CourseLevel.Advanced,
+            instructorId,
+            "Jane Doe",
+            category.Id);
+
+        // Act
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.IsSuccess.Should().BeTrue();
+        var createdCourse = await _dbContext.FirstOrDefaultAsync(
+            _dbContext.Courses, c => c.Id == result.Data);
+
+        createdCourse.Should().NotBeNull();
+        createdCourse!.ThumbnailUrl.Should().Be(expectedUrl);
+    }
+
+    [Fact]
     public async Task Handle_WithEmptyTitle_ReturnsFailure()
     {
         // Arrange
@@ -96,7 +143,8 @@ public class CreateCourseCommandHandlerTests : IDisposable
         var command = new CreateCourseCommand(
             "", // Invalid title
             "Description",
-            "https://img.com/img.png",
+            null,
+            null,
             100,
             CourseLevel.Beginner,
             Guid.NewGuid(),

@@ -1,4 +1,5 @@
 using Skill_Loop.Domain.Constants;
+using System.Linq;
 
 namespace Skill_Loop.Infrastructure.Persistence.Seed;
 
@@ -9,29 +10,18 @@ public static class RolePermissionsMap
         {
             [Roles.SuperAdmin] = Permissions.GetAllPermissions(),
 
-            [Roles.Admin] = new[]
-            {
-                Permissions.Courses.ManageAll,
-                Permissions.Sessions.ManageAll,
-                Permissions.Bookings.ManageAll,
-                Permissions.Users.ManageAll,
-                Permissions.Finance.ManageAll,
-                Permissions.Dashboards.ViewAdmin,
-                Permissions.Catalog.CategoriesManage,
-                Permissions.Catalog.SkillsManage,
-                Permissions.Catalog.TagsManage,
-                Permissions.SiteSettings.Manage,
-                Permissions.Support.Manage,
-                Permissions.Instructors.ManageAll
-            },
+            [Roles.Admin] = Permissions.GetAllPermissions()
+                .Where(p => !p.StartsWith("Access.")) // Admin has everything except Access management (SuperAdmin only)
+                .ToList(),
 
             [Roles.FinanceManager] = new[]
             {
-                Permissions.Finance.ManageAll,
+                Permissions.Finance.View,
                 Permissions.Finance.PackagesManage,
                 Permissions.Finance.PromoCodesManage,
                 Permissions.Finance.WalletAdjust,
                 Permissions.Finance.PaymentsView,
+                Permissions.Finance.ManageAll,
                 Permissions.Dashboards.ViewAdmin
             },
 
@@ -40,20 +30,24 @@ public static class RolePermissionsMap
                 Permissions.Users.View,
                 Permissions.Bookings.ViewAll,
                 Permissions.Finance.View,
+                Permissions.Support.View,
                 Permissions.Support.Manage
             },
 
             [Roles.Instructor] = new[]
             {
+                Permissions.Courses.View,
                 Permissions.Courses.Create,
                 Permissions.Courses.Update,
                 Permissions.Courses.Delete,
                 Permissions.Courses.Publish,
                 Permissions.Courses.Archive,
+                Permissions.Sessions.View,
                 Permissions.Sessions.Create,
                 Permissions.Sessions.Update,
                 Permissions.Sessions.Delete,
                 Permissions.Sessions.Cancel,
+                Permissions.Sessions.ViewMaterials,
                 Permissions.Sessions.UploadMaterials,
                 Permissions.Sessions.DeleteMaterials,
                 Permissions.Sessions.ReorderMaterials,
@@ -62,7 +56,8 @@ public static class RolePermissionsMap
 
             [Roles.User] = new string[]
             {
-                // Users mainly rely on [AuthenticatedOnly] for their own data.
+                // Users rely on [AuthenticatedOnly] and [AllowAnonymous] for their endpoints.
+                // No specific permissions are required to manage their own data.
             }
         };
 }

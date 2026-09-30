@@ -8,7 +8,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.UpdateSection;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record UpdateSectionCommand(Guid CourseId, Guid SectionId, string Title, int OrderIndex) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>

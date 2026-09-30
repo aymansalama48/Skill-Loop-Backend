@@ -6,7 +6,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.RemoveLessonMaterial;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Courses.Update)]
 public sealed record RemoveLessonMaterialCommand(
     Guid CourseId, 
     Guid SectionId, 

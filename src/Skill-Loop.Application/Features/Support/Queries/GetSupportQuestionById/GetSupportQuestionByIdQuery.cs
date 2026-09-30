@@ -9,7 +9,7 @@ namespace Skill_Loop.Application.Features.Support.Queries.GetSupportQuestionById
 /// <summary>
 /// سؤال واحد من الـ FAQ العام — المنشور بس، وبشكل مبسّط.
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.View)]
 public sealed record GetSupportQuestionByIdQuery(Guid Id) : ICacheableQuery<SupportQuestionResponse>
 {
     public string CacheKey => $"support:question:{Id}";

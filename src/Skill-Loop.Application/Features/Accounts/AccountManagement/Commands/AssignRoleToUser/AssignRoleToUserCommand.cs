@@ -5,7 +5,7 @@ using Skill_Loop.Domain.Constants;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Commands.AssignRoleToUser;
 
-[AuthenticatedOnly]
+[Permission(Permissions.Users.AssignRole)]
 public sealed record AssignRoleToUserCommand(Guid UserId, string RoleName) : ICommand<bool>, ICacheInvalidatorCommand
 {
     // هنمسح كاش الآدمن عشان اللستة تتحدث بالرول الجديد فوراً

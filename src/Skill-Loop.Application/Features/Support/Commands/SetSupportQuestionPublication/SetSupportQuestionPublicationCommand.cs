@@ -9,7 +9,7 @@ namespace Skill_Loop.Application.Features.Support.Commands.SetSupportQuestionPub
 /// <summary>
 /// نشر سؤال في الـ FAQ العام أو إخفاؤه منه. النشر مستحيل من غير إجابة.
 /// </summary>
-[AuthenticatedOnly]
+[Permission(Permissions.Support.Manage)]
 public sealed record SetSupportQuestionPublicationCommand(
     Guid Id,
     bool IsPublished) : ICommand, ICacheInvalidatorCommand
