@@ -11,7 +11,7 @@ public sealed record AddInstructorAvailabilityCommand(
     DayOfWeek DayOfWeek,
     TimeSpan StartTime,
     TimeSpan EndTime
-) : ICommand<bool>, ICacheInvalidatorCommand
+) : ICommand<Guid>, ICacheInvalidatorCommand
 {
     // بنمسح الكاش عشان الطالب يشوف المواعيد الجديدة فوراً
     public IReadOnlyCollection<string> CacheKeys =>

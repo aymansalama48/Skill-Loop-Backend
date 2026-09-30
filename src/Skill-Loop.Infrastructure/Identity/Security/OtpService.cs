@@ -172,7 +172,11 @@ public class OtpService(
     private static string GenerateSecureCode(int codeLength)
     {
         // Guard the configured value so a misconfigured section cannot collapse the key space.
-        var length = Math.Clamp(codeLength, 4, 10);
+        // The bounds come from OtpCodeValidationExtensions so the generator and the
+        // validators can never disagree about what a legal code length is.
+        var length = Math.Clamp(codeLength,
+            Skill_Loop.Application.Common.Validation.OtpCodeValidationExtensions.MinLength,
+            Skill_Loop.Application.Common.Validation.OtpCodeValidationExtensions.MaxLength);
 
         // RandomNumberGenerator.GetInt32 is exclusive on the upper bound, hence 10^length.
         var max = (int)Math.Pow(10, length);

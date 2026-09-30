@@ -28,6 +28,7 @@ AUTH_HEADER = {
 MANUAL_VARS = {
     "adminEmail", "adminPassword", "student1Email", "student1Otp",
     "student1Password", "student2Email", "student2Otp", "invitationToken",
+    "student1ResetOtp",
 }
 
 GUID_RE = re.compile(r"^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
@@ -158,6 +159,8 @@ def build_http(plan) -> str:
             out.append(f"### MANUAL INPUT REQUIRED: fill {', '.join(step['manualInput'])} before running")
         if step.get("skipIfStepCompleted"):
             out.append(f"### SKIP if you already ran {step['skipIfStepCompleted']}")
+        if step.get("skip"):
+            out.append(f"### NOT RUN: {step['skip']}")
         out.append("")
         out.append(f"{step['method']} {full_target(step)}")
         out.append("Accept: application/json")
@@ -247,7 +250,12 @@ def build_postman(plan) -> dict:
                 {"key": "Accept", "value": "application/json"},
             ],
             "url": url_for(step),
-            "description": step.get("notes") or step["name"],
+            "description": "\n\n".join(
+                filter(None, [
+                    f"NOT RUN - {step['skip']}" if step.get("skip") else None,
+                    step.get("notes") or step["name"],
+                ])
+            ),
         }
 
         if step["auth"] in AUTH_HEADER:
@@ -303,7 +311,11 @@ def build_postman(plan) -> dict:
         requests = []
         for step in steps:
             requests.append({
-                "name": f"{step['order']:>3} | {step['id']} | {step['name']}",
+                "name": f"{step['order']:>3} | {step['id']} | {step['name']}"
+                        + ("  [SKIPPED]" if step.get("skip") else ""),
+                # A disabled request stays visible in the collection for coverage, but Postman
+                # will not send it unless the user re-enables it by hand.
+                "disabled": bool(step.get("skip")),
                 "event": events_for(step),
                 "request": request_for(step),
                 "response": [],

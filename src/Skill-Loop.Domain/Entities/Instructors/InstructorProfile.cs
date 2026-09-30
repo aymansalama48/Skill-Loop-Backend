@@ -148,7 +148,7 @@ public sealed class InstructorProfile : AuditableEntity
     /// <summary>
     /// إضافة موعد جديد متاح للعمل
     /// </summary>
-    public Result AddAvailability(DayOfWeek dayOfWeek, TimeSpan startTime, TimeSpan endTime)
+    public Result<Guid> AddAvailability(DayOfWeek dayOfWeek, TimeSpan startTime, TimeSpan endTime)
     {
         // التحقق من عدم وجود تداخل في المواعيد لنفس اليوم (اختياري ولكنه مفيد)
         var hasOverlap = _availabilities.Any(a =>
@@ -157,15 +157,15 @@ public sealed class InstructorProfile : AuditableEntity
 
         if (hasOverlap)
         {
-            return Result.Failure(InstructorProfileErrors.AvailabilityOverlap);
+            return Result<Guid>.Failure(InstructorProfileErrors.AvailabilityOverlap);
         }
 
         var availabilityResult = InstructorAvailability.Create(Id, dayOfWeek, startTime, endTime);
         if (!availabilityResult.IsSuccess)
-            return availabilityResult;
+            return Result<Guid>.Failure(availabilityResult.Errors);
 
-        _availabilities.Add(availabilityResult.Data);
-        return Result.Success();
+        _availabilities.Add(availabilityResult.Data!);
+        return Result<Guid>.Success(availabilityResult.Data!.Id);
     }
 
     /// <summary>

@@ -2,9 +2,11 @@ using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Application.Common.Errors.Auth;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Application.Common.Errors.Instructors;
 using Skill_Loop.Application.Features.Instructors.Commands.CreateMyInstructorProfile;
+using Skill_Loop.Domain.Constants;
 using Skill_Loop.Domain.Entities.Instructors;
 using Skill_Loop.UnitTests.Common;
 
@@ -48,10 +50,30 @@ public class CreateMyInstructorProfileCommandHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenUserLacksInstructorRole_ReturnsForbidden()
+    {
+        var userId = Guid.NewGuid();
+        _currentUser.Setup(c => c.UserId).Returns(userId);
+        _currentUser.Setup(c => c.IsInRole(It.IsAny<string>())).Returns(false);
+
+        var command = new CreateMyInstructorProfileCommand(userId, "Headline", "Bio");
+        var result = await _handler.Handle(command, CancellationToken.None);
+
+        result.IsFailure.Should().BeTrue();
+        result.Errors.Should().Contain(e => e.Code == AuthErrors.Forbidden.Code);
+        result.Data.Should().BeEmpty();
+
+        var created = await _dbContext.FirstOrDefaultAsync(
+            _dbContext.InstructorProfiles.Where(p => p.UserId == userId));
+        created.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Handle_WhenProfileAlreadyExists_ReturnsAlreadyExistsFailure()
     {
         var userId = Guid.NewGuid();
         _currentUser.Setup(c => c.UserId).Returns(userId);
+        _currentUser.Setup(c => c.IsInRole(Roles.Instructor)).Returns(true);
 
         var existing = InstructorProfile.Create(userId, "Existing", "Bio").Data!;
         _dbContext.Add(existing);
@@ -69,6 +91,7 @@ public class CreateMyInstructorProfileCommandHandlerTests
     {
         var userId = Guid.NewGuid();
         _currentUser.Setup(c => c.UserId).Returns(userId);
+        _currentUser.Setup(c => c.IsInRole(Roles.Instructor)).Returns(true);
 
         var command = new CreateMyInstructorProfileCommand(userId, "Senior .NET Developer", "Experienced instructor.");
 

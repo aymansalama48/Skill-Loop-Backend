@@ -189,7 +189,20 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
                 return false;
 
             var relative = Path.Combine(segments);
-            candidates.Add(Path.Combine(root, relative));
+
+            // UploadAsync hands back a path that already carries the root folder name
+            // ("UploadedFiles/probe-dir/a.txt"). Prepending the root again produced
+            // ".../UploadedFiles/UploadedFiles/probe-dir/a.txt", which is still inside the
+            // root, so the containment check below accepted it and returned it first. The
+            // real file was then reported as missing by ExistsAsync and DeleteAsync, so a
+            // value returned by UploadAsync could not be passed back to either of them.
+            var alreadyRooted = string.Equals(
+                segments[0], _options.RootFolder.Trim('/', '\\'),
+                StringComparison.OrdinalIgnoreCase);
+
+            if (!alreadyRooted)
+                candidates.Add(Path.Combine(root, relative));
+
             candidates.Add(Path.Combine(currentDirectory, relative));
         }
 

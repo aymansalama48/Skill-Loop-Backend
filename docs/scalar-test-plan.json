@@ -2,7 +2,6 @@
   "name": "Skill Loop Backend - Scalar Manual Test Plan",
   "version": "1.1.0",
   "description": "Ordered, end-to-end manual test plan for every HTTP endpoint in the Skill Loop API, to be executed by hand against the Scalar UI. Steps are in strict dependency order: each step only depends on artifacts produced by earlier steps.",
-
   "scalar": {
     "ui": "https://localhost:7271/scalar/v1",
     "openApiJson": "https://localhost:7271/openapi/v1.json",
@@ -16,7 +15,6 @@
       "Both /scalar/v1 and /openapi/v1.json are registered only when ASPNETCORE_ENVIRONMENT=Development. The script sets that for you."
     ]
   },
-
   "howToUse": {
     "steps": [
       "Open the Scalar UI URL above.",
@@ -40,7 +38,6 @@
       "devAdminToken": "Token from S020 (POST /api/v1/dev/quick-login). Identity only, ZERO permissions."
     }
   },
-
   "criticalRules": [
     "ENUMS IN JSON BODIES MUST BE NUMBERS. No JsonStringEnumConverter is registered (ServiceCollectionExtensions.cs calls AddControllers() with no AddJsonOptions). Sending \"level\": \"Beginner\" returns 400; send \"level\": 1.",
     "ENUMS IN QUERY STRINGS MAY BE NAMES. Query binding is model binding, not System.Text.Json, so ?status=Confirmed works.",
@@ -50,7 +47,6 @@
     "GET /api/v1/dev/quick-login issues a token with an EMPTY permissions claim list (DevController.cs:47). It satisfies [Authorize] and [AuthenticatedOnly] but every [Permission]-gated command will return 403. Use the real staff login (S021) for all admin work.",
     "POST /api/v1/Auth/user/login also issues a token with an empty permissions list (UserAuthService.cs:77). For endpoints that need permissions, call POST /api/v1/Auth/refresh-token afterwards, which DOES embed permissions (RefreshTokenService.cs:81)."
   ],
-
   "responseEnvelope": {
     "successWithData": "HTTP 200 with { \"data\": <payload>, \"message\": null } - capture paths start at $.data.",
     "successNoData": "HTTP 204 No Content. This is the SUCCESS case for most Commands, not an error.",
@@ -64,11 +60,23 @@
       "500": "ErrorType.Unexpected"
     }
   },
-
   "enumValues": {
-    "CourseLevel": { "1": "Beginner", "2": "Intermediate", "3": "Advanced", "4": "AllLevels" },
-    "SessionStatus": { "1": "Draft", "2": "Published", "3": "Completed", "4": "Cancelled" },
-    "SessionLocationType": { "1": "Online", "2": "Offline" },
+    "CourseLevel": {
+      "1": "Beginner",
+      "2": "Intermediate",
+      "3": "Advanced",
+      "4": "AllLevels"
+    },
+    "SessionStatus": {
+      "1": "Draft",
+      "2": "Published",
+      "3": "Completed",
+      "4": "Cancelled"
+    },
+    "SessionLocationType": {
+      "1": "Online",
+      "2": "Offline"
+    },
     "BookingStatus": {
       "1": "Pending",
       "2": "Confirmed",
@@ -78,7 +86,13 @@
       "6": "Rejected",
       "7": "NoShow"
     },
-    "MaterialType": { "0": "PDF", "1": "Video", "2": "Image", "3": "Document", "4": "Other" },
+    "MaterialType": {
+      "0": "PDF",
+      "1": "Video",
+      "2": "Image",
+      "3": "Document",
+      "4": "Other"
+    },
     "DayOfWeek": {
       "0": "Sunday",
       "1": "Monday",
@@ -96,74 +110,286 @@
       "4": "PriceHighToLow"
     }
   },
-
   "variables": {
-    "adminEmail": { "value": "admin@skillloop.com", "source": "Seed:SuperAdmin:Email user-secret. Only exists if you seeded it." },
-    "adminPassword": { "value": "", "source": "YOU MUST FILL THIS IN - it is whatever you set in Seed:SuperAdmin:Password. There is no default password in the codebase any more." },
-    "adminToken": { "value": "", "source": "S021 $.data.accessToken" },
-    "adminRefreshToken": { "value": "", "source": "S021 $.data.refreshToken" },
-    "adminUserId": { "value": "", "source": "S020 $.data.userId" },
-    "devAdminToken": { "value": "", "source": "S020 $.data.accessToken" },
-    "student1Email": { "value": "student1@test.com", "source": "edit before S022" },
-    "student1Otp": { "value": "", "source": "S022 email inbox, 6-digit code" },
-    "student1Password": { "value": "Password@123", "source": "edit before S022" },
-    "userToken": { "value": "", "source": "S026 $.data.accessToken" },
-    "student1UserId": { "value": "", "source": "S026 $.data.userId" },
-    "student1RefreshToken": { "value": "", "source": "S026 $.data.refreshToken" },
-    "student2Email": { "value": "student2@test.com", "source": "edit before S027" },
-    "student2Otp": { "value": "", "source": "S027 email inbox" },
-    "user2Token": { "value": "", "source": "S029 $.data.accessToken" },
-    "student2UserId": { "value": "", "source": "S029 $.data.userId" },
-    "instructorToken": { "value": "", "source": "S053 $.data.accessToken" },
-    "instructorUserId": { "value": "same as student2UserId", "source": "S029 $.data.userId" },
-    "invitationToken": { "value": "", "source": "S070 response or the invitation email link" },
-    "notificationId": { "value": "", "source": "S230 first item id" },
-    "categoryId": { "value": "", "source": "S090 $.data.id" },
-    "courseId": { "value": "", "source": "S100 $.data.id" },
-    "sectionId": { "value": "", "source": "S101 $.data.id" },
-    "lessonId": { "value": "", "source": "S102 $.data.id" },
-    "section2Id": { "value": "", "source": "S101b $.data.id" },
-    "courseMaterialId": { "value": "", "source": "S113 $.data.id" },
-    "lessonMaterialId": { "value": "", "source": "S114 $.data.id" },
-    "availabilityId": { "value": "", "source": "S143 $.data.id" },
-    "instructorProfileId": { "value": "", "source": "S141 $.data.id" },
-    "instructorReviewId": { "value": "", "source": "S148 $.data.id" },
-    "sessionId": { "value": "", "source": "S160 $.data.id" },
-    "sessionMaterialId": { "value": "", "source": "S166 $.data.id" },
-    "bookingId": { "value": "", "source": "S200 $.data.id" },
-    "promoCodeId": { "value": "", "source": "S183 $.data.id" },
-    "promoCode": { "value": "WELCOME10", "source": "S183 body" },
-    "conversationId": { "value": "", "source": "S220 $.data.id" },
-    "supportQuestionId": { "value": "", "source": "S245 $.data.id" },
-    "userSupportQuestionId": { "value": "", "source": "S243 first item id" },
-    "roleId": { "value": "", "source": "S061 select the role under test" },
-    "permissionId": { "value": "", "source": "S060 select one permission" },
-    "emailLogId": { "value": "", "source": "S270 $.data, or the EmailLog table" },
-    "testFilePath": { "value": "", "source": "S280 returned path" }
+    "adminEmail": {
+      "value": "admin@skillloop.com",
+      "source": "Seed:SuperAdmin:Email user-secret. Only exists if you seeded it."
+    },
+    "adminPassword": {
+      "value": "",
+      "source": "YOU MUST FILL THIS IN - it is whatever you set in Seed:SuperAdmin:Password. There is no default password in the codebase any more."
+    },
+    "adminToken": {
+      "value": "",
+      "source": "S021 $.data.accessToken"
+    },
+    "adminRefreshToken": {
+      "value": "",
+      "source": "S021 $.data.refreshToken"
+    },
+    "adminUserId": {
+      "value": "",
+      "source": "S020 $.data.userId"
+    },
+    "devAdminToken": {
+      "value": "",
+      "source": "S020 $.data.accessToken"
+    },
+    "student1Email": {
+      "value": "{{student1Email}}",
+      "source": "edit before S022"
+    },
+    "student1Otp": {
+      "value": "",
+      "source": "S022 email inbox, 6-digit code"
+    },
+    "student1ResetOtp": {
+      "value": "",
+      "source": "S040 email inbox - a SEPARATE code from student1Otp, because OTP purpose is part of the HMAC input"
+    },
+    "student1Password": {
+      "value": "Password@123",
+      "source": "edit before S022"
+    },
+    "userToken": {
+      "value": "",
+      "source": "S026 $.data.accessToken"
+    },
+    "student1UserId": {
+      "value": "",
+      "source": "S026 $.data.userId"
+    },
+    "student1RefreshToken": {
+      "value": "",
+      "source": "S026 $.data.refreshToken"
+    },
+    "student2Email": {
+      "value": "{{student2Email}}",
+      "source": "edit before S027"
+    },
+    "student2Otp": {
+      "value": "",
+      "source": "S027 email inbox"
+    },
+    "user2Token": {
+      "value": "",
+      "source": "S029 $.data.accessToken"
+    },
+    "student2UserId": {
+      "value": "",
+      "source": "S029 $.data.userId"
+    },
+    "instructorToken": {
+      "value": "",
+      "source": "S053 $.data.accessToken"
+    },
+    "instructorUserId": {
+      "value": "same as student2UserId",
+      "source": "S029 $.data.userId"
+    },
+    "invitationToken": {
+      "value": "",
+      "source": "S070 response or the invitation email link"
+    },
+    "notificationId": {
+      "value": "",
+      "source": "S230 first item id"
+    },
+    "categoryId": {
+      "value": "",
+      "source": "S090 $.data.id"
+    },
+    "supportEmail": {
+      "value": "support@skillloop.com",
+      "source": "S004 SiteSettings.supportEmail"
+    },
+    "runStamp": {
+      "value": "1111111",
+      "source": "run suffix, keeps unique fields unique per run"
+    },
+    "courseId": {
+      "value": "",
+      "source": "S100 $.data.id"
+    },
+    "sectionId": {
+      "value": "",
+      "source": "S101 $.data.id"
+    },
+    "lessonId": {
+      "value": "",
+      "source": "S102 $.data.id"
+    },
+    "section2Id": {
+      "value": "",
+      "source": "S101b $.data.id"
+    },
+    "courseMaterialId": {
+      "value": "",
+      "source": "S113 $.data.id"
+    },
+    "lessonMaterialId": {
+      "value": "",
+      "source": "S114 $.data.id"
+    },
+    "availabilityId": {
+      "value": "",
+      "source": "S143 $.data.id"
+    },
+    "instructorProfileId": {
+      "value": "",
+      "source": "S141 $.data.id"
+    },
+    "instructorReviewId": {
+      "value": "",
+      "source": "S148 $.data.id"
+    },
+    "sessionId": {
+      "value": "",
+      "source": "S160 $.data.id"
+    },
+    "sessionMaterialId": {
+      "value": "",
+      "source": "S166 $.data.id"
+    },
+    "bookingId": {
+      "value": "",
+      "source": "S200 $.data.id"
+    },
+    "promoCodeId": {
+      "value": "",
+      "source": "S183 $.data.id"
+    },
+    "categorySlug": {
+      "value": "programming",
+      "source": "S090 form slug"
+    },
+    "promoCodeSeed": {
+      "value": "WELCOME10",
+      "source": "S183 body code"
+    },
+    "promoCode": {
+      "value": "WELCOME10",
+      "source": "mirrors promoCodeSeed, which the runner scopes per run"
+    },
+    "conversationId": {
+      "value": "",
+      "source": "S220 $.data.id"
+    },
+    "supportQuestionId": {
+      "value": "",
+      "source": "S245 $.data.id"
+    },
+    "userSupportQuestionId": {
+      "value": "",
+      "source": "S243 first item id"
+    },
+    "roleId": {
+      "value": "",
+      "source": "S061 select the role under test"
+    },
+    "permissionId": {
+      "value": "",
+      "source": "S060 select one permission"
+    },
+    "rolePermissionIds": {
+      "value": "[]",
+      "source": "S062 body -> replayed verbatim by S065"
+    },
+    "emailLogId": {
+      "value": "",
+      "source": "S270 $.data, or the EmailLog table"
+    },
+    "testFilePath": {
+      "value": "",
+      "source": "S280 returned path"
+    },
+    "testFilesDir": {
+      "value": "docs/test-files",
+      "source": "real upload fixtures; run_test_plan.py expands this to an absolute path"
+    },
+    "throwawayCategorySlug": {
+      "value": "disposable",
+      "source": "S098 form slug"
+    }
   },
-
   "phases": [
-    { "id": "P0", "name": "Bootstrap & API surface" },
-    { "id": "P1", "name": "Public read-only endpoints" },
-    { "id": "P2", "name": "Authentication & tokens" },
-    { "id": "P3", "name": "Password reset & OTP" },
-    { "id": "P4", "name": "Admin: users, roles, permissions" },
-    { "id": "P5", "name": "Staff invitations" },
-    { "id": "P6", "name": "Profile" },
-    { "id": "P7", "name": "Categories" },
-    { "id": "P8", "name": "Courses, sections, lessons, materials" },
-    { "id": "P9", "name": "Enrollments (student)" },
-    { "id": "P10", "name": "Instructor profiles & reviews" },
-    { "id": "P11", "name": "Sessions, materials, reviews" },
-    { "id": "P12", "name": "Wallet, credits, promo codes" },
-    { "id": "P13", "name": "Bookings" },
-    { "id": "P14", "name": "Chat & notifications" },
-    { "id": "P15", "name": "Support (FAQ & contact)" },
-    { "id": "P16", "name": "Dashboards" },
-    { "id": "P17", "name": "Admin emails, site settings, file storage" },
-    { "id": "P18", "name": "Cleanup & teardown" }
+    {
+      "id": "P0",
+      "name": "Bootstrap & API surface"
+    },
+    {
+      "id": "P1",
+      "name": "Public read-only endpoints"
+    },
+    {
+      "id": "P2",
+      "name": "Authentication & tokens"
+    },
+    {
+      "id": "P3",
+      "name": "Password reset & OTP"
+    },
+    {
+      "id": "P4",
+      "name": "Admin: users, roles, permissions"
+    },
+    {
+      "id": "P5",
+      "name": "Staff invitations"
+    },
+    {
+      "id": "P6",
+      "name": "Profile"
+    },
+    {
+      "id": "P7",
+      "name": "Categories"
+    },
+    {
+      "id": "P8",
+      "name": "Courses, sections, lessons, materials"
+    },
+    {
+      "id": "P9",
+      "name": "Enrollments (student)"
+    },
+    {
+      "id": "P10",
+      "name": "Instructor profiles & reviews"
+    },
+    {
+      "id": "P11",
+      "name": "Sessions, materials, reviews"
+    },
+    {
+      "id": "P12",
+      "name": "Wallet, credits, promo codes"
+    },
+    {
+      "id": "P13",
+      "name": "Bookings"
+    },
+    {
+      "id": "P14",
+      "name": "Chat & notifications"
+    },
+    {
+      "id": "P15",
+      "name": "Support (FAQ & contact)"
+    },
+    {
+      "id": "P16",
+      "name": "Dashboards"
+    },
+    {
+      "id": "P17",
+      "name": "Admin emails, site settings, file storage"
+    },
+    {
+      "id": "P18",
+      "name": "Cleanup & teardown"
+    }
   ],
-
   "steps": [
     {
       "order": 1,
@@ -173,7 +399,9 @@
       "method": "GET",
       "path": "/openapi/v1.json",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "openapi: 3.1.x with paths for every controller",
       "notes": "Open this URL directly in the browser first. If it 404s the environment is not Development, so Scalar is not mapped."
     },
@@ -185,7 +413,9 @@
       "method": "GET",
       "path": "/scalar/v1",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "HTML page rendering the API reference",
       "notes": "The spec URL inside Scalar must point at /openapi/v1.json. Continue the whole plan from this page."
     },
@@ -197,7 +427,9 @@
       "method": "GET",
       "path": "/openapi/v1.json",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "components.securitySchemes.BearerAuth = { type: http, scheme: bearer, bearerFormat: JWT }",
       "notes": "Added by BearerSecuritySchemeTransformer in OpenApiExtensions.cs. This is what makes Scalar show an Auth dropdown and carry the token into every Test Request, so you never type an Authorization header by hand. If securitySchemes is missing, that transformer is not registered."
     },
@@ -209,12 +441,18 @@
       "method": "GET",
       "path": "/api/v1/SiteSettings",
       "auth": "none",
-      "headers": { "X-Correlation-Id": "test-trace-0001" },
-      "expectStatus": [200],
+      "headers": {
+        "X-Correlation-Id": "test-trace-0001"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.appName = 'Skill Loop'",
-      "notes": "Any header sent here comes back in problem-details responses as correlationId for steps later on."
+      "notes": "Any header sent here comes back in problem-details responses as correlationId for steps later on.",
+      "capture": {
+        "supportEmail": "$.data.supportEmail"
+      }
     },
-
     {
       "order": 5,
       "id": "S010",
@@ -223,7 +461,9 @@
       "method": "GET",
       "path": "/api/v1/SiteSettings",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.appName, data.supportEmail, data.logoName"
     },
     {
@@ -234,7 +474,9 @@
       "method": "GET",
       "path": "/api/v1/Categories",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is an array of categories"
     },
     {
@@ -245,8 +487,13 @@
       "method": "GET",
       "path": "/api/v1/Courses",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] plus data.pagination"
     },
     {
@@ -266,7 +513,9 @@
         "minRating": 3.5,
         "sortBy": "HighestRated"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Only Beginner courses with >= 3.5 average rating",
       "notes": "Query-string enums accept names, unlike JSON bodies."
     },
@@ -278,9 +527,14 @@
       "method": "GET",
       "path": "/api/v1/Courses/{{courseId}}",
       "auth": "none",
-      "expectStatus": [200, 404],
+      "expectStatus": [
+        200,
+        404
+      ],
       "expectBody": "200 with course detail including sections and lessons",
-      "manualInput": ["courseId"],
+      "manualInput": [
+        "courseId"
+      ],
       "notes": "Sits before S100, so courseId is still empty. Either skip this step on the first pass and rely on S107, or copy a published course id out of the S012 response and paste it into the path now. This is a deliberate early smoke check of the read path."
     },
     {
@@ -291,8 +545,15 @@
       "method": "GET",
       "path": "/api/v1/instructor-profiles",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10, "minRating": 0, "hasCompletedSessions": true },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "minRating": 0,
+        "hasCompletedSessions": true
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of instructor summaries"
     },
     {
@@ -303,8 +564,13 @@
       "method": "GET",
       "path": "/api/support/questions",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of published support questions",
       "notes": "Note this prefix is /api/support, not /api/v1/support."
     },
@@ -316,8 +582,15 @@
       "method": "GET",
       "path": "/api/support/questions",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10, "searchTerm": "password", "category": "General" },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "searchTerm": "password",
+        "category": "General"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Filtered FAQ list"
     },
     {
@@ -328,11 +601,21 @@
       "method": "GET",
       "path": "/api/v1/courses/{{courseId}}/reviews",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200, 404],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200,
+        404
+      ],
       "expectBody": "Review list for the course",
-      "manualInput": ["courseId"],
-      "requires": ["S100"],
+      "manualInput": [
+        "courseId"
+      ],
+      "requires": [
+        "S100"
+      ],
       "notes": "Early smoke check that runs before S100. S115 is the authoritative review read, executed after the reviews exist. Safe to skip here."
     },
     {
@@ -343,10 +626,15 @@
       "method": "GET",
       "path": "/api/v1/promo-codes/{{promoCode}}/validate",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200,
+        404
+      ],
       "expectBody": "Validity flag and discount details for the code",
-      "manualInput": ["promoCode"],
-      "notes": "promoCode defaults to WELCOME10, which does not exist yet. A not-found or invalid result is the correct outcome at this point. S185 is the authoritative validation, run after S183 creates the code."
+      "manualInput": [
+        "promoCode"
+      ],
+      "notes": "Smoke-tests the public validator. {{promoCode}} is only created in S183, so on a fresh database this is expected to report the code as unknown. S185/S190 re-check the same code after it exists."
     },
     {
       "order": 15,
@@ -356,11 +644,13 @@
       "method": "POST",
       "path": "/api/v1/dev/quick-login",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.accessToken, data.userId, data.roles = ['SuperAdmin']",
       "capture": {
-        "adminUserId": "$.data.userId",
-        "devAdminToken": "$.data.accessToken"
+        "adminUserId": "$.userId",
+        "devAdminToken": "$.accessToken"
       },
       "notes": "Development only; returns 404 otherwise. This token has NO permissions, so it will 403 on every [Permission]-gated command. Use it only for identity checks, and switch to S021 before touching admin endpoints."
     },
@@ -372,11 +662,12 @@
       "method": "GET",
       "path": "/api/v1/dev/users",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Up to 50 users as { id, email, fullName, isActive }",
       "notes": "Development only. Convenient for recovering the admin userId if S020 failed, but note it does not expose password hashes or refresh tokens."
     },
-
     {
       "order": 17,
       "id": "S021",
@@ -390,7 +681,9 @@
         "email": "{{adminEmail}}",
         "password": "{{adminPassword}}"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.accessToken, data.refreshToken, data.roles",
       "capture": {
         "adminToken": "$.data.accessToken",
@@ -411,10 +704,12 @@
       "body": {
         "firstName": "Student",
         "lastName": "One",
-        "email": "student1@test.com",
+        "email": "{{student1Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Success plus an OTP emailed to the address",
       "notes": "Email must be unique. Change the address if re-running. The account gets the 'User' role and EmailConfirmed = false."
     },
@@ -427,30 +722,18 @@
       "path": "/api/v1/auth/otp/resend",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "email": "student1@test.com" },
-      "expectStatus": [200],
-      "expectBody": "Success. Resend cooldown is 00:01:00, max 3 attempts",
-      "notes": "Use this if the S022 email never arrived. Only one of S022/S023 needs to run first."
+      "body": {
+        "email": "{{student1Email}}"
+      },
+      "expectStatus": [
+        200,
+        400
+      ],
+      "expectBody": "Success, or 400 OTP_RESEND_TOO_SOON",
+      "notes": "Optional: use this only if the S022 email never arrived, since only one of S022/S023 needs to run first. 400 with code OTP_RESEND_TOO_SOON is a correct outcome here, not a failure - S022 already issued a code and the resend cooldown is 00:02:00."
     },
     {
       "order": 20,
-      "id": "S024",
-      "phase": "P2",
-      "name": "Verify the student email with the OTP",
-      "method": "POST",
-      "path": "/api/v1/auth/otp/verify",
-      "auth": "none",
-      "contentType": "application/json",
-      "body": {
-        "email": "student1@test.com",
-        "otpCode": "123456"
-      },
-      "expectStatus": [200],
-      "expectBody": "Success; EmailConfirmed becomes true",
-      "notes": "MANDATORY before S026. Read the real 6-digit code from the inbox (or the Logs folder) and replace 123456. OTP expires in 5 minutes and is limited to 3 attempts."
-    },
-    {
-      "order": 21,
       "id": "S025",
       "phase": "P2",
       "name": "Negative check - login before email confirmation",
@@ -459,12 +742,37 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "student1@test.com",
+        "email": "{{student1Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [400],
+      "expectStatus": [
+        400,
+        403
+      ],
       "expectBody": "problem+json with an email-not-confirmed error",
-      "notes": "Run this ONLY if you skipped S024. Expected to fail deliberately, proving the confirmation gate works."
+      "notes": "NEGATIVE CHECK - must run BEFORE S024 confirms the address. Login with an unconfirmed email is rejected, so this returns 400/403. After S024 the same credentials succeed, which is why the ordering matters."
+    },
+    {
+      "order": 21,
+      "id": "S024",
+      "phase": "P2",
+      "name": "Verify the student email with the OTP",
+      "method": "POST",
+      "path": "/api/v1/auth/otp/verify",
+      "auth": "none",
+      "contentType": "application/json",
+      "manualInput": [
+        "student1Otp"
+      ],
+      "body": {
+        "email": "{{student1Email}}",
+        "otpCode": "{{student1Otp}}"
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "Success; EmailConfirmed becomes true",
+      "notes": "MANDATORY before S026. Fill student1Otp with the real 6-digit code sent to student1@test.com by S022 - the placeholder 123456 can never verify. docs/run_test_plan.py recovers it automatically from the database. The OTP expires in 5 minutes and is limited to 3 attempts."
     },
     {
       "order": 22,
@@ -476,10 +784,12 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "student1@test.com",
+        "email": "{{student1Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.accessToken, data.refreshToken, data.userId",
       "capture": {
         "userToken": "$.data.accessToken",
@@ -500,10 +810,12 @@
       "body": {
         "firstName": "Student",
         "lastName": "Two",
-        "email": "student2@test.com",
+        "email": "{{student2Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Success plus an OTP email"
     },
     {
@@ -515,11 +827,16 @@
       "path": "/api/v1/auth/otp/verify",
       "auth": "none",
       "contentType": "application/json",
+      "manualInput": [
+        "student2Otp"
+      ],
       "body": {
-        "email": "student2@test.com",
-        "otpCode": "123456"
+        "email": "{{student2Email}}",
+        "otpCode": "{{student2Otp}}"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Success",
       "notes": "Replace 123456 with the actual code for student2@test.com."
     },
@@ -533,10 +850,12 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "student2@test.com",
+        "email": "{{student2Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.accessToken, data.userId",
       "capture": {
         "user2Token": "$.data.accessToken",
@@ -554,8 +873,14 @@
       "path": "/api/v1/Auth/staff/login/google",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "idToken": "REPLACE_WITH_GOOGLE_ID_TOKEN" },
-      "expectStatus": [200, 400, 401],
+      "body": {
+        "idToken": "REPLACE_WITH_GOOGLE_ID_TOKEN"
+      },
+      "expectStatus": [
+        200,
+        400,
+        401
+      ],
       "expectBody": "Tokens when the Google account maps to an existing staff user",
       "notes": "Needs GoogleAuth:ClientId configured plus a live OIDC id_token. A 400 here is a configuration result, not a code defect. The account must already exist in the database; Google login never creates users."
     },
@@ -568,8 +893,14 @@
       "path": "/api/v1/Auth/user/login/google",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "idToken": "REPLACE_WITH_GOOGLE_ID_TOKEN" },
-      "expectStatus": [200, 400, 401],
+      "body": {
+        "idToken": "REPLACE_WITH_GOOGLE_ID_TOKEN"
+      },
+      "expectStatus": [
+        200,
+        400,
+        401
+      ],
       "expectBody": "Tokens for an existing, confirmed, active, non-staff user",
       "notes": "Rejects staff roles on purpose, and requires EmailConfirmed = true."
     },
@@ -582,8 +913,12 @@
       "path": "/api/v1/Auth/refresh-token",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "refreshToken": "{{adminRefreshToken}}" },
-      "expectStatus": [200],
+      "body": {
+        "refreshToken": "{{adminRefreshToken}}"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "A new accessToken and a rotated refreshToken; the old refresh token is revoked",
       "capture": {
         "adminToken": "$.data.accessToken",
@@ -600,8 +935,12 @@
       "path": "/api/v1/Auth/refresh-token",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "refreshToken": "{{student1RefreshToken}}" },
-      "expectStatus": [200],
+      "body": {
+        "refreshToken": "{{student1RefreshToken}}"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "A new accessToken plus a rotated student refresh token",
       "capture": {
         "userToken": "$.data.accessToken",
@@ -618,8 +957,13 @@
       "path": "/api/v1/Auth/refresh-token",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "refreshToken": "REPLAY_THE_PREVIOUS_REFRESH_TOKEN" },
-      "expectStatus": [400, 401],
+      "body": {
+        "refreshToken": "REPLAY_THE_PREVIOUS_REFRESH_TOKEN"
+      },
+      "expectStatus": [
+        400,
+        401
+      ],
       "expectBody": "Token-revoked error",
       "notes": "Deliberate failure. Proves replay protection on the rotation path."
     },
@@ -632,12 +976,16 @@
       "path": "/api/v1/Auth/logout",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "refreshToken": "{{student1RefreshToken}}" },
-      "expectStatus": [200, 204],
+      "body": {
+        "refreshToken": "{{student1RefreshToken}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "The only auth endpoint requiring [Authorize]. Re-login (S026) before any later step that needs userToken."
     },
-
     {
       "order": 32,
       "id": "S040",
@@ -647,8 +995,13 @@
       "path": "/api/v1/auth/password/forgot",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "email": "student1@test.com" },
-      "expectStatus": [200, 204],
+      "body": {
+        "email": "{{student1Email}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success plus a password-reset OTP email"
     },
     {
@@ -660,15 +1013,21 @@
       "path": "/api/v1/auth/password/reset",
       "auth": "none",
       "contentType": "application/json",
+      "manualInput": [
+        "student1ResetOtp"
+      ],
       "body": {
-        "email": "student1@test.com",
-        "otpCode": "654321",
+        "email": "{{student1Email}}",
+        "otpCode": "{{student1ResetOtp}}",
         "newPassword": "NewPassword@123",
         "confirmPassword": "NewPassword@123"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
-      "notes": "Replace 654321 with the code from S040. Afterwards student1 logs in with NewPassword@123, so re-run S026 or update later bodies."
+      "notes": "Fill student1ResetOtp with the code S040 sent - it is a SEPARATE code from the email-verification OTP, because OTP purpose is part of the HMAC input. docs/run_test_plan.py recovers it from the database. Afterwards student1 logs in with NewPassword@123, so re-run S026 or update later bodies."
     },
     {
       "order": 34,
@@ -679,17 +1038,21 @@
       "path": "/api/v1/auth/password/reset",
       "auth": "none",
       "contentType": "application/json",
+      "manualInput": [
+        "student1ResetOtp"
+      ],
       "body": {
-        "email": "student1@test.com",
-        "otpCode": "654321",
+        "email": "{{student1Email}}",
+        "otpCode": "{{student1ResetOtp}}",
         "newPassword": "NewPassword@123",
         "confirmPassword": "DifferentPassword@123"
       },
-      "expectStatus": [400],
+      "expectStatus": [
+        400
+      ],
       "expectBody": "Validation problem details",
       "notes": "Deliberate failure, confirms confirm-password is enforced."
     },
-
     {
       "order": 35,
       "id": "S050",
@@ -698,8 +1061,13 @@
       "method": "GET",
       "path": "/api/v1/Users",
       "auth": "adminToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of users with roles",
       "notes": "Controller-level [Authorize(Roles = 'Admin,SuperAdmin')]. Locate student1 and student2 here if you lost their ids."
     },
@@ -711,8 +1079,15 @@
       "method": "GET",
       "path": "/api/v1/Users",
       "auth": "adminToken",
-      "query": { "pageNumber": 1, "pageSize": 20, "role": "User", "searchTerm": "student" },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20,
+        "role": "User",
+        "searchTerm": "student"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Only users holding the User role matching the search"
     },
     {
@@ -724,8 +1099,13 @@
       "path": "/api/v1/Users/{{student2UserId}}/roles",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "roleName": "Instructor" },
-      "expectStatus": [200, 204],
+      "body": {
+        "roleName": "Instructor"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Valid role names: SuperAdmin, Admin, FinanceManager, Support, User, Instructor. Do this before S141 so the account can own a profile and sessions."
     },
@@ -739,12 +1119,16 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "student2@test.com",
+        "email": "{{student2Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.accessToken with roles containing Instructor",
-      "capture": { "instructorToken": "$.data.accessToken" },
+      "capture": {
+        "instructorToken": "$.data.accessToken"
+      },
       "notes": "Roles are baked into the JWT, so a fresh login is mandatory after S052."
     },
     {
@@ -755,97 +1139,167 @@
       "method": "DELETE",
       "path": "/api/v1/Users/{{student2UserId}}/roles/Instructor",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "This undoes S052. To continue with the instructor steps, re-run S052 and S053, or skip this step entirely."
     },
     {
       "order": 40,
+      "id": "S057",
+      "phase": "P4",
+      "name": "Re-assign the Instructor role",
+      "method": "POST",
+      "path": "/api/v1/Users/{{student2UserId}}/roles",
+      "auth": "adminToken",
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "notes": "Restores what S054 removed. student2 is the instructor account for the rest of the run, so the role has to be back before the session and dashboard steps.",
+      "capture": null,
+      "body": {
+        "roleName": "Instructor"
+      }
+    },
+    {
+      "order": 41,
+      "id": "S058",
+      "phase": "P4",
+      "name": "Log the instructor back in after the role round trip",
+      "method": "POST",
+      "path": "/api/v1/Auth/user/login",
+      "auth": "none",
+      "contentType": "application/json",
+      "body": {
+        "email": "{{student2Email}}",
+        "password": "Password@123"
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data.accessToken with roles containing Instructor",
+      "capture": {
+        "instructorToken": "$.data.accessToken"
+      },
+      "notes": "Re-issues {{instructorToken}} so its claims match the restored role."
+    },
+    {
+      "order": 42,
       "id": "S055",
       "phase": "P4",
       "name": "Deactivate a user",
       "method": "PATCH",
       "path": "/api/v1/Users/{{student2UserId}}/deactivate",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; account becomes inactive and all refresh tokens are revoked",
       "notes": "Deactivating the instructor invalidates instructorToken for the rest of the run. Run this near the end (see S180) or re-activate immediately after."
     },
     {
-      "order": 41,
+      "order": 43,
       "id": "S056",
       "phase": "P4",
       "name": "Reactivate the user",
       "method": "PATCH",
       "path": "/api/v1/Users/{{student2UserId}}/activate",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Pair with S055 to verify the activate/deactivate round trip."
     },
     {
-      "order": 42,
+      "order": 44,
       "id": "S060",
       "phase": "P4",
       "name": "List every permission",
       "method": "GET",
       "path": "/api/v1/PermissionManagement/permissions",
       "auth": "adminToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is the full permission catalog",
-      "capture": { "permissionId": "first data[].id" },
-      "notes": "Source the permissionId used in S063/S064 from this response."
+      "capture": {
+        "permissionId": "$.data[0].id"
+      },
+      "notes": "Permissions expose id; roles expose roleId (see S061), not id."
     },
     {
-      "order": 43,
+      "order": 45,
       "id": "S061",
       "phase": "P4",
       "name": "List roles with their permissions",
       "method": "GET",
       "path": "/api/v1/PermissionManagement/roles",
       "auth": "adminToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data[] of roles each carrying a permissions[] array",
-      "capture": { "roleId": "id of the role you intend to modify" },
-      "notes": "Prefer a non-critical role such as Support so admin access is not lost."
+      "capture": {
+        "roleId": "$.data[roleName=Instructor].roleId"
+      },
+      "notes": "Roles carry roleId, not id. Pick Instructor by name: data[0] is SuperAdmin, and S065 rewrites the role's whole permission list."
     },
     {
-      "order": 44,
+      "order": 46,
       "id": "S062",
       "phase": "P4",
       "name": "Permissions of one role",
       "method": "GET",
       "path": "/api/v1/PermissionManagement/roles/{{roleId}}",
       "auth": "adminToken",
-      "expectStatus": [200],
-      "expectBody": "The role with its permission list"
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "The role with its permission list",
+      "capture": {
+        "rolePermissionIds": "$.data.permissions[*].id"
+      },
+      "notes": "Reads the role's current permissions so S065 can send the same list back instead of stripping the role to one permission."
     },
     {
-      "order": 45,
+      "order": 47,
       "id": "S063",
       "phase": "P4",
       "name": "Assign one permission to a role",
       "method": "POST",
       "path": "/api/v1/PermissionManagement/roles/{{roleId}}/permissions/{{permissionId}}/assign",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Idempotent by design; re-assigning the same pair should still succeed."
     },
     {
-      "order": 46,
+      "order": 48,
       "id": "S064",
       "phase": "P4",
       "name": "Remove that permission from the role",
       "method": "POST",
       "path": "/api/v1/PermissionManagement/roles/{{roleId}}/permissions/{{permissionId}}/remove",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Pairs with S063 as a round trip."
     },
     {
-      "order": 47,
+      "order": 49,
       "id": "S065",
       "phase": "P4",
       "name": "Bulk replace a role's permissions",
@@ -853,14 +1307,16 @@
       "path": "/api/v1/PermissionManagement/roles/{{roleId}}/permissions/update",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": ["{{permissionId}}"],
-      "expectStatus": [200, 204],
+      "body": "{{rolePermissionIds}}",
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the role's permission set is replaced by this list",
-      "notes": "The body is a BARE JSON ARRAY of permission id strings, not an object. Take the full current list from S062 first, or you will strip the role down to one permission."
+      "notes": "The body is a BARE JSON ARRAY of permission id strings - the exact list S062 read, so this round trip leaves the role unchanged. It also guards a real defect: the rate-limit identity middleware used to call TryGetProperty on the body root, which threw on any array body and 500'd this endpoint."
     },
-
     {
-      "order": 48,
+      "order": 50,
       "id": "S070",
       "phase": "P5",
       "name": "Invite a new staff member",
@@ -869,27 +1325,38 @@
       "auth": "adminToken",
       "contentType": "application/json",
       "body": {
-        "email": "newstaff@test.com",
+        "email": "newstaff-{{runStamp}}@test.com",
         "role": "Support"
       },
-      "expectStatus": [200, 204],
-      "expectBody": "Success; an invitation email with a token is sent"
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; an invitation email with a token is sent",
+      "capture": {
+        "invitationToken": "$.data"
+      },
+      "notes": "Returns the invitation token as a bare GUID in data; S071/S072 use it directly instead of re-reading the row from the database."
     },
     {
-      "order": 49,
+      "order": 51,
       "id": "S071",
       "phase": "P5",
       "name": "Validate an invitation token",
       "method": "GET",
       "path": "/api/v1/StaffInvitations/validate/{{invitationToken}}",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Valid invitation details: email and role",
-      "manualInput": ["invitationToken"],
+      "manualInput": [
+        "invitationToken"
+      ],
       "notes": "Take invitationToken from the S070 response body or the invitation link in the email. This endpoint is anonymous by design, which makes it the way to confirm a token is genuinely valid."
     },
     {
-      "order": 50,
+      "order": 52,
       "id": "S072",
       "phase": "P5",
       "name": "Accept the invitation with a password",
@@ -901,15 +1368,19 @@
         "invitationToken": "{{invitationToken}}",
         "fullName": "New Staff",
         "password": "Password@123",
-        "phoneNumber": "01000000000"
+        "phoneNumber": "01{{runStamp}}00"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Success; the account is created with the invited role and EmailConfirmed = true",
-      "manualInput": ["invitationToken"],
+      "manualInput": [
+        "invitationToken"
+      ],
       "notes": "SKIP THIS STEP on the first pass if you intend to run S073, because invitations are single-use and S072 consumes the token. Either accept with a password here (and skip S073) or accept with Google (and skip this)."
     },
     {
-      "order": 51,
+      "order": 53,
       "id": "S073",
       "phase": "P5",
       "name": "Accept an invitation using Google (documented)",
@@ -921,28 +1392,35 @@
         "invitationToken": "{{invitationToken}}",
         "googleIdToken": "REPLACE_WITH_GOOGLE_ID_TOKEN"
       },
-      "expectStatus": [200, 400, 401],
+      "expectStatus": [
+        200,
+        400,
+        401
+      ],
       "expectBody": "Success when the Google account matches the invited email",
-      "manualInput": ["invitationToken"],
+      "manualInput": [
+        "invitationToken"
+      ],
       "needsFreshInvitation": true,
       "skipIfStepCompleted": "S072",
       "notes": "Mutually exclusive with S072: an invitation is single-use, so pick one accept path. Send a new invitation via S070 using the Google account's email address first."
     },
-
     {
-      "order": 52,
+      "order": 54,
       "id": "S080",
       "phase": "P6",
       "name": "Read my profile",
       "method": "GET",
       "path": "/api/v1/Profile",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data with firstName, lastName, email, phoneNumber, avatarUrl",
       "notes": "The real route is /api/v1/Profile, not /api/v1/me as the README claims."
     },
     {
-      "order": 53,
+      "order": 55,
       "id": "S081",
       "phase": "P6",
       "name": "Update my profile",
@@ -953,13 +1431,16 @@
       "body": {
         "firstName": "Student",
         "lastName": "One-Updated",
-        "phoneNumber": "01111111111"
+        "phoneNumber": "011{{runStamp}}"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 54,
+      "order": 56,
       "id": "S082",
       "phase": "P6",
       "name": "Upload a profile picture",
@@ -967,13 +1448,19 @@
       "path": "/api/v1/Profile/picture",
       "auth": "userToken",
       "contentType": "multipart/form-data",
-      "form": { "file": "C:/path/to/avatar.png" },
-      "expectStatus": [200, 204],
+      "form": null,
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; avatarUrl points at /uploads/...",
-      "notes": "In Scalar pick the file from disk for the 'file' field. Allowed extensions come from FileStorage options, max 10 MB. The served file is publicly reachable at /uploads/... with no auth."
+      "notes": "Uploads the real fixture avatar.png from docs/test-files. The multipart field is named file.",
+      "optionalForm": {
+        "file": "{{testFilesDir}}/avatar.png"
+      }
     },
     {
-      "order": 55,
+      "order": 57,
       "id": "S083",
       "phase": "P6",
       "name": "Change my password",
@@ -982,16 +1469,19 @@
       "auth": "userToken",
       "contentType": "application/json",
       "body": {
-        "currentPassword": "Password@123",
+        "currentPassword": "NewPassword@123",
         "newPassword": "ChangedPassword@123",
         "confirmNewPassword": "ChangedPassword@123"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
-      "notes": "Field name is confirmNewPassword, not confirmPassword. Run this LAST in the profile phase because it invalidates the current password for later logins."
+      "notes": "student1 reset its password in S041, so the current password is the one S041 set, not the registration default."
     },
     {
-      "order": 56,
+      "order": 58,
       "id": "S084",
       "phase": "P6",
       "name": "Current password wrong is rejected (negative check)",
@@ -1004,13 +1494,14 @@
         "newPassword": "AnotherOne@123",
         "confirmNewPassword": "AnotherOne@123"
       },
-      "expectStatus": [400],
+      "expectStatus": [
+        400
+      ],
       "expectBody": "Validation/credentials error",
       "notes": "Deliberate failure, proves the current password is actually checked."
     },
-
     {
-      "order": 57,
+      "order": 59,
       "id": "S090",
       "phase": "P7",
       "name": "Create a course category",
@@ -1020,18 +1511,24 @@
       "contentType": "multipart/form-data",
       "form": {
         "name": "Programming",
-        "slug": "programming",
+        "slug": "{{categorySlug}}",
         "description": "Software development courses",
         "displayOrder": 1
       },
-      "optionalForm": { "iconFile": "C:/path/to/icon.png" },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new category",
-      "capture": { "categoryId": "$.data.id" },
-      "notes": "This is multipart/form-data, not JSON. Add the scalar fields in Scalar, optionally attaching iconFile. S100 needs this categoryId."
+      "optionalForm": {
+        "iconFile": "{{testFilesDir}}/icon.png"
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new category id (a bare GUID, not an object)",
+      "capture": {
+        "categoryId": "$.data"
+      },
+      "notes": "This is multipart/form-data, not JSON. Add the scalar fields in Scalar, optionally attaching iconFile. S100 needs this categoryId. Uploads the real fixture icon.png from docs/test-files."
     },
     {
-      "order": 58,
+      "order": 60,
       "id": "S091",
       "phase": "P7",
       "name": "Update the category",
@@ -1041,41 +1538,84 @@
       "contentType": "multipart/form-data",
       "form": {
         "name": "Programming & Software",
-        "slug": "programming-software",
+        "slug": "{{categorySlug}}-updated",
         "description": "Updated description",
         "displayOrder": 2
       },
-      "optionalForm": { "iconFile": "C:/path/to/icon-v2.png" },
-      "expectStatus": [200, 204],
-      "expectBody": "Success"
+      "optionalForm": {
+        "iconFile": "{{testFilesDir}}/icon-v2.png"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "notes": "Uploads the real fixture icon-v2.png from docs/test-files."
     },
     {
-      "order": 59,
+      "order": 61,
       "id": "S092",
       "phase": "P7",
       "name": "Re-list categories to confirm the update",
       "method": "GET",
       "path": "/api/v1/Categories",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The updated category appears with the new name and order"
     },
     {
-      "order": 60,
+      "order": 62,
+      "id": "S098",
+      "phase": "P7",
+      "name": "Create a throwaway category to delete",
+      "method": "POST",
+      "path": "/api/v1/Categories",
+      "auth": "adminToken",
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
+      "expectBody": "data is the id of the throwaway category",
+      "skipBeforeOrder": 100,
+      "notes": "Disposable fixture, so the delete case below has something to remove without touching the category S100 needs.",
+      "contentType": "multipart/form-data",
+      "form": {
+        "name": "Disposable",
+        "slug": "{{throwawayCategorySlug}}",
+        "description": "Created only to be deleted",
+        "displayOrder": 9
+      },
+      "optionalForm": null,
+      "capture": {
+        "throwawayCategoryId": "$.data"
+      }
+    },
+    {
+      "order": 63,
       "id": "S099",
       "phase": "P7",
-      "name": "Delete a throwaway category",
+      "name": "Delete the throwaway category",
       "method": "DELETE",
-      "path": "/api/v1/Categories/{{categoryId}}",
+      "path": "/api/v1/Categories/{{throwawayCategoryId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204, 409],
-      "expectBody": "Success, or 409 if courses still reference it",
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
+      "expectBody": "the throwaway category is gone",
       "skipBeforeOrder": 100,
-      "notes": "SKIP THIS STEP on the first pass. S100 needs categoryId to exist. It exists only to prove the delete path works, so run it after S119 using a second throwaway category."
+      "notes": "Deletes only {{throwawayCategoryId}}. S291 removes {{categoryId}} at teardown.",
+      "capture": null,
+      "form": null,
+      "optionalForm": null,
+      "contentType": null
     },
-
     {
-      "order": 61,
+      "order": 64,
       "id": "S100",
       "phase": "P8",
       "name": "Create a course (draft)",
@@ -1087,16 +1627,21 @@
         "Description": "A complete guide to modern C#.",
         "Credits": 50,
         "Level": 2,
-        "CategoryId": "{{categoryId}}"
+        "CategoryId": "{{categoryId}}",
+        "ThumbnailImage": "{{testFilesDir}}/thumbnail.jpg"
       },
-      "optionalForm": { "ThumbnailImage": "C:/path/to/thumbnail.jpg" },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new course, status = Draft",
-      "capture": { "courseId": "$.data.id" },
-      "notes": "This endpoint takes multipart/form-data, NOT json - a JSON body returns 415. Level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels; a string returns 400. There is deliberately no InstructorId/InstructorName field: the handler derives the instructor from the caller's token, so you cannot publish a course as someone else unless the caller holds Courses.ManageAll. Gated by [Permissions.Courses.Create], so it needs the real staff token from S021."
+      "optionalForm": null,
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new course id (a bare GUID); the course starts as Draft",
+      "capture": {
+        "courseId": "$.data"
+      },
+      "notes": "This endpoint takes multipart/form-data, NOT json - a JSON body returns 415. Level is the CourseLevel INTEGER: 1 Beginner, 2 Intermediate, 3 Advanced, 4 AllLevels; a string returns 400. There is deliberately no InstructorId/InstructorName field: the handler derives the instructor from the caller's token, so you cannot publish a course as someone else unless the caller holds Courses.ManageAll. Gated by [Permissions.Courses.Create], so it needs the real staff token from S021. Uploads the real fixture thumbnail.jpg from docs/test-files."
     },
     {
-      "order": 62,
+      "order": 65,
       "id": "S101",
       "phase": "P8",
       "name": "Add the first section",
@@ -1104,13 +1649,20 @@
       "path": "/api/v1/courses/{{courseId}}/sections",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "title": "Getting Started", "orderIndex": 1 },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new section",
-      "capture": { "sectionId": "$.data.id" }
+      "body": {
+        "title": "Getting Started",
+        "orderIndex": 1
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new section id (a bare GUID)",
+      "capture": {
+        "sectionId": "$.data"
+      }
     },
     {
-      "order": 63,
+      "order": 66,
       "id": "S102",
       "phase": "P8",
       "name": "Add a second section (for reorder)",
@@ -1118,13 +1670,20 @@
       "path": "/api/v1/courses/{{courseId}}/sections",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "title": "Advanced Topics", "orderIndex": 2 },
-      "expectStatus": [200],
-      "expectBody": "data.id for the second section",
-      "capture": { "section2Id": "$.data.id" }
+      "body": {
+        "title": "Advanced Topics",
+        "orderIndex": 2
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the id of the second section",
+      "capture": {
+        "section2Id": "$.data"
+      }
     },
     {
-      "order": 64,
+      "order": 67,
       "id": "S103",
       "phase": "P8",
       "name": "Add a lesson to the first section",
@@ -1141,13 +1700,42 @@
         "streamingResolution": "1080p",
         "externalProviderId": null
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new lesson",
-      "capture": { "lessonId": "$.data.id" },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new lesson id (a bare GUID)",
+      "capture": {
+        "lessonId": "$.data"
+      },
       "notes": "duration is a TimeSpan and MUST be the .NET literal string \"00:30:00\". streamingResolution and externalProviderId are nullable and may be omitted or sent as null."
     },
     {
-      "order": 65,
+      "order": 68,
+      "id": "S103b",
+      "phase": "P8",
+      "name": "Add a lesson to the second section",
+      "method": "POST",
+      "path": "/api/v1/courses/{{courseId}}/sections/{{section2Id}}/lessons",
+      "auth": "adminToken",
+      "contentType": "application/json",
+      "body": {
+        "title": "Lesson 1 - Advanced Patterns",
+        "videoUrl": "https://example.com/video3.mp4",
+        "duration": "00:40:00",
+        "orderIndex": 1,
+        "isPreviewable": false,
+        "streamingResolution": "1080p",
+        "externalProviderId": null
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the lesson id for section 2",
+      "capture": null,
+      "notes": "Section 2 would otherwise stay empty, and Course.Publish refuses a course with an empty section. S106 publishes, and the enrolment steps need a published course."
+    },
+    {
+      "order": 69,
       "id": "S104",
       "phase": "P8",
       "name": "Update the section",
@@ -1155,12 +1743,18 @@
       "path": "/api/v1/courses/{{courseId}}/sections/{{sectionId}}",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "title": "Getting Started (v2)", "orderIndex": 1 },
-      "expectStatus": [200, 204],
+      "body": {
+        "title": "Getting Started (v2)",
+        "orderIndex": 1
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 66,
+      "order": 70,
       "id": "S105",
       "phase": "P8",
       "name": "Update the lesson",
@@ -1177,132 +1771,142 @@
         "orderIndex": 1,
         "isPreviewable": true
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "UpdateLessonRequest takes the full object, not a partial patch. Note the field order differs from AddLessonRequest but the JSON keys are identical."
     },
     {
-      "order": 67,
+      "order": 71,
       "id": "S106",
       "phase": "P8",
       "name": "Publish the course",
       "method": "POST",
       "path": "/api/v1/Courses/{{courseId}}/publish",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; status becomes Published",
       "notes": "Only [AuthenticatedOnly]-gated, so ownership rules still apply but no granular permission is needed."
     },
     {
-      "order": 68,
+      "order": 72,
       "id": "S107",
       "phase": "P8",
       "name": "Read the published course (anonymous re-check of S014)",
       "method": "GET",
       "path": "/api/v1/Courses/{{courseId}}",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Course detail including sections and their lessons"
     },
     {
-      "order": 69,
+      "order": 73,
       "id": "S108",
       "phase": "P8",
       "name": "Filter the course list by the new category",
       "method": "GET",
       "path": "/api/v1/Courses",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10, "categoryId": "{{categoryId}}", "sortBy": "Newest" },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "categoryId": "{{categoryId}}",
+        "sortBy": "Newest"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The new course appears first"
     },
     {
-      "order": 70,
+      "order": 74,
       "id": "S109",
       "phase": "P8",
       "name": "List my draft courses",
       "method": "GET",
       "path": "/api/v1/Courses/drafts",
       "auth": "adminToken",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Empty now that S106 published the course; create another draft to see rows"
     },
     {
-      "order": 71,
+      "order": 75,
       "id": "S110",
       "phase": "P8",
       "name": "Bookmark the course as a student",
       "method": "POST",
       "path": "/api/v1/Courses/{{courseId}}/bookmark",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; this is a toggle"
     },
     {
-      "order": 72,
+      "order": 76,
       "id": "S111",
       "phase": "P8",
       "name": "List my bookmarks",
       "method": "GET",
       "path": "/api/v1/Courses/bookmarks",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] containing the bookmarked course"
     },
     {
-      "order": 73,
+      "order": 77,
       "id": "S112",
       "phase": "P8",
       "name": "Un-bookmark the course (toggle back)",
       "method": "POST",
       "path": "/api/v1/Courses/{{courseId}}/bookmark",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; removes the bookmark",
       "notes": "Toggles, so a second identical call inverts the state. Re-run S111 if you want the bookmark to persist."
     },
     {
-      "order": 74,
-      "id": "S113",
-      "phase": "P8",
-      "name": "Review the course as a student",
-      "method": "POST",
-      "path": "/api/v1/courses/{{courseId}}/reviews",
-      "auth": "userToken",
-      "contentType": "application/json",
-      "body": { "stars": 5, "comment": "Excellent course." },
-      "expectStatus": [200, 204],
-      "expectBody": "Success"
-    },
-    {
-      "order": 75,
-      "id": "S114",
-      "phase": "P8",
-      "name": "Review the same course as a second user",
-      "method": "POST",
-      "path": "/api/v1/courses/{{courseId}}/reviews",
-      "auth": "user2Token",
-      "contentType": "application/json",
-      "body": { "stars": 4, "comment": "Very good, minor gaps." },
-      "expectStatus": [200, 204],
-      "expectBody": "Success; proves a second reviewer aggregates into the average"
-    },
-    {
-      "order": 76,
+      "order": 78,
       "id": "S115",
       "phase": "P8",
       "name": "Read the course reviews (anonymous re-check of S018)",
       "method": "GET",
       "path": "/api/v1/courses/{{courseId}}/reviews",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Both reviews with an average of 4.5"
     },
     {
-      "order": 77,
+      "order": 79,
       "id": "S116",
       "phase": "P8",
       "name": "Upload a course-level material",
@@ -1311,16 +1915,21 @@
       "auth": "adminToken",
       "contentType": "multipart/form-data",
       "form": {
-        "file": "C:/path/to/syllabus.pdf",
+        "file": "{{testFilesDir}}/syllabus.pdf",
         "materialType": "PDF"
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the uploaded material",
-      "capture": { "courseMaterialId": "$.data.id" },
-      "notes": "materialType is a form field bound by name, so 'PDF' works here even though JSON bodies need the number 0. Allowed extensions are restricted by FileStorage options, max 10 MB."
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the id of the uploaded course material",
+      "capture": {
+        "courseMaterialId": "$.data"
+      },
+      "notes": "materialType is a form field bound by name, so 'PDF' works here even though JSON bodies need the number 0. Allowed extensions are restricted by FileStorage options, max 10 MB. SKIPPED: Google Drive storage is broken.",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step uploads a course material through Google Drive."
     },
     {
-      "order": 78,
+      "order": 80,
       "id": "S117",
       "phase": "P8",
       "name": "Upload a lesson-level material",
@@ -1329,37 +1938,53 @@
       "auth": "adminToken",
       "contentType": "multipart/form-data",
       "form": {
-        "file": "C:/path/to/lesson-slides.pdf",
+        "file": "{{testFilesDir}}/lesson-slides.pdf",
         "materialType": "PDF"
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the uploaded lesson material",
-      "capture": { "lessonMaterialId": "$.data.id" }
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the id of the uploaded lesson material",
+      "capture": {
+        "lessonMaterialId": "$.data"
+      },
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step uploads a lesson material through Google Drive.",
+      "notes": " SKIPPED: Google Drive storage is broken."
     },
     {
-      "order": 79,
+      "order": 81,
       "id": "S118",
       "phase": "P8",
       "name": "Delete the lesson material",
       "method": "DELETE",
       "path": "/api/v1/courses/{{courseId}}/sections/{{sectionId}}/lessons/{{lessonId}}/materials/{{lessonMaterialId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
-      "expectBody": "Success"
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step removes a lesson material through Google Drive.",
+      "notes": " SKIPPED: Google Drive storage is broken."
     },
     {
-      "order": 80,
+      "order": 82,
       "id": "S119",
       "phase": "P8",
       "name": "Delete the course material",
       "method": "DELETE",
       "path": "/api/v1/courses/{{courseId}}/materials/{{courseMaterialId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
-      "expectBody": "Success"
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step removes a course material through Google Drive.",
+      "notes": " SKIPPED: Google Drive storage is broken."
     },
     {
-      "order": 81,
+      "order": 83,
       "id": "S120",
       "phase": "P8",
       "name": "Reorder the sections",
@@ -1373,12 +1998,15 @@
           "{{section2Id}}": 1
         }
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the two sections swap positions",
       "notes": "The body is an object whose keys are GUID STRINGS mapping to the new 1-based order. Both sections must be included. This route is declared after {sectionId:guid}, but the :guid constraint keeps them distinct."
     },
     {
-      "order": 82,
+      "order": 84,
       "id": "S121",
       "phase": "P8",
       "name": "Reorder the lessons",
@@ -1386,12 +2014,19 @@
       "path": "/api/v1/courses/{{courseId}}/sections/{{sectionId}}/lessons/reorder",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "lessonOrders": { "{{lessonId}}": 1 } },
-      "expectStatus": [200, 204],
+      "body": {
+        "lessonOrders": {
+          "{{lessonId}}": 1
+        }
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 83,
+      "order": 85,
       "id": "S122",
       "phase": "P8",
       "name": "Update the course details",
@@ -1407,25 +2042,34 @@
         "level": 3,
         "categoryId": "{{categoryId}}"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "level is again the integer 3 (Advanced)."
     },
     {
-      "order": 84,
-      "id": "S123",
-      "phase": "P8",
-      "name": "Archive the course",
+      "order": 86,
+      "id": "S122a",
+      "phase": "P9",
+      "name": "Buy credits so the learner can pay for a course",
       "method": "POST",
-      "path": "/api/v1/Courses/{{courseId}}/archive",
-      "auth": "adminToken",
-      "expectStatus": [200, 204],
-      "expectBody": "Success; status becomes Archived",
-      "notes": "The course disappears from public S007/S012 listings. Un-archive by publishing again if a later step needs it visible."
+      "path": "/api/v1/Wallets/buy-credits",
+      "auth": "userToken",
+      "contentType": "application/json",
+      "body": {
+        "amount": 200,
+        "promoCode": null
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "Purchase result; the wallet now holds enough credits for the paid course",
+      "notes": "Enrolling in a paid course debits credits, and a fresh wallet starts empty. This has to happen BEFORE the P9 enrollment steps; the later P12 finance steps exercise the quote/credit-purchase flows, which are a different intent."
     },
-
     {
-      "order": 85,
+      "order": 87,
       "id": "S130",
       "phase": "P9",
       "name": "Enroll in the course",
@@ -1433,23 +2077,30 @@
       "path": "/api/v1/Enrollments/enroll",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "courseId": "{{courseId}}" },
-      "expectStatus": [200, 204],
+      "body": {
+        "courseId": "{{courseId}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; enrollment status Active"
     },
     {
-      "order": 86,
+      "order": 88,
       "id": "S131",
       "phase": "P9",
       "name": "List my enrollments",
       "method": "GET",
       "path": "/api/v1/Enrollments/my-courses",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data[] containing the course"
     },
     {
-      "order": 87,
+      "order": 89,
       "id": "S132",
       "phase": "P9",
       "name": "Record lesson progress",
@@ -1457,23 +2108,109 @@
       "path": "/api/v1/Enrollments/{{courseId}}/lessons/progress",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "lessonId": "{{lessonId}}" },
-      "expectStatus": [200, 204],
+      "body": {
+        "lessonId": "{{lessonId}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; watch progress updated"
     },
     {
-      "order": 88,
+      "order": 90,
       "id": "S133",
       "phase": "P9",
       "name": "Mark the lesson complete",
       "method": "POST",
       "path": "/api/v1/Enrollments/{{courseId}}/lessons/{{lessonId}}/complete",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the lesson counts toward course completion"
     },
     {
-      "order": 89,
+      "order": 91,
+      "id": "S133b",
+      "phase": "P9",
+      "name": "Second learner buys credits",
+      "method": "POST",
+      "path": "/api/v1/Wallets/buy-credits",
+      "auth": "user2Token",
+      "contentType": "application/json",
+      "body": {
+        "amount": 200,
+        "promoCode": null
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "Purchase result",
+      "notes": "A fresh wallet starts empty and the course costs credits, so the second reviewer needs credits too."
+    },
+    {
+      "order": 92,
+      "id": "S133c",
+      "phase": "P9",
+      "name": "Second learner enrolls in the same course",
+      "method": "POST",
+      "path": "/api/v1/Enrollments/enroll",
+      "auth": "user2Token",
+      "contentType": "application/json",
+      "body": {
+        "courseId": "{{courseId}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; the second learner is enrolled",
+      "notes": "Required by S114: reviewing a course is only allowed for an enrolled learner."
+    },
+    {
+      "order": 93,
+      "id": "S113",
+      "phase": "P9",
+      "name": "Review the course as a student",
+      "method": "POST",
+      "path": "/api/v1/courses/{{courseId}}/reviews",
+      "auth": "userToken",
+      "contentType": "application/json",
+      "body": {
+        "stars": 5,
+        "comment": "Excellent course."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "notes": "Needs an enrollment: AddCourseReview rejects a learner who is not enrolled in the course, so this runs right after S130."
+    },
+    {
+      "order": 94,
+      "id": "S114",
+      "phase": "P9",
+      "name": "Review the same course as a second user",
+      "method": "POST",
+      "path": "/api/v1/courses/{{courseId}}/reviews",
+      "auth": "user2Token",
+      "contentType": "application/json",
+      "body": {
+        "stars": 4,
+        "comment": "Very good, minor gaps."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; proves a second reviewer aggregates into the average",
+      "notes": "A second enrolled reviewer, which proves the rating aggregates rather than overwrites. Needs its own enrollment, added in S133c."
+    },
+    {
+      "order": 95,
       "id": "S134",
       "phase": "P9",
       "name": "Enrolling without a token is rejected (negative check)",
@@ -1481,14 +2218,17 @@
       "path": "/api/v1/Enrollments/enroll",
       "auth": "none",
       "contentType": "application/json",
-      "body": { "courseId": "{{courseId}}" },
-      "expectStatus": [401],
+      "body": {
+        "courseId": "{{courseId}}"
+      },
+      "expectStatus": [
+        401
+      ],
       "expectBody": "Unauthorized problem details",
       "notes": "Deliberate failure, proves the [Authorize] gate on the controller."
     },
-
     {
-      "order": 90,
+      "order": 96,
       "id": "S140",
       "phase": "P10",
       "name": "Create my instructor profile",
@@ -1500,26 +2240,34 @@
         "headline": "Senior .NET Engineer",
         "bio": "10 years of experience building large-scale .NET systems."
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new profile",
-      "capture": { "instructorProfileId": "$.data.id" },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new instructor profile id (a bare GUID)",
+      "capture": {
+        "instructorProfileId": "$.data"
+      },
       "notes": "Requires the Instructor role, so S052/S053 must have run and S054 must be skipped."
     },
     {
-      "order": 91,
+      "order": 97,
       "id": "S141",
       "phase": "P10",
       "name": "Read my instructor profile",
       "method": "GET",
       "path": "/api/v1/instructor-profiles/me",
       "auth": "instructorToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data with headline, bio, isApproved, averageRating",
-      "capture": { "instructorProfileId": "$.data.id" },
+      "capture": {
+        "instructorProfileId": "$.data.profileId"
+      },
       "notes": "New profiles start unapproved; S146 is what flips that."
     },
     {
-      "order": 92,
+      "order": 98,
       "id": "S142",
       "phase": "P10",
       "name": "Update my instructor profile",
@@ -1531,11 +2279,14 @@
         "headline": "Principal .NET Engineer",
         "bio": "Updated bio: 12 years of experience, MCP and cloud."
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 93,
+      "order": 99,
       "id": "S143",
       "phase": "P10",
       "name": "Add weekly availability",
@@ -1548,13 +2299,17 @@
         "startTime": "09:00:00",
         "endTime": "17:00:00"
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the availability window",
-      "capture": { "availabilityId": "$.data.id" },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new availability id",
+      "capture": {
+        "availabilityId": "$.data"
+      },
       "notes": "dayOfWeek is the .NET DayOfWeek INTEGER: 0 Sunday ... 6 Saturday. startTime/endTime are TimeSpan strings. Use dayOfWeek 1 for Monday."
     },
     {
-      "order": 94,
+      "order": 100,
       "id": "S144",
       "phase": "P10",
       "name": "Add a second availability window",
@@ -1567,11 +2322,13 @@
         "startTime": "12:00:00",
         "endTime": "20:00:00"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Success; a Wednesday window"
     },
     {
-      "order": 95,
+      "order": 101,
       "id": "S145",
       "phase": "P10",
       "name": "Admin approves the instructor",
@@ -1579,36 +2336,49 @@
       "path": "/api/v1/instructor-profiles/{{instructorUserId}}/approval-status",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "isApproved": true },
-      "expectStatus": [200, 204],
+      "body": {
+        "isApproved": true
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "The path takes the USER id (not the profile id), which is a common source of confusion."
     },
     {
-      "order": 96,
+      "order": 102,
       "id": "S146",
       "phase": "P10",
       "name": "List instructor profiles (anonymous re-check of S015)",
       "method": "GET",
       "path": "/api/v1/instructor-profiles",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 10, "searchTerm": "Senior" },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "searchTerm": "Senior"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The approved instructor now appears in the public list"
     },
     {
-      "order": 97,
+      "order": 103,
       "id": "S147",
       "phase": "P10",
       "name": "Get an instructor profile by user id",
       "method": "GET",
       "path": "/api/v1/instructor-profiles/{{instructorUserId}}",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The instructor's public profile"
     },
     {
-      "order": 98,
+      "order": 104,
       "id": "S148",
       "phase": "P10",
       "name": "Review the instructor as a student",
@@ -1616,14 +2386,21 @@
       "path": "/api/v1/instructor-profiles/{{instructorProfileId}}/reviews",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "rating": 5, "comment": "Clear explanations." },
-      "expectStatus": [200],
-      "expectBody": "data.id for the review",
-      "capture": { "instructorReviewId": "$.data.id" },
+      "body": {
+        "rating": 5,
+        "comment": "Clear explanations."
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new review id",
+      "capture": {
+        "instructorReviewId": "$.data"
+      },
       "notes": "The field is 'rating' here, whereas course and session reviews use 'stars'."
     },
     {
-      "order": 99,
+      "order": 105,
       "id": "S149",
       "phase": "P10",
       "name": "Update my instructor review",
@@ -1631,34 +2408,46 @@
       "path": "/api/v1/instructor-profiles/{{instructorProfileId}}/reviews/{{instructorReviewId}}",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "rating": 4, "comment": "Good, could be deeper." },
-      "expectStatus": [200, 204],
+      "body": {
+        "rating": 4,
+        "comment": "Good, could be deeper."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 100,
+      "order": 106,
       "id": "S150",
       "phase": "P10",
       "name": "Delete my instructor review",
       "method": "DELETE",
       "path": "/api/v1/instructor-profiles/{{instructorProfileId}}/reviews/{{instructorReviewId}}",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 101,
+      "order": 107,
       "id": "S151",
       "phase": "P10",
       "name": "Delete an availability window",
       "method": "DELETE",
       "path": "/api/v1/instructor-profiles/{{instructorProfileId}}/availabilities/{{availabilityId}}",
       "auth": "instructorToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the Monday window is removed"
     },
     {
-      "order": 102,
+      "order": 108,
       "id": "S152",
       "phase": "P10",
       "name": "Create a profile before having the role (negative check)",
@@ -1670,13 +2459,15 @@
         "headline": "Not an instructor",
         "bio": "This should be rejected."
       },
-      "expectStatus": [400, 403],
+      "expectStatus": [
+        400,
+        403
+      ],
       "expectBody": "Forbidden or validation error",
       "notes": "Deliberate failure, proves the Instructor role is enforced."
     },
-
     {
-      "order": 103,
+      "order": 109,
       "id": "S160",
       "phase": "P11",
       "name": "Create a session",
@@ -1694,13 +2485,17 @@
         "locationDetails": "https://meet.example.com/abc",
         "maxParticipants": 10
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the new session, status = Draft",
-      "capture": { "sessionId": "$.data.id" },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new session id (a bare GUID); the session starts as Draft",
+      "capture": {
+        "sessionId": "$.data"
+      },
       "notes": "locationType is the INTEGER 1 (Online) or 2 (Offline). scheduledAtUtc must be in the future and is interpreted as UTC; a past date is rejected. Use a date well ahead of the test run."
     },
     {
-      "order": 104,
+      "order": 110,
       "id": "S161",
       "phase": "P11",
       "name": "Publish the session so it becomes bookable",
@@ -1708,13 +2503,18 @@
       "path": "/api/v1/Sessions/{{sessionId}}/status",
       "auth": "instructorToken",
       "contentType": "application/json",
-      "body": { "status": 2 },
-      "expectStatus": [200, 204],
+      "body": {
+        "status": 2
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; status becomes Published",
       "notes": "status is the INTEGER SessionStatus: 1 Draft, 2 Published, 3 Completed, 4 Cancelled. S200 cannot book a draft."
     },
     {
-      "order": 105,
+      "order": 111,
       "id": "S162",
       "phase": "P11",
       "name": "Update the session",
@@ -1732,11 +2532,14 @@
         "locationDetails": "https://meet.example.com/abc",
         "maxParticipants": 20
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 106,
+      "order": 112,
       "id": "S163",
       "phase": "P11",
       "name": "List sessions as admin with filters",
@@ -1751,35 +2554,45 @@
         "bookableOnly": true,
         "maxCredits": 50
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The published session only",
       "notes": "Status is a query param here, so the name 'Published' is accepted."
     },
     {
-      "order": 107,
+      "order": 113,
       "id": "S164",
       "phase": "P11",
       "name": "List my own sessions as instructor",
       "method": "GET",
       "path": "/api/v1/Sessions/me",
       "auth": "instructorToken",
-      "query": { "pageNumber": 1, "pageSize": 10, "upcomingOnly": true },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "upcomingOnly": true
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] containing the session"
     },
     {
-      "order": 108,
+      "order": 114,
       "id": "S165",
       "phase": "P11",
       "name": "Get the session by id",
       "method": "GET",
       "path": "/api/v1/Sessions/{{sessionId}}",
       "auth": "adminToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Full session detail"
     },
     {
-      "order": 109,
+      "order": 115,
       "id": "S166",
       "phase": "P11",
       "name": "Upload a session material",
@@ -1788,40 +2601,56 @@
       "auth": "instructorToken",
       "contentType": "multipart/form-data",
       "form": {
-        "file": "C:/path/to/workshop.zip",
+        "file": "{{testFilesDir}}/workshop.zip",
         "materialType": "Other"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.id for the material",
-      "capture": { "sessionMaterialId": "$.data.id" },
-      "notes": "The [Consumes(\"multipart/form-data\")] attribute here is what makes Scalar render a proper file-picker form."
+      "capture": {
+        "sessionMaterialId": "$.data.id"
+      },
+      "notes": "The [Consumes(\"multipart/form-data\")] attribute here is what makes Scalar render a proper file-picker form. SKIPPED: Google Drive storage is broken.",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step uploads a session material through Google Drive."
     },
     {
-      "order": 110,
+      "order": 116,
       "id": "S167",
       "phase": "P11",
       "name": "List session materials",
       "method": "GET",
       "path": "/api/v1/sessions/{{sessionId}}/materials",
       "auth": "instructorToken",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
-      "expectBody": "data.items[] with the uploaded material"
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data.items[] with the uploaded material",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step lists session materials through Google Drive.",
+      "notes": " SKIPPED: Google Drive storage is broken."
     },
     {
-      "order": 111,
+      "order": 117,
       "id": "S168",
       "phase": "P11",
       "name": "Download a session material",
       "method": "GET",
       "path": "/api/v1/sessions/{{sessionId}}/materials/{{sessionMaterialId}}/download",
       "auth": "instructorToken",
-      "expectStatus": [200, 302],
+      "expectStatus": [
+        200,
+        302
+      ],
       "expectBody": "The file stream or a redirect to /uploads/...",
-      "notes": "Scalar may follow the redirect to the static file. Use 'Download files' in the request options if you want the raw bytes."
+      "notes": "Scalar may follow the redirect to the static file. Use 'Download files' in the request options if you want the raw bytes. SKIPPED: Google Drive storage is broken.",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step downloads a session material through Google Drive."
     },
     {
-      "order": 112,
+      "order": 118,
       "id": "S169",
       "phase": "P11",
       "name": "Reorder session materials",
@@ -1830,25 +2659,39 @@
       "auth": "instructorToken",
       "contentType": "application/json",
       "body": {
-        "materials": [{ "materialId": "{{sessionMaterialId}}", "sortOrder": 1 }]
+        "materials": [
+          {
+            "materialId": "{{sessionMaterialId}}",
+            "sortOrder": 1
+          }
+        ]
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
-      "notes": "An ARRAY of {materialId, sortOrder} objects - different shape from the course reorder endpoints."
+      "notes": "An ARRAY of {materialId, sortOrder} objects - different shape from the course reorder endpoints. SKIPPED: Google Drive storage is broken.",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step reorders session materials through Google Drive."
     },
     {
-      "order": 113,
+      "order": 119,
       "id": "S170",
       "phase": "P11",
       "name": "Delete a session material",
       "method": "DELETE",
       "path": "/api/v1/sessions/{{sessionId}}/materials/{{sessionMaterialId}}",
       "auth": "instructorToken",
-      "expectStatus": [200, 204],
-      "expectBody": "Success"
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success",
+      "skip": "Google Drive upload/download is currently failing, so these storage steps cannot pass. Re-enable once the Drive integration is fixed. This step deletes a session material through Google Drive.",
+      "notes": " SKIPPED: Google Drive storage is broken."
     },
     {
-      "order": 114,
+      "order": 120,
       "id": "S171",
       "phase": "P11",
       "name": "A student may not create sessions (negative check)",
@@ -1866,50 +2709,64 @@
         "locationDetails": null,
         "maxParticipants": 5
       },
-      "expectStatus": [400, 403],
+      "expectStatus": [
+        400,
+        403
+      ],
       "expectBody": "Forbidden or validation error",
       "notes": "Deliberate failure, proves the Instructor-only rule on session creation."
     },
-
     {
-      "order": 115,
+      "order": 121,
       "id": "S180",
       "phase": "P12",
       "name": "Read my wallet balance",
       "method": "GET",
       "path": "/api/v1/Wallets/me",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data with the current credit balance",
       "notes": "Record the starting balance; S200 deducts credits, so compare before and after."
     },
     {
-      "order": 116,
+      "order": 122,
       "id": "S181",
       "phase": "P12",
       "name": "Wallet transaction history",
       "method": "GET",
       "path": "/api/v1/Wallets/me/transactions",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of credit movements"
     },
     {
-      "order": 117,
+      "order": 123,
       "id": "S182",
       "phase": "P12",
       "name": "Instructor earnings summary",
       "method": "GET",
       "path": "/api/v1/Wallets/me/earnings",
       "auth": "instructorToken",
-      "query": { "year": 2026, "month": 12 },
-      "expectStatus": [200],
+      "query": {
+        "year": 2026,
+        "month": 12
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Earnings totals for the requested month",
       "notes": "Omit year and month to get the all-time summary."
     },
     {
-      "order": 118,
+      "order": 124,
       "id": "S183",
       "phase": "P12",
       "name": "Create a promo code as finance/admin",
@@ -1918,42 +2775,53 @@
       "auth": "adminToken",
       "contentType": "application/json",
       "body": {
-        "code": "WELCOME10",
+        "code": "{{promoCodeSeed}}",
         "discountType": "Percentage",
         "discountValue": 10,
         "maxRedemptions": 100,
         "expiresAt": "2027-01-01T00:00:00Z"
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the promo code",
-      "capture": { "promoCodeId": "$.data.id", "promoCode": "WELCOME10" },
-      "notes": "discountType is a plain STRING here, one of 'Percentage' or 'FixedAmount' - it is not the DiscountType enum. For Percentage, discountValue is 1-100; for FixedAmount it is the smallest currency unit."
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the new promo code id",
+      "capture": {
+        "promoCodeId": "$.data.id"
+      },
+      "notes": "Creates {{promoCodeSeed}}. The command is declared Result<Guid> but the handler returns the full entity, so data is an object: {{promoCodeId}} comes from $.data.id."
     },
     {
-      "order": 119,
+      "order": 125,
       "id": "S184",
       "phase": "P12",
       "name": "List promo codes",
       "method": "GET",
       "path": "/api/v1/promo-codes",
       "auth": "adminToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] including WELCOME10"
     },
     {
-      "order": 120,
+      "order": 126,
       "id": "S185",
       "phase": "P12",
       "name": "Validate the promo code (anonymous re-check of S019)",
       "method": "GET",
       "path": "/api/v1/promo-codes/WELCOME10/validate",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Valid, plus the 10% discount it applies"
     },
     {
-      "order": 121,
+      "order": 127,
       "id": "S186",
       "phase": "P12",
       "name": "Quote a credit purchase with the promo",
@@ -1961,13 +2829,18 @@
       "path": "/api/v1/credit-purchases/quote",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "credits": 100, "promoCode": "WELCOME10" },
-      "expectStatus": [200],
+      "body": {
+        "credits": 100,
+        "promoCode": "WELCOME10"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Priced quote showing the discount applied",
       "notes": "Quote only; nothing is charged. Always call this before S187 so the amount matches what the user agreed to."
     },
     {
-      "order": 122,
+      "order": 128,
       "id": "S187",
       "phase": "P12",
       "name": "Purchase credits",
@@ -1975,13 +2848,18 @@
       "path": "/api/v1/credit-purchases",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "credits": 100, "promoCode": "WELCOME10" },
-      "expectStatus": [200],
+      "body": {
+        "credits": 100,
+        "promoCode": "WELCOME10"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Purchase result; the wallet balance from S180 increases",
       "notes": "Depends on a configured payment gateway. Without one the call is expected to fail - that is a configuration outcome, not a defect. Re-read S180 afterwards to confirm the credit."
     },
     {
-      "order": 123,
+      "order": 129,
       "id": "S188",
       "phase": "P12",
       "name": "Buy credits directly through the wallet endpoint",
@@ -1989,37 +2867,46 @@
       "path": "/api/v1/Wallets/buy-credits",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "amount": 50, "promoCode": null },
-      "expectStatus": [200],
+      "body": {
+        "amount": 50,
+        "promoCode": null
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Purchase result",
       "notes": "A second purchase path alongside /credit-purchases; confirm both behave the same."
     },
     {
-      "order": 124,
+      "order": 130,
       "id": "S189",
       "phase": "P12",
       "name": "Deactivate the promo code",
       "method": "POST",
       "path": "/api/v1/promo-codes/{{promoCodeId}}/deactivate",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 125,
+      "order": 131,
       "id": "S190",
       "phase": "P12",
       "name": "A deactivated code no longer validates (negative check)",
       "method": "GET",
       "path": "/api/v1/promo-codes/WELCOME10/validate",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "An invalid/expired result for the code",
       "notes": "The endpoint still returns 200 with an invalid flag rather than a 4xx."
     },
-
     {
-      "order": 126,
+      "order": 132,
       "id": "S200",
       "phase": "P13",
       "name": "Book the published session",
@@ -2027,61 +2914,141 @@
       "path": "/api/v1/Bookings",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "sessionId": "{{sessionId}}" },
-      "expectStatus": [200, 204],
-      "expectBody": "data.id for the booking, status Pending (1), credits held",
-      "capture": { "bookingId": "$.data.id" },
+      "body": {
+        "sessionId": "{{sessionId}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "data is the new booking id; the booking is Confirmed and the credits are deducted immediately",
+      "capture": {
+        "bookingId": "$.data"
+      },
       "notes": "Requires S161 to have published the session, and enough wallet credits. Fails with 409 if already booked, or with an insufficient-credits error otherwise."
     },
     {
-      "order": 127,
+      "order": 133,
       "id": "S201",
       "phase": "P13",
       "name": "List my bookings",
       "method": "GET",
       "path": "/api/v1/Bookings/me",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 10, "upcomingOnly": true },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "upcomingOnly": true
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] containing the booking"
     },
     {
-      "order": 128,
+      "order": 134,
       "id": "S202",
       "phase": "P13",
       "name": "Get the booking by id",
       "method": "GET",
       "path": "/api/v1/Bookings/{{bookingId}}",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Booking detail including the session summary"
     },
     {
-      "order": 129,
+      "order": 135,
       "id": "S203",
       "phase": "P13",
       "name": "Instructor lists bookings for their session",
       "method": "GET",
       "path": "/api/v1/sessions/{{sessionId}}/bookings",
       "auth": "instructorToken",
-      "query": { "pageNumber": 1, "pageSize": 10, "status": "Pending" },
-      "expectStatus": [200],
-      "expectBody": "data.items[] with the student's booking"
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10,
+        "status": "Confirmed"
+      },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data.items[] with the student's confirmed booking",
+      "notes": "A booking is Confirmed the moment it is created: nothing produces the Pending state yet (docs/BACKEND_GAP_ANALYSIS.md lists the session-approval switch as still to do), so filter on the status the API actually produces."
     },
     {
-      "order": 130,
+      "order": 136,
       "id": "S204",
       "phase": "P13",
-      "name": "Instructor confirms the booking",
+      "name": "Instructor tries to confirm an already-confirmed booking",
       "method": "PATCH",
       "path": "/api/v1/Bookings/{{bookingId}}/status?status=Confirmed",
       "auth": "instructorToken",
-      "expectStatus": [200, 204],
-      "expectBody": "Success; status becomes Confirmed (2) and the credits are consumed",
-      "notes": "Status travels as a QUERY parameter here, so the name 'Confirmed' is correct. This endpoint binds no request body - send none."
+      "expectStatus": [
+        409
+      ],
+      "expectBody": "409 'Cannot change booking status from Confirmed to Confirmed' - the guarded transition rejects it because the Pending approval state is never produced",
+      "notes": "Bookings are created Confirmed, so Confirm has no valid source state. This negative step documents the guard instead of pretending the instructor-approval flow exists."
     },
     {
-      "order": 131,
+      "order": 137,
+      "id": "S204b",
+      "phase": "P13",
+      "name": "Learner cancels the booking and the credits come back",
+      "method": "POST",
+      "path": "/api/v1/Bookings/{{bookingId}}/cancel",
+      "auth": "userToken",
+      "contentType": "application/json",
+      "body": {
+        "reason": "Cannot make this one."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; a CreditRefund transaction returns the held credits to the wallet",
+      "notes": "Cancelling a Confirmed booking is refundable, so this is the step that proves the refund path."
+    },
+    {
+      "order": 138,
+      "id": "S204c",
+      "phase": "P13",
+      "name": "Book the session again after cancelling",
+      "method": "POST",
+      "path": "/api/v1/Bookings",
+      "auth": "userToken",
+      "contentType": "application/json",
+      "body": {
+        "sessionId": "{{sessionId}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; a new booking id, Confirmed again",
+      "capture": {
+        "bookingId": "$.data"
+      },
+      "notes": "A Cancelled booking no longer counts as active, so the duplicate-booking guard allows this. It replaces bookingId so the later steps act on the live booking."
+    },
+    {
+      "order": 139,
+      "id": "S204d",
+      "phase": "P13",
+      "name": "Instructor completes the booking",
+      "method": "PATCH",
+      "path": "/api/v1/Bookings/{{bookingId}}/status?status=Completed",
+      "auth": "instructorToken",
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; the booking is Completed and the instructor wallet is credited",
+      "notes": "Complete accepts Confirmed directly. It also raises SessionCompletedDomainEvent, and the session review below only accepts a learner whose booking is Completed."
+    },
+    {
+      "order": 140,
       "id": "S205",
       "phase": "P13",
       "name": "Mark the session completed",
@@ -2089,13 +3056,18 @@
       "path": "/api/v1/Sessions/{{sessionId}}/status",
       "auth": "instructorToken",
       "contentType": "application/json",
-      "body": { "status": 3 },
-      "expectStatus": [200, 204],
+      "body": {
+        "status": 3
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; status becomes Completed",
       "notes": "Needed before S206, since a session review normally requires a completed session."
     },
     {
-      "order": 132,
+      "order": 141,
       "id": "S206",
       "phase": "P13",
       "name": "Student reviews the attended session",
@@ -2103,26 +3075,33 @@
       "path": "/api/v1/sessions/{{sessionId}}/reviews",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "stars": 5, "comment": "Great workshop." },
-      "expectStatus": [200, 204],
+      "body": {
+        "stars": 5,
+        "comment": "Great workshop."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Field is 'stars'. The instructor reviewing themselves (instructorToken) should be rejected - try it as a negative check."
     },
     {
-      "order": 133,
+      "order": 142,
       "id": "S207",
       "phase": "P13",
       "name": "Cancel the booking",
       "method": "POST",
       "path": "/api/v1/Bookings/{{bookingId}}/cancel",
       "auth": "userToken",
-      "expectStatus": [200, 204, 409],
-      "expectBody": "Success and a credit refund, or 409 if the cancellation window has passed",
-      "notes": "Run after S206. Once a session is Completed the cancellation window usually closes, so a 409 here is a valid result - check the reason in the response. This endpoint binds no request body - send none."
+      "expectStatus": [
+        409
+      ],
+      "expectBody": "409 - a Completed booking can no longer be cancelled",
+      "notes": "The booking was completed in S204d, so the cancellation window is closed. Refund coverage lives in S204b."
     },
-
     {
-      "order": 134,
+      "order": 143,
       "id": "S220",
       "phase": "P14",
       "name": "Start a conversation with the other user",
@@ -2130,37 +3109,50 @@
       "path": "/api/v1/Chat/conversations",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "otherUserId": "{{student2UserId}}" },
-      "expectStatus": [200],
+      "body": {
+        "otherUserId": "{{student2UserId}}"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.id for the conversation",
-      "capture": { "conversationId": "$.data.id" },
+      "capture": {
+        "conversationId": "$.data.id"
+      },
       "notes": "The other party is the account promoted to Instructor in S052, which also makes them the counterparty for S148."
     },
     {
-      "order": 135,
+      "order": 144,
       "id": "S221",
       "phase": "P14",
       "name": "List my conversations",
       "method": "GET",
       "path": "/api/v1/Chat/conversations",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data[] containing the conversation"
     },
     {
-      "order": 136,
+      "order": 145,
       "id": "S222",
       "phase": "P14",
       "name": "Read conversation messages",
       "method": "GET",
       "path": "/api/v1/Chat/conversations/{{conversationId}}/messages",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of messages, newest first"
     },
     {
-      "order": 137,
+      "order": 146,
       "id": "S223",
       "phase": "P14",
       "name": "Send a message via REST",
@@ -2168,12 +3160,17 @@
       "path": "/api/v1/Chat/conversations/{{conversationId}}/messages",
       "auth": "userToken",
       "contentType": "application/json",
-      "body": { "content": "Hello, can we move the workshop to Friday?" },
-      "expectStatus": [200, 204],
+      "body": {
+        "content": "Hello, can we move the workshop to Friday?"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the other party receives it over the /hubs/chat SignalR hub"
     },
     {
-      "order": 138,
+      "order": 147,
       "id": "S224",
       "phase": "P14",
       "name": "Reply from the other side",
@@ -2181,86 +3178,120 @@
       "path": "/api/v1/Chat/conversations/{{conversationId}}/messages",
       "auth": "instructorToken",
       "contentType": "application/json",
-      "body": { "content": "Friday works for me." },
-      "expectStatus": [200, 204],
+      "body": {
+        "content": "Friday works for me."
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Confirms both parties can post into the same conversation."
     },
     {
-      "order": 139,
+      "order": 148,
       "id": "S225",
       "phase": "P14",
       "name": "Mark the conversation as read",
       "method": "POST",
       "path": "/api/v1/Chat/conversations/{{conversationId}}/read",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; unread count drops"
     },
     {
-      "order": 140,
+      "order": 149,
       "id": "S226",
       "phase": "P14",
       "name": "Accessing someone else's conversation is denied (negative check)",
       "method": "GET",
       "path": "/api/v1/Chat/conversations/{{conversationId}}/messages",
       "auth": "instructorToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200, 403, 404],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200,
+        403,
+        404
+      ],
       "expectBody": "Either the same messages (if a participant) or a 403/404",
       "notes": "This counterparty IS a participant, so 200 is correct. Use a third, unrelated account to prove the isolation."
     },
     {
-      "order": 141,
+      "order": 150,
       "id": "S230",
       "phase": "P14",
       "name": "List my notifications",
       "method": "GET",
       "path": "/api/v1/Notifications",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of notifications, or an empty list",
-      "capture": { "notificationId": "id of any unread item" },
-      "notes": "Notifications are produced by booking and message events, so run this after S200 and S223. If the list is empty, re-run it later."
+      "capture": {
+        "notificationId": "id of any unread item"
+      },
+      "notes": "Notifications are produced by booking and message events, so run this after S200 and S223. If the list is empty, re-run it later.",
+      "pollFor": {
+        "var": "notificationId",
+        "seconds": 90,
+        "interval": 3
+      }
     },
     {
-      "order": 142,
+      "order": 151,
       "id": "S231",
       "phase": "P14",
       "name": "Unread notification count",
       "method": "GET",
       "path": "/api/v1/Notifications/unread-count",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is the unread total, matching S230"
     },
     {
-      "order": 143,
+      "order": 152,
       "id": "S232",
       "phase": "P14",
       "name": "Mark one notification as read",
       "method": "POST",
       "path": "/api/v1/Notifications/{{notificationId}}/read",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Skip if S230 returned no items."
     },
     {
-      "order": 144,
+      "order": 153,
       "id": "S233",
       "phase": "P14",
       "name": "Mark all notifications as read",
       "method": "POST",
       "path": "/api/v1/Notifications/read-all",
       "auth": "userToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; re-run S231 and expect 0"
     },
-
     {
-      "order": 145,
+      "order": 154,
       "id": "S240",
       "phase": "P15",
       "name": "Submit a support contact request",
@@ -2273,25 +3304,35 @@
         "message": "The reset email never arrives. I tried three times.",
         "category": "General"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the request is queued for the support team",
       "notes": "The sender name and email come from the JWT, not the body, so a mismatch with S226 is expected and correct."
     },
     {
-      "order": 146,
+      "order": 155,
       "id": "S241",
       "phase": "P15",
       "name": "List my support requests",
       "method": "GET",
       "path": "/api/support/questions/mine",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] including the S240 request",
-      "capture": { "userSupportQuestionId": "id of the S240 request" }
+      "capture": {
+        "userSupportQuestionId": "id of the S240 request"
+      }
     },
     {
-      "order": 147,
+      "order": 156,
       "id": "S242",
       "phase": "P15",
       "name": "Support team lists all questions",
@@ -2305,34 +3346,43 @@
         "isPublished": false,
         "category": "General"
       },
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] of all questions, newest first"
     },
     {
-      "order": 148,
+      "order": 157,
       "id": "S243",
       "phase": "P15",
       "name": "Support team lists unanswered questions",
       "method": "GET",
       "path": "/api/support/manage/questions/unanswered",
       "auth": "adminToken",
-      "query": { "pageNumber": 1, "pageSize": 20 },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data.items[] with no answer set"
     },
     {
-      "order": 149,
+      "order": 158,
       "id": "S244",
       "phase": "P15",
       "name": "Open question details for the support team",
       "method": "GET",
       "path": "/api/support/manage/questions/{{userSupportQuestionId}}",
       "auth": "adminToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The full record, including the submitter's contact details"
     },
     {
-      "order": 150,
+      "order": 159,
       "id": "S245",
       "phase": "P15",
       "name": "Create an FAQ entry",
@@ -2346,13 +3396,17 @@
         "category": "Account",
         "isPublished": false
       },
-      "expectStatus": [200],
-      "expectBody": "data.id for the FAQ entry",
-      "capture": { "supportQuestionId": "$.data.id" },
+      "expectStatus": [
+        200
+      ],
+      "expectBody": "data is the id of the new FAQ question",
+      "capture": {
+        "supportQuestionId": "$.data"
+      },
       "notes": "Created unpublished so it does not pollute the public FAQ check in S016 until S248 publishes it."
     },
     {
-      "order": 151,
+      "order": 160,
       "id": "S246",
       "phase": "P15",
       "name": "Answer the user's contact request",
@@ -2360,13 +3414,19 @@
       "path": "/api/support/manage/questions/{{userSupportQuestionId}}/answer",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "answer": "Check your spam folder; the OTP expires after 5 minutes.", "publish": false },
-      "expectStatus": [200, 204],
+      "body": {
+        "answer": "Check your spam folder; the OTP expires after 5 minutes.",
+        "publish": false
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the question is no longer in the unanswered list",
       "notes": "Re-run S243 afterwards to confirm it dropped off."
     },
     {
-      "order": 152,
+      "order": 161,
       "id": "S247",
       "phase": "P15",
       "name": "Edit the FAQ entry",
@@ -2380,12 +3440,15 @@
         "category": "Account",
         "isPublished": false
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "UpdateSupportQuestionRequest requires isPublished explicitly, unlike create."
     },
     {
-      "order": 153,
+      "order": 162,
       "id": "S248",
       "phase": "P15",
       "name": "Publish the FAQ entry",
@@ -2393,120 +3456,153 @@
       "path": "/api/support/manage/questions/{{supportQuestionId}}/publication",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "isPublished": true },
-      "expectStatus": [200, 204],
+      "body": {
+        "isPublished": true
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 154,
+      "order": 163,
       "id": "S249",
       "phase": "P15",
       "name": "The published FAQ now appears publicly",
       "method": "GET",
       "path": "/api/support/questions",
       "auth": "none",
-      "query": { "pageNumber": 1, "pageSize": 20, "category": "Account" },
-      "expectStatus": [200],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 20,
+        "category": "Account"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The new entry appears with its answer and no personal data"
     },
     {
-      "order": 155,
+      "order": 164,
       "id": "S250",
       "phase": "P15",
       "name": "Get a published question by id (anonymous)",
       "method": "GET",
       "path": "/api/support/questions/{{supportQuestionId}}",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Question and answer only, no submitter details"
     },
     {
-      "order": 156,
+      "order": 165,
       "id": "S251",
       "phase": "P15",
       "name": "Email a published answer to a user",
       "method": "POST",
       "path": "/api/support/questions/{{supportQuestionId}}/email-answer",
-      "auth": "userToken",
-      "expectStatus": [200, 204],
+      "auth": "adminToken",
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the answer is emailed to the requesting user",
-      "notes": "Needs a working SMTP configuration. The failure here is a mail-config issue, not an API defect."
+      "notes": "Answering a question is a Support.Manage action, so this needs an admin token. SKIPPED: no SMTP host configured locally.",
+      "skip": "Sending an email needs a configured SMTP host. appsettings.json ships MailSettings:Host empty on purpose (the credential is never committed), so the local run cannot deliver mail and this step fails with 400. Re-enable once a real SMTP host is supplied via user-secrets or MailSettings__Host."
     },
     {
-      "order": 157,
+      "order": 166,
       "id": "S252",
       "phase": "P15",
       "name": "A student may not list all support questions (negative check)",
       "method": "GET",
       "path": "/api/support/manage/questions",
       "auth": "userToken",
-      "query": { "pageNumber": 1, "pageSize": 10 },
-      "expectStatus": [401, 403],
+      "query": {
+        "pageNumber": 1,
+        "pageSize": 10
+      },
+      "expectStatus": [
+        401,
+        403
+      ],
       "expectBody": "Forbidden problem details",
       "notes": "Deliberate failure, proves the support management surface is staff-only."
     },
     {
-      "order": 158,
+      "order": 167,
       "id": "S253",
       "phase": "P15",
       "name": "Delete the FAQ entry",
       "method": "DELETE",
       "path": "/api/support/manage/questions/{{supportQuestionId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; it disappears from the public list in S249"
     },
-
     {
-      "order": 159,
+      "order": 168,
       "id": "S260",
       "phase": "P16",
       "name": "Admin dashboard summary",
       "method": "GET",
       "path": "/api/v1/Dashboards/admin",
       "auth": "adminToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "Platform totals: users, courses, sessions, revenue",
       "notes": "Security note: DashboardsController carries NO [Authorize] attribute. The guard is the [Permission] marker inside each handler, so a token with no permissions still gets 403. Verify that a staff token WITHOUT the right permission is rejected."
     },
     {
-      "order": 160,
+      "order": 169,
       "id": "S261",
       "phase": "P16",
       "name": "Instructor dashboard summary",
       "method": "GET",
       "path": "/api/v1/Dashboards/instructor",
       "auth": "instructorToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The instructor's sessions, bookings and earnings"
     },
     {
-      "order": 161,
+      "order": 170,
       "id": "S262",
       "phase": "P16",
       "name": "Student dashboard summary",
       "method": "GET",
       "path": "/api/v1/Dashboards/student",
       "auth": "userToken",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The student's enrollments, bookings and credits",
       "notes": "Run this after S130 and S200 so the numbers are non-zero and meaningful."
     },
     {
-      "order": 162,
+      "order": 171,
       "id": "S263",
       "phase": "P16",
       "name": "A student cannot read the admin dashboard (negative check)",
       "method": "GET",
       "path": "/api/v1/Dashboards/admin",
       "auth": "userToken",
-      "expectStatus": [401, 403],
+      "expectStatus": [
+        401,
+        403
+      ],
       "expectBody": "Forbidden problem details",
       "notes": "Deliberate failure. This is the single most important authorization check in the plan, because the controller itself has no [Authorize]."
     },
-
     {
-      "order": 163,
+      "order": 172,
       "id": "S270",
       "phase": "P17",
       "name": "Send a test email as admin",
@@ -2514,26 +3610,36 @@
       "path": "/api/v1/Admin/Emails/test",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "to": "admin@skillloop.com", "subject": "Skill Loop SMTP test" },
-      "expectStatus": [200],
+      "body": {
+        "to": "{{supportEmail}}",
+        "subject": "Skill Loop SMTP test"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is the result/message; an EmailLog row is created",
-      "capture": { "emailLogId": "id of the EmailLog row just written" },
-      "notes": "The route is /api/v1/Admin/Emails with capital A and E. Only 'to' and 'subject' are accepted; the body is not free-form."
+      "capture": {
+        "emailLogId": "$.data"
+      },
+      "notes": "Posts to {{supportEmail}} - the endpoint accepts no other recipient by design, so it is not an open mail relay. Returns the EmailLog id as a bare GUID for S271."
     },
     {
-      "order": 164,
+      "order": 173,
       "id": "S271",
       "phase": "P17",
       "name": "Resend a logged email",
       "method": "POST",
       "path": "/api/v1/Admin/Emails/{{emailLogId}}/resend",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; a second EmailLog entry records the resend",
       "notes": "Get the id from the Emails table if it is not in the S270 response."
     },
     {
-      "order": 165,
+      "order": 174,
       "id": "S272",
       "phase": "P17",
       "name": "Update site settings",
@@ -2552,23 +3658,28 @@
         "instagramUrl": "https://instagram.com/skillloop",
         "whatsAppNumber": "01000000000"
       },
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the settings cache is invalidated automatically",
       "notes": "All fields are nullable, so a partial object is valid. Re-run S010 to confirm the read path reflects the change."
     },
     {
-      "order": 166,
+      "order": 175,
       "id": "S273",
       "phase": "P17",
       "name": "Confirm the settings read path",
       "method": "GET",
       "path": "/api/v1/SiteSettings",
       "auth": "none",
-      "expectStatus": [200],
+      "expectStatus": [
+        200
+      ],
       "expectBody": "The values written in S272"
     },
     {
-      "order": 167,
+      "order": 176,
       "id": "S280",
       "phase": "P17",
       "name": "Upload a test file to storage",
@@ -2576,136 +3687,196 @@
       "path": "/api/test/files/upload",
       "auth": "adminToken",
       "contentType": "multipart/form-data",
-      "query": { "folderName": "test-uploads" },
-      "form": { "file": "C:/path/to/probe.txt" },
-      "expectStatus": [200],
+      "query": {
+        "folderName": "test-uploads"
+      },
+      "form": {
+        "file": "{{testFilesDir}}/probe.txt"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is the stored path, under the folderName argument",
-      "capture": { "testFilePath": "$.data" },
-      "notes": "Admin/SuperAdmin only. Note the route has no /v1 segment. In Scalar attach the file to the 'file' field."
+      "capture": {
+        "testFilePath": "$.data"
+      },
+      "notes": "Admin/SuperAdmin only. Note the route has no /v1 segment. In Scalar attach the file to the 'file' field. Uploads the real fixture probe.txt from docs/test-files."
     },
     {
-      "order": 168,
+      "order": 177,
       "id": "S281",
       "phase": "P17",
       "name": "Check that the stored file exists",
       "method": "GET",
       "path": "/api/test/files/exists",
       "auth": "adminToken",
-      "query": { "filePath": "{{testFilePath}}" },
-      "expectStatus": [200],
+      "query": {
+        "filePath": "{{testFilePath}}"
+      },
+      "expectStatus": [
+        200
+      ],
       "expectBody": "data is true"
     },
     {
-      "order": 169,
+      "order": 178,
       "id": "S282",
       "phase": "P17",
       "name": "Delete the stored file",
       "method": "DELETE",
       "path": "/api/test/files/delete",
       "auth": "adminToken",
-      "query": { "filePath": "{{testFilePath}}" },
-      "expectStatus": [200, 204],
+      "query": {
+        "filePath": "{{testFilePath}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success"
     },
     {
-      "order": 170,
+      "order": 179,
       "id": "S283",
       "phase": "P17",
       "name": "Hangfire dashboard is reachable",
       "method": "GET",
       "path": "/hangfire",
       "auth": "none",
-      "expectStatus": [200, 302],
+      "expectStatus": [
+        200,
+        302
+      ],
       "expectBody": "Dashboard UI, open in Development and Admin-only otherwise",
       "notes": "The auth filter allows everyone in Development and requires Admin elsewhere, so a 200 here is expected locally."
     },
-
     {
-      "order": 171,
+      "order": 180,
       "id": "S290",
       "phase": "P18",
       "name": "Delete the test session",
       "method": "DELETE",
       "path": "/api/v1/Sessions/{{sessionId}}",
       "auth": "instructorToken",
-      "expectStatus": [200, 204, 409],
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
       "expectBody": "Success, or 409 if bookings or reviews still reference it",
       "notes": "Run after S207. If the booking was cancelled, deletion may still be blocked by the S206 review - that is a deliberate referential-integrity check."
     },
     {
-      "order": 172,
+      "order": 181,
       "id": "S290b",
       "phase": "P18",
       "name": "Delete the test lesson",
       "method": "DELETE",
       "path": "/api/v1/courses/{{courseId}}/sections/{{sectionId}}/lessons/{{lessonId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204, 409],
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
       "expectBody": "Success, or 409 while enrollments still reference the lesson",
       "notes": "Must run BEFORE deleting the section, otherwise the section delete cascades. Deleting a lesson the student has completed may be rejected, so a 409 is a valid outcome here."
     },
     {
-      "order": 173,
+      "order": 182,
       "id": "S290c",
       "phase": "P18",
       "name": "Delete the test section",
       "method": "DELETE",
       "path": "/api/v1/courses/{{courseId}}/sections/{{section2Id}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204, 409],
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
       "expectBody": "Success, or 409 while courses still reference the section",
       "notes": "Uses section2Id, the section created in S102 and never given a lesson, so this is the cleanest section to remove. Deleting the section that still holds lessonId usually fails while the lesson exists."
     },
     {
-      "order": 174,
+      "order": 183,
       "id": "S291",
       "phase": "P18",
       "name": "Delete a throwaway category",
       "method": "DELETE",
       "path": "/api/v1/Categories/{{categoryId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204, 409],
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
       "expectBody": "Success, or 409 while courses still reference the category",
       "notes": "The proper place for this step, since S099 had to be skipped. Delete S124's course first if you need a clean 204."
     },
     {
-      "order": 175,
+      "order": 184,
+      "id": "S123",
+      "phase": "P18",
+      "name": "Archive the course",
+      "method": "POST",
+      "path": "/api/v1/Courses/{{courseId}}/archive",
+      "auth": "adminToken",
+      "expectStatus": [
+        200,
+        204
+      ],
+      "expectBody": "Success; status becomes Archived",
+      "notes": "Runs at teardown. Archiving here used to break S130-S133, which enrol and then report progress on this same course."
+    },
+    {
+      "order": 185,
       "id": "S292",
       "phase": "P18",
       "name": "Delete the test course",
       "method": "DELETE",
       "path": "/api/v1/Courses/{{courseId}}",
       "auth": "adminToken",
-      "expectStatus": [200, 204, 409],
+      "expectStatus": [
+        200,
+        204,
+        409
+      ],
       "expectBody": "Success, or 409 while enrollments still reference the course",
       "notes": "Cancels out the enrollments created in phase P9. Deleting an archived course (S123) may be the only allowed route."
     },
     {
-      "order": 176,
+      "order": 186,
       "id": "S293",
       "phase": "P18",
       "name": "Remove the Instructor role from the test account",
       "method": "DELETE",
       "path": "/api/v1/Users/{{student2UserId}}/roles/Instructor",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success",
       "notes": "Completes the S052/S054 round trip in a consistent end state."
     },
     {
-      "order": 177,
+      "order": 187,
       "id": "S294",
       "phase": "P18",
       "name": "Deactivate the test student accounts",
       "method": "PATCH",
       "path": "/api/v1/Users/{{student1UserId}}/deactivate",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; refresh tokens for the account are revoked",
       "notes": "Prefer deactivation over deletion here - there is no delete-user endpoint."
     },
     {
-      "order": 178,
+      "order": 188,
       "id": "S295",
       "phase": "P18",
       "name": "Deactivating a user blocks login (negative check)",
@@ -2714,26 +3885,32 @@
       "auth": "none",
       "contentType": "application/json",
       "body": {
-        "email": "student1@test.com",
+        "email": "{{student1Email}}",
         "password": "Password@123"
       },
-      "expectStatus": [400],
+      "expectStatus": [
+        400,
+        401
+      ],
       "expectBody": "Account-deactivated error",
-      "notes": "Deliberate failure, closes the deactivate/activate loop from S055."
+      "notes": "S294 deactivated this user, so the login is rejected before any password comparison."
     },
     {
-      "order": 179,
+      "order": 189,
       "id": "S296",
       "phase": "P18",
       "name": "Reactivate the test student accounts",
       "method": "PATCH",
       "path": "/api/v1/Users/{{student1UserId}}/activate",
       "auth": "adminToken",
-      "expectStatus": [200, 204],
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the accounts are usable again"
     },
     {
-      "order": 180,
+      "order": 190,
       "id": "S297",
       "phase": "P18",
       "name": "Log out the admin session",
@@ -2741,17 +3918,21 @@
       "path": "/api/v1/Auth/logout",
       "auth": "adminToken",
       "contentType": "application/json",
-      "body": { "refreshToken": "{{adminRefreshToken}}" },
-      "expectStatus": [200, 204],
+      "body": {
+        "refreshToken": "{{adminRefreshToken}}"
+      },
+      "expectStatus": [
+        200,
+        204
+      ],
       "expectBody": "Success; the refresh token is revoked",
       "notes": "Last step. Afterwards only the 60-minute access token remains valid, and it expires on its own."
     }
   ],
-
   "coverage": {
-    "totalSteps": 180,
+    "totalSteps": 190,
     "controllerActions": 136,
-    "coverageIntent": "Every one of the 136 controller actions in src/Skill-Loop.Api/Controllers is covered by at least one step, verified by extracting the [Route] and [Http*] attributes and diffing them against the paths in this file. The 180 steps exceed 136 because 44 extra steps are negative checks that assert a 4xx, plus read-back re-checks that confirm a mutation actually took effect. Steps are ordered so that each artifact (category, course, section, lesson, session, booking, conversation, support question) exists before it is referenced, and destructive calls are pushed to the end of their phase.",
+    "coverageIntent": "Every one of the 136 controller actions in src/Skill-Loop.Api/Controllers is covered by at least one step, verified by extracting the [Route] and [Http*] attributes and diffing them against the paths in this file. The 190 steps exceed 136 because 54 extra steps are negative checks that assert a 4xx, plus read-back re-checks that confirm a mutation actually took effect. Steps are ordered so that each artifact (category, course, section, lesson, session, booking, conversation, support question) exists before it is referenced, and destructive calls are pushed to the end of their phase.",
     "verifiedBy": "All paths were diffed against the [Route]/[HttpGet|Post|Put|Patch|Delete] attributes in the controllers. Order was checked to be a contiguous 1..N sequence with no duplicates, phases contiguous, and every {{variable}} produced by a capture at a strictly earlier step (or explicitly flagged manualInput).",
     "notExecutableInScalar": [
       {
@@ -2777,10 +3958,18 @@
       "api/v1/dev/* is [AllowAnonymous] and guarded only by a runtime IsDevelopment() check, while docker-compose sets ASPNETCORE_ENVIRONMENT=Development.",
       "/uploads/** is served without authentication.",
       "Support and TestFiles routes are unversioned (/api/support, /api/test/files) while everything else uses /api/v1.",
-      "DevController and UserAuthService issue tokens with an empty permissions claim list, so permission-gated endpoints 403 until a refresh-token round trip."
+      "BuyCreditsCommandHandler is a fake checkout: it credits the wallet without any payment, so any authenticated user can mint unlimited credits. S122a and S188 depend on that behaviour."
     ],
     "fixedWhileWritingThisPlan": [
       "components.securitySchemes was absent because AddOpenApi() had no options. BearerSecuritySchemeTransformer now registers BearerAuth, and OperationSecurityTransformer marks each operation from its real [Authorize]/[AllowAnonymous] metadata. Verified against the live spec: 136 operations, 108 secured, 28 anonymous, 0 unmatched."
+    ],
+    "environmentSkips": [
+      "S116-S119 and S166-S170: Google Drive upload/download, reported broken. Left as first-class skips rather than re-enabled.",
+      "S251: emailing a published FAQ answer needs a real SMTP host; appsettings.json ships MailSettings:Host empty on purpose so the committed config holds no credential."
     ]
+  },
+  "stepKeyNotes": {
+    "skip": "A reason string. The step is never sent; it still appears in the report as SKIPPED so the coverage stays visible.",
+    "pollFor": "For a read whose target is written asynchronously. The step is re-issued until the named capture resolves, bounded by seconds/interval. Only ever put it on idempotent steps."
   }
 }

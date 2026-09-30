@@ -16,7 +16,7 @@ public class PasswordsController : BaseApiController
 {
     [HttpPost("forgot")]
     [AllowAnonymous]
-    [EnableRateLimiting(RateLimitingExtensions.OtpResendPolicy)]
+    [EnableRateLimiting(RateLimitingExtensions.PasswordResetRequestPolicy)]
     public async Task<IResult> ForgotPassword(
         [FromBody] ForgotPasswordRequest request,
         CancellationToken cancellationToken)

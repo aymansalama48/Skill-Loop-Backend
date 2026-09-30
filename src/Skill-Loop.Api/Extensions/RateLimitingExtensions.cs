@@ -22,6 +22,7 @@ public static class RateLimitingExtensions
     public const string LoginPolicy = "login";
     public const string OtpVerifyPolicy = "otp-verify";
     public const string OtpResendPolicy = "otp-resend";
+    public const string PasswordResetRequestPolicy = "password-reset-request";
     public const string EmailTestPolicy = "email-test";
     public const string ContactFormPolicy = "contact-form";
     public const string RefreshPolicy = "refresh-token";
@@ -74,6 +75,21 @@ public static class RateLimitingExtensions
 
             // Prevents inbox flooding and SMTP quota exhaustion against a third party.
             options.AddPolicy(OtpResendPolicy, context =>
+                RateLimitPartition.GetFixedWindowLimiter(
+                    BuildKey(context, "email"),
+                    _ => new FixedWindowRateLimiterOptions
+                    {
+                        PermitLimit = 2,
+                        Window = TimeSpan.FromMinutes(10),
+                        QueueLimit = 0
+                    }));
+
+            // Requesting a password-reset code is a separate abuse vector from resending an
+            // email-verification code, so it gets its own bucket at the same strength. Sharing
+            // one partition made the two flows consume each other's budget: a user who asked
+            // for a verification resend was then refused a password reset - and, worse, a
+            // legitimate password reset was indistinguishable from an inbox flood.
+            options.AddPolicy(PasswordResetRequestPolicy, context =>
                 RateLimitPartition.GetFixedWindowLimiter(
                     BuildKey(context, "email"),
                     _ => new FixedWindowRateLimiterOptions
@@ -206,12 +222,19 @@ public sealed class RateLimitIdentityMiddleware(RequestDelegate next)
                     using var document = System.Text.Json.JsonDocument.Parse(raw);
                     var root = document.RootElement;
 
-                    foreach (var field in new[] { "email", "to", "identifier" })
+                    // A JSON body may legitimately be an array or a scalar, not an object.
+                    // TryGetProperty throws InvalidOperationException on those roots, and
+                    // that escapes the JsonException catch below - which turned every
+                    // array-bodied request into a 500. Partition by IP for those.
+                    if (root.ValueKind == JsonValueKind.Object)
                     {
-                        if (root.TryGetProperty(field, out var element)
-                            && element.ValueKind == JsonValueKind.String)
+                        foreach (var field in new[] { "email", "to", "identifier" })
                         {
-                            context.Items[ItemKey + field] = element.GetString();
+                            if (root.TryGetProperty(field, out var element)
+                                && element.ValueKind == JsonValueKind.String)
+                            {
+                                context.Items[ItemKey + field] = element.GetString();
+                            }
                         }
                     }
                 }

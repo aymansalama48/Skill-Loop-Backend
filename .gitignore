@@ -487,6 +487,24 @@ uploads/
 Logs/
 *.log
 
+# API test-suite run artifacts. The plan itself (docs/scalar-test-plan.json) and the
+# generated .http/Postman collections ARE tracked - they are the source of truth for the
+# suite. Only the per-run report is throwaway.
+docs/test-plan-report.json
+docs/_openapi.json
+
+# Python bytecode from the docs/ helper scripts.
+__pycache__/
+*.pyc
+
+# Merge leftovers. Two .cs.rej files from the PR #20 merge were committed by accident and
+# shadowed nothing but must never be staged again.
+*.rej
+*.orig
+
+# NOTE: docs/test-files/ is deliberately NOT ignored. Those are the real upload fixtures
+# the suite posts; without them every multipart step would have no file to send.
+
 # Local configuration overrides. These are where developers put real values.
 # NOTE: appsettings.json is intentionally NOT ignored — it is tracked and holds
 # structure only, with every secret left empty. Ignoring a file that is already

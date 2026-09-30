@@ -11,9 +11,10 @@ public class ResetPasswordCommandValidator : AbstractValidator<ResetPasswordComm
             .NotEmpty().WithMessage("This field is required.")
             .EmailAddress().WithMessage("Invalid email address format.");
 
-        RuleFor(x => x.OtpCode) // 👈 التحقق من كود الـ OTP
-            .NotEmpty().WithMessage("This field is required.")
-            .Length(4).WithMessage("Invalid value.");
+        // 👈 التحقق من كود الـ OTP
+        //   كان .Length(4) هنا أيضًا، فأي كود حقيقي (6 أرقام) كان مرفوضًا
+        RuleFor(x => x.OtpCode)
+            .ApplyOtpCodeRules();
 
         RuleFor(x => x.NewPassword)
             .ApplyStandardPasswordRules();

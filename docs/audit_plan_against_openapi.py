@@ -43,6 +43,16 @@ def resolve(schema, doc, depth=0):
 def properties_of(schema, doc):
     """Return (properties dict, required list) for an object schema, allOf merged."""
     schema = resolve(schema, doc)
+
+    # A nullable body is emitted as oneOf [null, T]. Follow the first branch that carries
+    # an actual object, otherwise every property reads as unknown for these endpoints.
+    branches = [b for b in (schema.get("oneOf") or schema.get("anyOf") or []) if isinstance(b, dict)]
+    if branches and "properties" not in schema:
+        for branch in branches:
+            candidate, cand_required = properties_of(branch, doc)
+            if candidate:
+                return candidate, cand_required
+
     props, required = {}, []
 
     for sub in schema.get("allOf", []) or []:

@@ -200,6 +200,27 @@ public class UserManagementService(
     }
 
     /// <summary>
+    /// Accepts either an absolute URL or the rooted-relative path that
+    /// IFileStorage.UploadAsync actually returns, e.g. "UploadedFiles/avatars/a.png".
+    /// Requiring an absolute URI made every profile-picture upload fail, because local
+    /// storage hands back a relative path. Relative values are still rejected when they are
+    /// rooted or climb out of the storage root.
+    /// </summary>
+    private static bool IsAcceptableImageLocation(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+            return false;
+
+        if (Uri.IsWellFormedUriString(value, UriKind.Absolute))
+            return true;
+
+        if (Path.IsPathRooted(value) || value.Contains("..", StringComparison.Ordinal))
+            return false;
+
+        return value.IndexOfAny(Path.GetInvalidPathChars()) < 0;
+    }
+
+    /// <summary>
     /// تحديث رابط الصورة الشخصية
     /// </summary>
     public async Task<Result> UpdateProfilePictureAsync(
@@ -211,7 +232,7 @@ public class UserManagementService(
         if (user is null)
             return Result.Failure(UserErrors.NotFound);
 
-        if (!string.IsNullOrWhiteSpace(avatarUrl) && !Uri.IsWellFormedUriString(avatarUrl, UriKind.Absolute))
+        if (!IsAcceptableImageLocation(avatarUrl))
             return Result.Failure(UserErrors.ValidationFailed("رابط الصورة غير صالح"));
 
         user.AvatarUrl = avatarUrl;

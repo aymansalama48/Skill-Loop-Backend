@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Skill_Loop.Application.Common.Abstractions.Core;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authentication;
+using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Application.Common.Abstractions.Identity.Providers;
 using Skill_Loop.Application.Common.Abstractions.Identity.Tokens;
 using Skill_Loop.Application.Common.Errors.Identity;
@@ -16,6 +17,7 @@ public class UserAuthService(
     SignInManager<ApplicationUser> signInManager,
     IJwtTokenGenerator jwtTokenGenerator,
     IRefreshTokenService refreshTokenService,
+    IPermissionService permissionService,
     IDateTime dateTime,
     IEnumerable<IExternalAuthProvider> externalAuthProviders) : IUserAuthService
 {
@@ -73,8 +75,15 @@ public class UserAuthService(
         }
 
         // 5. ????? ????????
+        // Role-based permissions must go into the token, exactly as StaffAuthService does.
+        // Instructor is not one of the staff-only roles, so an instructor signs in through
+        // this portal; passing an empty permission list left them with a token that could
+        // never satisfy a [Permission(...)] check, so every instructor endpoint returned
+        // 403 Auth.Forbidden no matter which role the account actually held.
+        var permissions = await permissionService.GetUserPermissionsAsync(user.Id, cancellationToken);
+
         var accessToken = jwtTokenGenerator.GenerateJwtToken(
-            user.Id, user.Email!, user.FullName, roles, []);
+            user.Id, user.Email!, user.FullName, roles, permissions);
         var refreshToken = await refreshTokenService
             .GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
@@ -121,7 +130,10 @@ public class UserAuthService(
             return Result<UserAuthResponse>.Failure(UserErrors.UseStaffPortal);
         }
 
-        var accessToken = jwtTokenGenerator.GenerateJwtToken(user.Id, user.Email!, user.FullName, roles, []);
+        // Same reason as LoginAsync: an end-user token must carry its role's permissions.
+        var permissions = await permissionService.GetUserPermissionsAsync(user.Id, cancellationToken);
+
+        var accessToken = jwtTokenGenerator.GenerateJwtToken(user.Id, user.Email!, user.FullName, roles, permissions);
         var refreshToken = await refreshTokenService.GenerateAndSaveRefreshTokenAsync(user.Id, cancellationToken);
 
         user.LastLoginAt = dateTime.UtcNow;

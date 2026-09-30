@@ -1,6 +1,6 @@
 # Testing Runbook - no Docker, no Redis
 
-Two ways to exercise the API, both against the same 180-step plan.
+Two ways to exercise the API, both against the same 190-step plan.
 
 - **Plan A - Postman collection runner** gives you a pass/fail summary. Use this for regression runs.
 - **Plan B - Scalar** is for reading responses and poking single endpoints. Use this when something looks wrong.
@@ -48,7 +48,7 @@ Verify: <https://localhost:7271/scalar/v1> loads. First start takes ~20-40 secon
 
 1. Open Postman.
 2. **Import** -> drag in `docs\skill-loop.postman_collection.json`.
-3. You get a collection called **Skill Loop API Test Plan** with 19 phase folders and 180 requests.
+3. You get a collection called **Skill Loop API Test Plan** with 19 phase folders and 190 requests.
 
 ### A2. Point it at your API
 
@@ -156,7 +156,7 @@ Other roles exist and the plan creates them as it goes:
 
 ### B4. Working through the plan in Scalar
 
-Scalar is for inspection, not for the full 180-step chain, because it has no variable substitution between requests - you copy ids by hand. A workable middle path:
+Scalar is for inspection, not for the full 190-step chain, because it has no variable substitution between requests - you copy ids by hand. A workable middle path:
 
 1. Run the Postman collection first (Plan A) so the data exists: categories, courses, sections, sessions, bookings.
 2. Come to Scalar to read and verify interesting responses in full.
@@ -165,8 +165,18 @@ Scalar is for inspection, not for the full 180-step chain, because it has no var
 ### B5. Useful things to poke at
 
 - **Enum values are integers in JSON bodies.** There is no `JsonStringEnumConverter` registered, so `materialType` is `0`, not `"PDF"`. Sending `"PDF"` in a JSON body gets a 400. (Form fields are different - there `PDF` is fine, because the string is bound by name.)
-- **User and quick-login tokens carry empty permission claims.** If a permission-gated call returns 403 for a normal user, that is expected - use the admin token, or do a refresh-token round trip to pick up the real claims.
-- **Rate limits** are 300/min global, 5/min per login email, 3 OTP verifies per 10 min. Hitting those returns 429 with a `Retry-After` header.
+- **Tokens carry the role's permission claims.** End-user tokens load the caller's role permissions at login, so a permission-gated call answers 403 for a real lack of permission rather than for an empty claim list.
+- **Rate limits** are 300/min global, 5/min per login email, 3 OTP verifies per 10 min, 2 OTP resends per 10 min, and 2 password-reset requests per 10 min (its own bucket, separate from OTP resends). Hitting those returns 429 with a `Retry-After` header, which `run_test_plan.py` honours, so a re-run inside the window waits it out instead of reporting a failure.
+- **A booking is `Confirmed` the moment it is created.** Nothing produces the `Pending` approval state yet (see `BACKEND_GAP_ANALYSIS.md`), so confirming an existing booking is a 409 by design.
+
+### Skipped steps
+
+Ten steps are excluded on purpose and report as `SKIPPED` rather than failing:
+
+- **S116-S119, S166-S170** - Google Drive upload/download, reported broken.
+- **S251** - needs a real SMTP host; `appsettings.json` ships `MailSettings:Host` empty so no credential is committed.
+
+Re-enable them by removing the `skip` key once the underlying problem is fixed.
 
 ---
 
