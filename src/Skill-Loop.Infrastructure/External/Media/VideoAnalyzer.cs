@@ -8,6 +8,7 @@ using Skill_Loop.Application.Common.Abstractions.External.Media;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Common.Errors;
 using Xabe.FFmpeg;
+using Xabe.FFmpeg.Downloader; // تأكد من وجود ده
 
 namespace Skill_Loop.Infrastructure.External.Media;
 
@@ -15,6 +16,7 @@ internal sealed class VideoAnalyzer : IVideoAnalyzer
 {
     private readonly ILogger<VideoAnalyzer> _logger;
     private static bool _ffmpegInitialized = false;
+    private static readonly SemaphoreSlim _semaphore = new SemaphoreSlim(1, 1); // لمنع تعارض التحميل لو أكتر من ريكويست دخلوا مع بعض
 
     public VideoAnalyzer(ILogger<VideoAnalyzer> logger)
     {
@@ -27,12 +29,28 @@ internal sealed class VideoAnalyzer : IVideoAnalyzer
         {
             if (!_ffmpegInitialized)
             {
-                // Attempt to set up ffmpeg path. If it's not installed in PATH, Xabe.FFmpeg uses the current directory or throws.
-                _ffmpegInitialized = true;
+                await _semaphore.WaitAsync(cancellationToken);
+                try
+                {
+                    if (!_ffmpegInitialized)
+                    {
+                        var currentDir = Directory.GetCurrentDirectory();
+
+                        // تحميل ملفات FFmpeg في المسار الحالي
+                        await FFmpegDownloader.GetLatestVersion(FFmpegVersion.Official, currentDir);
+
+                        // إجبار المكتبة تقرأ من المسار ده صراحةً
+                        FFmpeg.SetExecutablesPath(currentDir);
+
+                        _ffmpegInitialized = true;
+                    }
+                }
+                finally
+                {
+                    _semaphore.Release();
+                }
             }
 
-            // Note: If videoUrlOrPath is a URL, FFmpeg can probe it directly.
-            // If it's a local file, it can also probe it directly.
             var mediaInfo = await FFmpeg.GetMediaInfo(videoUrlOrPath, cancellationToken);
             var videoStream = mediaInfo.VideoStreams.FirstOrDefault();
 
