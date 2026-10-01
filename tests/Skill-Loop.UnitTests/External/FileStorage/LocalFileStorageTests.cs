@@ -163,13 +163,29 @@ public class LocalFileStorageTests
     [Fact]
     public async Task ExistsAsync_WithExistingFile_ReturnsTrue()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        var uploadResult = await _storage.UploadAsync(stream, "test.txt", "uploads");
+        var fileName = $"{Guid.NewGuid()}.txt";
+        var folderName = "uploads";
+        var directoryPath = Path.Combine(_testRoot, folderName);
+        Directory.CreateDirectory(directoryPath);
+        var fullPath = Path.Combine(directoryPath, fileName);
+        
+        try
+        {
+            await File.WriteAllTextAsync(fullPath, "test content");
+            var relativeUrl = $"https://localhost:5001/{folderName}/{fileName}";
 
-        var result = await _storage.ExistsAsync(uploadResult.Data!);
+            var result = await _storage.ExistsAsync(relativeUrl);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Data.Should().BeTrue();
+            result.IsSuccess.Should().BeTrue();
+            result.Data.Should().BeTrue();
+        }
+        finally
+        {
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
     }
 
     [Fact]
@@ -193,16 +209,29 @@ public class LocalFileStorageTests
     [Fact]
     public async Task DeleteAsync_WithExistingFile_ReturnsSuccess()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        var uploadResult = await _storage.UploadAsync(stream, "test.txt", "uploads");
+        var fileName = $"{Guid.NewGuid()}.txt";
+        var folderName = "uploads";
+        var directoryPath = Path.Combine(_testRoot, folderName);
+        Directory.CreateDirectory(directoryPath);
+        var fullPath = Path.Combine(directoryPath, fileName);
+        
+        try
+        {
+            await File.WriteAllTextAsync(fullPath, "test content");
+            var relativeUrl = $"https://localhost:5001/{folderName}/{fileName}";
 
-        var result = await _storage.DeleteAsync(uploadResult.Data!);
+            var result = await _storage.DeleteAsync(relativeUrl);
 
-        result.IsSuccess.Should().BeTrue();
-
-        var relativePath = uploadResult.Data!.Replace("https://localhost:5001/", "");
-        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
-        File.Exists(fullPath).Should().BeFalse();
+            result.IsSuccess.Should().BeTrue();
+            File.Exists(fullPath).Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
     }
 
     [Fact]
