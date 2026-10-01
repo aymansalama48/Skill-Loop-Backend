@@ -1,6 +1,8 @@
 namespace Skill_Loop.UnitTests.Features.Bookings.Queries.GetMyBookings;
 
 using FluentAssertions;
+using Moq;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Queries.GetMyBookings;
 using Skill_Loop.Domain.Entities.Booking;
@@ -16,12 +18,14 @@ using Xunit;
 public class GetMyBookingsQueryHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly Mock<IUserManagementService> _userService;
     private readonly GetMyBookingsQueryHandler _handler;
 
     public GetMyBookingsQueryHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new GetMyBookingsQueryHandler(_dbContext);
+        _userService = new Mock<IUserManagementService>();
+        _handler = new GetMyBookingsQueryHandler(_dbContext, _userService.Object);
     }
 
     private async Task<Session> SeedSessionAsync(DateTime? scheduledAtUtc = null, int credits = 20)

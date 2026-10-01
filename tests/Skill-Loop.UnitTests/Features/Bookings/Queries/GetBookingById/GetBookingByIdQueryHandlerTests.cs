@@ -2,6 +2,7 @@ using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Application.Features.Bookings.Queries.GetBookingById;
@@ -21,6 +22,7 @@ public class GetBookingByIdQueryHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly Mock<ICurrentUser> _currentUser;
+    private readonly Mock<IUserManagementService> _userService;
     private readonly GetBookingByIdQueryHandler _handler;
 
     // Read lazily by the Moq setup below so each test can switch the acting user.
@@ -32,7 +34,8 @@ public class GetBookingByIdQueryHandlerTests
         _currentUser = new Mock<ICurrentUser>();
         _currentUser.Setup(c => c.UserId).Returns(() => _actingUserId);
         _currentUser.Setup(c => c.HasPermission(It.IsAny<string>())).Returns(false);
-        _handler = new GetBookingByIdQueryHandler(_dbContext, _currentUser.Object);
+        _userService = new Mock<IUserManagementService>();
+        _handler = new GetBookingByIdQueryHandler(_dbContext, _currentUser.Object, _userService.Object);
     }
 
     private async Task<(Session Session, Booking Booking)> SeedAsync(int credits = 20)
