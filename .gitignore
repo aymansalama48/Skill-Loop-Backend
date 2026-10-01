@@ -526,3 +526,9 @@ google-drive-key.json
 **/google-drive-key.json
 .env
 
+
+ffmpeg.exe
+
+ffprobe.exe
+
+ffplay.exe
