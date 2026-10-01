@@ -1,4 +1,4 @@
-﻿namespace Skill_Loop.Api.Contracts.Auth
+namespace Skill_Loop.Api.Contracts.Auth
 {
-    public record RegisterUserRequest(string FirstName, string LastName, string Email, string Password);
+    public record RegisterUserRequest(string FullName, string Email, string Password);
 }

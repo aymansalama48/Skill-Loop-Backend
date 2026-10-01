@@ -298,6 +298,47 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
+    public Result UpdateReview(Guid userId, int stars, string? comment)
+    {
+        if (stars is < 1 or > 5)
+            return Result.Failure(ReviewErrors.InvalidStars);
+
+        var review = _reviews.FirstOrDefault(r => r.UserId == userId);
+        if (review is null)
+            return Result.Failure(ReviewErrors.NotFound);
+
+        var totalScore = (AverageRating * TotalReviews) - review.Stars + stars;
+        AverageRating = Math.Round(totalScore / TotalReviews, 2);
+
+        review.Update(stars, comment);
+
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result RemoveReview(Guid userId)
+    {
+        var review = _reviews.FirstOrDefault(r => r.UserId == userId);
+        if (review is null)
+            return Result.Failure(ReviewErrors.NotFound);
+
+        _reviews.Remove(review);
+
+        TotalReviews--;
+        if (TotalReviews == 0)
+        {
+            AverageRating = 0;
+        }
+        else
+        {
+            var totalScore = (AverageRating * (TotalReviews + 1)) - review.Stars;
+            AverageRating = Math.Round(totalScore / TotalReviews, 2);
+        }
+
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
     public Result Publish()
     {
         if (string.IsNullOrWhiteSpace(ThumbnailUrl))

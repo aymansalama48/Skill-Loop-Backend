@@ -42,7 +42,7 @@ public sealed class CacheInvalidationBehavior<TRequest, TResponse>
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            // 👇 التعديل السحري هنا: استخدام المسح بالبادئة
+            // ًں‘‡ ط§ظ„طھط¹ط¯ظٹظ„ ط§ظ„ط³ط­ط±ظٹ ظ‡ظ†ط§: ط§ط³طھط®ط¯ط§ظ… ط§ظ„ظ…ط³ط­ ط¨ط§ظ„ط¨ط§ط¯ط¦ط©
             await _cacheService.RemoveByPrefixAsync(cacheKey, cancellationToken);
 
             _logger.LogDebug("Invalidated cache keys starting with {CacheKey}", cacheKey);

@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Pagination;
@@ -10,10 +11,12 @@ namespace Skill_Loop.Application.Features.Courses.Queries.GetCoursesPaged;
 public sealed class GetCoursesPagedQueryHandler : IQueryHandler<GetCoursesPagedQuery, PagedResult<CourseSummaryDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUserManagementService _userService;
 
-    public GetCoursesPagedQueryHandler(IApplicationDbContext context)
+    public GetCoursesPagedQueryHandler(IApplicationDbContext context, IUserManagementService userService)
     {
         _context = context;
+        _userService = userService;
     }
 
     public async Task<Result<PagedResult<CourseSummaryDto>>> Handle(
@@ -86,6 +89,7 @@ public sealed class GetCoursesPagedQueryHandler : IQueryHandler<GetCoursesPagedQ
                      c.Category != null ? c.Category.Name : string.Empty,
                      c.InstructorId,
                      c.InstructorName,
+                     null, // InstructorAvatarUrl
                      c.Level.ToString(),
                      c.Status.ToString(),
                      c.Credits,
@@ -97,9 +101,18 @@ public sealed class GetCoursesPagedQueryHandler : IQueryHandler<GetCoursesPagedQ
                      c.CreatedAt)),
             cancellationToken);
 
+        var instructorIds = items.Select(c => c.InstructorId).Distinct().ToList();
+        var instructors = await _userService.GetUsersByIdsAsync(instructorIds, cancellationToken);
+        var instructorAvatars = instructors.ToDictionary(u => u.Id, u => u.AvatarUrl);
+
+        var finalItems = items.Select(item => item with 
+        { 
+            InstructorAvatarUrl = instructorAvatars.GetValueOrDefault(item.InstructorId) 
+        }).ToList();
+
         var result = new PagedResult<CourseSummaryDto>
         {
-            Items = items,
+            Items = finalItems,
             Pagination = new PaginationMetadata
             {
                 TotalCount = totalCount,

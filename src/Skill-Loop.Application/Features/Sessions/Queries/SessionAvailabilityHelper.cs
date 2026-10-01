@@ -26,11 +26,20 @@ public static class SessionAvailabilityHelper
                  b.Status == BookingStatus.Completed),
                 cancellationToken);
 
-    public static SessionResponse BuildResponse(Session session, int bookedParticipants, DateTime utcNow) =>
+    public static SessionResponse BuildResponse(
+        Session session,
+        int bookedParticipants,
+        DateTime utcNow,
+        string instructorName = "Unknown",
+        string? instructorAvatarUrl = null) =>
         new(
             session.Id,
             session.InstructorId,
             session.OwnerId,
+            instructorName,
+            instructorAvatarUrl,
+            session.AverageRating,
+            session.TotalReviews,
             session.Title,
             session.Description,
             session.Status,

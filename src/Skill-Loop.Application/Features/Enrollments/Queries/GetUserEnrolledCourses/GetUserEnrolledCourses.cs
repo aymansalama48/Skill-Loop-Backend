@@ -1,6 +1,7 @@
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Domain.Constants;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Enrollments.DTOs;
 using Skill_Loop.Domain.Common.Results;
@@ -13,10 +14,12 @@ public sealed record GetUserEnrolledCoursesQuery(Guid UserId) : IQuery<IReadOnly
 public sealed class GetUserEnrolledCoursesQueryHandler : IQueryHandler<GetUserEnrolledCoursesQuery, IReadOnlyList<UserEnrolledCourseDto>>
 {
     private readonly IApplicationDbContext _context;
+    private readonly IUserManagementService _userService;
 
-    public GetUserEnrolledCoursesQueryHandler(IApplicationDbContext context)
+    public GetUserEnrolledCoursesQueryHandler(IApplicationDbContext context, IUserManagementService userService)
     {
         _context = context;
+        _userService = userService;
     }
 
     public async Task<Result<IReadOnlyList<UserEnrolledCourseDto>>> Handle(GetUserEnrolledCoursesQuery request, CancellationToken cancellationToken)
@@ -31,6 +34,10 @@ public sealed class GetUserEnrolledCoursesQueryHandler : IQueryHandler<GetUserEn
 
         var enrollments = await _context.ToListAsync(enrollmentsQuery, cancellationToken);
 
+        var instructorIds = coursesDict.Select(c => c.InstructorId).Distinct().ToList();
+        var instructors = await _userService.GetUsersByIdsAsync(instructorIds, cancellationToken);
+        var instructorAvatars = instructors.ToDictionary(u => u.Id, u => u.AvatarUrl);
+
         var result = enrollments.Select(e =>
         {
             var course = coursesDict.FirstOrDefault(c => c.Id == e.CourseId);
@@ -40,6 +47,7 @@ public sealed class GetUserEnrolledCoursesQueryHandler : IQueryHandler<GetUserEn
                 course?.Title ?? "Unknown Course",
                 course?.ThumbnailUrl ?? string.Empty,
                 course?.InstructorName ?? string.Empty,
+                course != null ? instructorAvatars.GetValueOrDefault(course.InstructorId) : null,
                 e.ProgressPercentage,
                 e.Status.ToString(),
                 e.LastWatchedLessonId,

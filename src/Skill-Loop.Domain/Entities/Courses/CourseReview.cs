@@ -20,4 +20,10 @@ public sealed class CourseReview : AuditableEntity
             Stars = stars,
             Comment = comment?.Trim()
         };
+
+    internal void Update(int stars, string? comment)
+    {
+        Stars = stars;
+        Comment = comment?.Trim();
+    }
 }

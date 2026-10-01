@@ -6,9 +6,12 @@ using Skill_Loop.Infrastructure.Options;
 
 namespace Skill_Loop.Infrastructure.External.FileStorage;
 
-internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : IFileStorage
+internal sealed class LocalFileStorage(
+    IOptions<FileStorageOptions> options,
+    IOptions<BaseUrlOptions> baseUrlOptions) : IFileStorage
 {
     private readonly FileStorageOptions _options = options.Value;
+    private readonly BaseUrlOptions _baseUrlOptions = baseUrlOptions.Value;
 
     public async Task<Result<string>> UploadAsync(
         Stream fileStream,
@@ -120,7 +123,10 @@ internal sealed class LocalFileStorage(IOptions<FileStorageOptions> options) : I
         var relativePath = Path.Combine(_options.RootFolder, folderName, finalFileName)
             .Replace("\\", "/");
 
-        return Result<string>.Success(relativePath);
+        var baseUrl = _baseUrlOptions.Backend.TrimEnd('/');
+        var fullUrl = $"{baseUrl}/{relativePath}";
+
+        return Result<string>.Success(fullUrl);
     }
 
     public Task<Result<bool>> ExistsAsync(string filePath)

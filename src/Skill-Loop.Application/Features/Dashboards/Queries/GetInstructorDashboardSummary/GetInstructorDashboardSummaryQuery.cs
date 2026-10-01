@@ -13,5 +13,8 @@ public sealed record GetInstructorDashboardSummaryResponse(
     int TotalSessions,
     int TotalBookings,
     int TotalEnrollments,
-    decimal WalletBalance
+    decimal WalletBalance,
+    double AverageRating,
+    int ActiveSessions,
+    int CompletedSessions
 );

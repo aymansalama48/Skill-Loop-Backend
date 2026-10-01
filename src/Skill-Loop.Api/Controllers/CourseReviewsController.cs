@@ -18,6 +18,9 @@ public class CourseReviewsController : BaseApiController
     {
         _currentUser = currentUser;
     }
+    /// <summary>
+    /// إضافة تقييم جديد للكورس
+    /// </summary>
     [HttpPost]
     [Authorize]
     public async Task<IResult> AddReview(
@@ -30,6 +33,9 @@ public class CourseReviewsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+    /// <summary>
+    /// عرض تقييمات الكورس مع التصفح
+    /// </summary>
     [HttpGet]
     [AllowAnonymous]
     public async Task<IResult> GetReviews(
@@ -40,6 +46,37 @@ public class CourseReviewsController : BaseApiController
     {
         var query = new GetCourseReviewsQuery(courseId, pageNumber, pageSize);
         var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل تقييم مسجل مسبقاً
+    /// </summary>
+    [HttpPut]
+    [Authorize]
+    public async Task<IResult> UpdateReview(
+        Guid courseId,
+        [FromBody] UpdateCourseReviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = RequireUserId();
+        var command = new Skill_Loop.Application.Features.Courses.Commands.UpdateCourseReview.UpdateCourseReviewCommand(courseId, userId, request.Stars, request.Comment);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف تقييم الكورس
+    /// </summary>
+    [HttpDelete]
+    [Authorize]
+    public async Task<IResult> DeleteReview(
+        Guid courseId,
+        CancellationToken cancellationToken)
+    {
+        var userId = RequireUserId();
+        var command = new Skill_Loop.Application.Features.Courses.Commands.DeleteCourseReview.DeleteCourseReviewCommand(courseId, userId);
+        var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
 }

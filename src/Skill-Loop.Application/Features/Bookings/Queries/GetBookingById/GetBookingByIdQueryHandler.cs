@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
@@ -13,13 +14,16 @@ public sealed class GetBookingByIdQueryHandler : IQueryHandler<GetBookingByIdQue
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IUserManagementService _userService;
 
     public GetBookingByIdQueryHandler(
         IApplicationDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IUserManagementService userService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _userService = userService;
     }
 
     public async Task<Result<BookingResponse>> Handle(
@@ -57,6 +61,10 @@ public sealed class GetBookingByIdQueryHandler : IQueryHandler<GetBookingByIdQue
             return Result<BookingResponse>.Failure(BookingErrors.NotLearner);
         }
 
-        return Result<BookingResponse>.Success(BookingResponseFactory.Create(booking, session));
+        var userResult = await _userService.GetByIdAsync(session.InstructorId, cancellationToken);
+        var instructorName = userResult.IsSuccess ? userResult.Data?.FullName ?? "Unknown" : "Unknown";
+        var instructorAvatar = userResult.IsSuccess ? userResult.Data?.AvatarUrl : null;
+
+        return Result<BookingResponse>.Success(BookingResponseFactory.Create(booking, session, instructorName, instructorAvatar));
     }
 }

@@ -65,6 +65,31 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(query, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// جلب الكورسات المنشورة الخاصة بالمدرب الحالي
+    /// </summary>
+    [HttpGet("me")]
+    [Authorize]
+    public async Task<IResult> GetMyPublishedCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
+    {
+        var query = new GetCoursesPagedQuery
+        {
+            PageNumber = request.PageNumber,
+            PageSize = request.PageSize,
+            SearchTerm = request.SearchTerm,
+            CategoryId = request.CategoryId,
+            Level = request.Level,
+            MaxCredits = request.MaxCredits,
+            MinRating = request.MinRating,
+            SortBy = request.SortBy,
+            Status = CourseStatus.Published,
+            InstructorId = RequireUserId() // Filter for current instructor
+        };
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
     [HttpGet("bookmarks")]
     [Authorize]
     public async Task<IResult> GetMyBookmarks(
@@ -92,11 +117,13 @@ public class CoursesController : BaseApiController
         var instructorId = RequireUserId();
         var instructorName = _currentUser.FullName ?? "Instructor";
 
+        await using var thumbnailStream = request.ThumbnailImage?.OpenReadStream();
+
         // نمرر الـ Stream والاسم مباشرة، ولو مفيش صورة هيبعت null
         var command = new CreateCourseCommand(
             request.Title,
             request.Description,
-            request.ThumbnailImage?.OpenReadStream(),
+            thumbnailStream,
             request.ThumbnailImage?.FileName,
             request.Credits,
             request.Level,

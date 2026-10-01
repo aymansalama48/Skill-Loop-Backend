@@ -1,3 +1,4 @@
+﻿using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -21,9 +22,9 @@ public sealed record UpdateCourseDetailsCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        "courses:all",
-        "courses:paged:",
-        $"courses:{CourseId}",
-        $"courses:detail:{CourseId}"
+        AppCacheKeys.CoursesPrefix,
+        AppCacheKeys.CoursesPaged,
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseById(CourseId)
     ];
 }

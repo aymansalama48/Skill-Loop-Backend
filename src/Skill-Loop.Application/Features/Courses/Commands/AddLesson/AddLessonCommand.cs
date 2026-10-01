@@ -1,3 +1,4 @@
+﻿using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -11,7 +12,8 @@ public sealed record AddLessonCommand(
     Guid CourseId,
     Guid SectionId,
     string Title,
-    string VideoUrl,
+    Stream? VideoStream,
+    string? VideoFileName,
     TimeSpan Duration,
     int OrderIndex,
     bool IsPreviewable,
@@ -20,11 +22,11 @@ public sealed record AddLessonCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        "courses:all",
-        "courses:paged:",
-        $"courses:{CourseId}",
-        $"courses:detail:{CourseId}",
-        $"course-sections:{CourseId}",
-        $"course-lessons:{CourseId}"
+        AppCacheKeys.CoursesPrefix,
+        AppCacheKeys.CoursesPaged,
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseSections(CourseId),
+        AppCacheKeys.CourseLessons(CourseId)
     ];
 }

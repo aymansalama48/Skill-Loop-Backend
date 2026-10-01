@@ -65,6 +65,7 @@ public sealed class GetMyConversationsQueryHandler : IQueryHandler<GetMyConversa
         {
             var otherId = c.GetOtherParticipantId(request.UserId);
             usersById.TryGetValue(otherId, out var other);
+            var otherRole = other?.Roles != null && other.Roles.Contains(Roles.Instructor) ? Roles.Instructor : Roles.User;
 
             return new ConversationDto(
                 c.Id,
@@ -73,7 +74,8 @@ public sealed class GetMyConversationsQueryHandler : IQueryHandler<GetMyConversa
                 other?.AvatarUrl,
                 c.LastMessagePreview,
                 c.LastMessageAt,
-                unreadByConversation.GetValueOrDefault(c.Id));
+                unreadByConversation.GetValueOrDefault(c.Id),
+                otherRole);
         }).ToList();
 
         return Result<IReadOnlyList<ConversationDto>>.Success(result);

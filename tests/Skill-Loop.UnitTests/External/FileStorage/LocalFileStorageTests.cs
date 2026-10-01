@@ -17,6 +17,7 @@ public class LocalFileStorageTests
     private readonly string _testRoot;
     private readonly LocalFileStorage _storage;
     private readonly IOptions<FileStorageOptions> _options;
+    private readonly IOptions<BaseUrlOptions> _baseUrlOptions;
 
     public LocalFileStorageTests()
     {
@@ -34,7 +35,9 @@ public class LocalFileStorageTests
             OverwriteExistingFiles = false
         });
 
-        _storage = new LocalFileStorage(_options);
+        _baseUrlOptions = Options.Create(new BaseUrlOptions { Backend = "https://localhost:5001" });
+
+        _storage = new LocalFileStorage(_options, _baseUrlOptions);
     }
 
     [Fact]

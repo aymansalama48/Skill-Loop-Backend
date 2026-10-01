@@ -44,4 +44,8 @@ public static class CourseErrors
         "Course empty sections.",
         ErrorType.Validation);
 
+    public static readonly Error NotFound = new Error(
+        "Course.NotFound",
+        "Course not found.",
+        ErrorType.NotFound);
 }

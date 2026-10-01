@@ -1,4 +1,4 @@
-using Skill_Loop.Application.Common.Abstractions.External.Cache;
+﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
@@ -13,7 +13,7 @@ public sealed record ReorderSessionMaterialsCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        global::Skill_Loop.Application.Common.Constants.CacheKeys.SessionMaterials(SessionId),
-        global::Skill_Loop.Application.Common.Constants.CacheKeys.SessionMaterialsAll
+        global::Skill_Loop.Application.Common.Constants.AppCacheKeys.SessionMaterials(SessionId),
+        global::Skill_Loop.Application.Common.Constants.AppCacheKeys.SessionMaterialsAll
     ];
 }

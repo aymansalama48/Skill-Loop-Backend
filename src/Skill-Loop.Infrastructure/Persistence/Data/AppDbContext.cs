@@ -70,6 +70,9 @@ public class AppDbContext : IdentityDbContext<ApplicationUser, ApplicationRole, 
     // 📧 Email Logs
     public DbSet<Skill_Loop.Domain.Entities.Emails.EmailLog> EmailLogs => Set<Skill_Loop.Domain.Entities.Emails.EmailLog>();
 
+    // 📜 Audit Logs
+    public DbSet<Skill_Loop.Domain.Entities.System.AuditLog> AuditLogs => Set<Skill_Loop.Domain.Entities.System.AuditLog>();
+
     protected override void OnModelCreating(ModelBuilder builder)
     {
         base.OnModelCreating(builder);

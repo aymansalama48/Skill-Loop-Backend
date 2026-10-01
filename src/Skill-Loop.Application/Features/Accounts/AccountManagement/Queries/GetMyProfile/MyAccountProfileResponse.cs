@@ -6,5 +6,10 @@ public record MyAccountProfileResponse(
     string FullName,
     string Email,
     string? PhoneNumber,
-    string? AvatarUrl
+    string? AvatarUrl,
+    string? InstructorHeadline = null,
+    string? InstructorBio = null,
+    bool? IsInstructorApproved = null,
+    double? InstructorRating = null,
+    int? InstructorSessionsCompleted = null
 );

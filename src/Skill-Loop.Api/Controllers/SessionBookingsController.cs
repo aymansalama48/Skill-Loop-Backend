@@ -13,6 +13,9 @@ namespace Skill_Loop.Api.Controllers;
 [Tags("Session Bookings")]
 public class SessionBookingsController : BaseApiController
 {
+    /// <summary>
+    /// عرض جميع حجوزات الجلسة مع إمكانية الفلترة والتصفح
+    /// </summary>
     [HttpGet]
     public async Task<IResult> GetSessionBookings(
         Guid sessionId,

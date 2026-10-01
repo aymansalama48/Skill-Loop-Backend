@@ -16,17 +16,27 @@ public class CourseLessonsController : BaseApiController
 {
     [HttpPost]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<IResult> AddLesson(
         Guid courseId,
         Guid sectionId,
-        [FromBody] AddLessonRequest request,
+        [FromForm] AddLessonRequest request,
         CancellationToken cancellationToken)
     {
+        Stream? videoStream = null;
+        string? videoFileName = null;
+        if (request.VideoFile is not null && request.VideoFile.Length > 0)
+        {
+            videoStream = request.VideoFile.OpenReadStream();
+            videoFileName = request.VideoFile.FileName;
+        }
+
         var command = new AddLessonCommand(
             courseId,
             sectionId,
             request.Title,
-            request.VideoUrl,
+            videoStream,
+            videoFileName,
             request.Duration,
             request.OrderIndex,
             request.IsPreviewable,
@@ -37,19 +47,29 @@ public class CourseLessonsController : BaseApiController
     }
     [HttpPut("{lessonId:guid}")]
     [Authorize]
+    [Consumes("multipart/form-data")]
     public async Task<IResult> UpdateLesson(
         Guid courseId, 
         Guid sectionId, 
         Guid lessonId, 
-        [FromBody] UpdateLessonRequest request, 
+        [FromForm] UpdateLessonRequest request, 
         CancellationToken cancellationToken)
     {
+        Stream? videoStream = null;
+        string? videoFileName = null;
+        if (request.VideoFile is not null && request.VideoFile.Length > 0)
+        {
+            videoStream = request.VideoFile.OpenReadStream();
+            videoFileName = request.VideoFile.FileName;
+        }
+
         var command = new UpdateLessonCommand(
             courseId, 
             sectionId, 
             lessonId, 
             request.Title, 
-            request.VideoUrl, 
+            videoStream, 
+            videoFileName,
             request.Duration, 
             request.StreamingResolution, 
             request.ExternalProviderId, 

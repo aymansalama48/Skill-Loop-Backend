@@ -14,6 +14,7 @@ public sealed record UserEnrolledCourseDto(
     string CourseTitle,
     string CourseThumbnailUrl,
     string InstructorName,
+    string? InstructorAvatarUrl,
     double ProgressPercentage,
     string Status,
     Guid? LastWatchedLessonId,

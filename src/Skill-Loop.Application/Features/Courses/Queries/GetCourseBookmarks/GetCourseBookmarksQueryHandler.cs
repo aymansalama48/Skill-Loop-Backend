@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Pagination;
 using Skill_Loop.Application.Features.Courses.DTOs;
 using Skill_Loop.Domain.Common.Results;
@@ -17,11 +18,13 @@ public sealed class GetCourseBookmarksQueryHandler : IQueryHandler<GetCourseBook
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IUserManagementService _userService;
 
-    public GetCourseBookmarksQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetCourseBookmarksQueryHandler(IApplicationDbContext context, ICurrentUser currentUser, IUserManagementService userService)
     {
         _context = context;
         _currentUser = currentUser;
+        _userService = userService;
     }
 
     public async Task<Result<PagedResult<CourseSummaryDto>>> Handle(GetCourseBookmarksQuery request, CancellationToken cancellationToken)
@@ -54,6 +57,7 @@ public sealed class GetCourseBookmarksQueryHandler : IQueryHandler<GetCourseBook
                 c.Category != null ? c.Category.Name : string.Empty,
                 c.InstructorId,
                 c.InstructorName,
+                null, // InstructorAvatarUrl
                 c.Level.ToString(),
                 c.Status.ToString(),
                 c.Credits,
@@ -65,8 +69,17 @@ public sealed class GetCourseBookmarksQueryHandler : IQueryHandler<GetCourseBook
                 c.CreatedAt))
             .ToListAsync(cancellationToken);
 
+        var instructorIds = items.Select(c => c.InstructorId).Distinct().ToList();
+        var instructors = await _userService.GetUsersByIdsAsync(instructorIds, cancellationToken);
+        var instructorAvatars = instructors.ToDictionary(u => u.Id, u => u.AvatarUrl);
+
+        var finalItems = items.Select(item => item with 
+        { 
+            InstructorAvatarUrl = instructorAvatars.GetValueOrDefault(item.InstructorId) 
+        }).ToList();
+
         var pagination = new PaginationMetadata { TotalCount = totalCount, PageSize = request.PageSize, CurrentPage = request.PageNumber };
-        var pagedList = new PagedResult<CourseSummaryDto> { Items = items, Pagination = pagination };
+        var pagedList = new PagedResult<CourseSummaryDto> { Items = finalItems, Pagination = pagination };
 
         return Result<PagedResult<CourseSummaryDto>>.Success(pagedList);
     }
