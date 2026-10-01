@@ -5,7 +5,7 @@ using Skill_Loop.Application.Common.Abstractions.External.FileStorage;
 
 namespace Skill_Loop.Api.Controllers.Test;
 
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize]
 [Route("api/test/files")]
 public class TestFilesController : BaseApiController
 {

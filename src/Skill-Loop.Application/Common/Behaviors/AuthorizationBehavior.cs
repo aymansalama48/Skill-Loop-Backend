@@ -47,6 +47,12 @@ public sealed class AuthorizationBehavior<TRequest, TResponse>(
             return ResultFactory.CreateFailure<TResponse>(AuthErrors.MissingIdentifier);
         }
 
+        // لو اليوزر SuperAdmin، عديه فوراً وماتعملش أي تشيك تاني!
+        if (currentUser.IsInRole("SuperAdmin"))
+        {
+            return await next();
+        }
+
         if (permissionAttribute is not null)
         {
             var hasPermission = currentUser.HasPermission(permissionAttribute.Name)

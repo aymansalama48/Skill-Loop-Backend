@@ -62,7 +62,7 @@ public static class PipelineExtensions
         app.UseStaticFiles(new StaticFileOptions
         {
             FileProvider = new PhysicalFileProvider(uploadsPath),
-            RequestPath = "/uploads"  // الـ URL ثابت، مش بتغير
+            RequestPath = "/UploadedFiles"  // الـ URL ثابت، مش بتغير
         });
 
         // 8. توثيق OpenAPI/Scalar
