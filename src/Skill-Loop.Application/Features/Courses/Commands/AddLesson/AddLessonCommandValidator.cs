@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace Skill_Loop.Application.Features.Courses.Commands.AddLesson;
 
@@ -17,9 +17,6 @@ public sealed class AddLessonCommandValidator : AbstractValidator<AddLessonComma
         RuleFor(x => x.Title)
             .NotEmpty().WithMessage("Title is required.")
             .MaximumLength(200).WithMessage("Title cannot exceed 200 characters.");
-
-        RuleFor(x => x.VideoUrl)
-            .NotEmpty().WithMessage("Video URL is required.");
 
         RuleFor(x => x.Duration)
             .GreaterThan(TimeSpan.Zero)

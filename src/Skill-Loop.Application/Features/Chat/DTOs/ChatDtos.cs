@@ -23,7 +23,8 @@ public sealed record ConversationDto(
     string? OtherUserAvatarUrl,
     string? LastMessagePreview,
     DateTime? LastMessageAt,
-    int UnreadCount);
+    int UnreadCount,
+    string OtherUserRole = "Student");
 
 /// <summary>
 /// بيتبعت للمُرسِل لما الطرف التاني يقرا رسايله.

@@ -10,18 +10,18 @@ using Skill_Loop.Application.Features.Promotions.Common;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Entities.Wallets;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 
 namespace Skill_Loop.Application.Features.CreditPurchases.Commands.PurchaseCredits;
 
 /// <summary>شحن المحفظة: اشترِ X كريديت (اختياري: بكود خصم).</summary>
 [AuthenticatedOnly]
-public sealed record PurchaseCreditsCommand(Guid UserId, int Credits, string? PromoCode) : ICommand<CreditPurchaseDto>;
+public sealed record PurchaseCreditsCommand(int Credits, string? PromoCode) : ICommand<CreditPurchaseDto>;
 
 public sealed class PurchaseCreditsCommandValidator : AbstractValidator<PurchaseCreditsCommand>
 {
     public PurchaseCreditsCommandValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Credits)
             .InclusiveBetween(CreditPurchase.MinCredits, CreditPurchase.MaxCredits)
             .WithMessage($"عدد الكريديت لازم يكون بين {CreditPurchase.MinCredits} و {CreditPurchase.MaxCredits}.");
@@ -33,21 +33,25 @@ public sealed class PurchaseCreditsCommandHandler : ICommandHandler<PurchaseCred
     private readonly IApplicationDbContext _context;
     private readonly IPaymentGateway _gateway;
     private readonly ICreditPricing _pricing;
+    private readonly ICurrentUser _currentUser;
 
-    public PurchaseCreditsCommandHandler(IApplicationDbContext context, IPaymentGateway gateway, ICreditPricing pricing)
+    public PurchaseCreditsCommandHandler(IApplicationDbContext context, IPaymentGateway gateway, ICreditPricing pricing, ICurrentUser currentUser)
     {
         _context = context;
         _gateway = gateway;
         _pricing = pricing;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<CreditPurchaseDto>> Handle(PurchaseCreditsCommand request, CancellationToken cancellationToken)
     {
+        var userId = _currentUser.UserId.Value;
+
         // 1. كود الخصم (لو موجود): لازم صالح ومستخدمش قبل كده
         PromoCode? promo = null;
         if (!string.IsNullOrWhiteSpace(request.PromoCode))
         {
-            var promoResult = await PromoCodeLookup.ResolveAsync(_context, request.PromoCode, request.UserId, cancellationToken);
+            var promoResult = await PromoCodeLookup.ResolveAsync(_context, request.PromoCode, userId, cancellationToken);
             if (promoResult.IsFailure)
                 return Result<CreditPurchaseDto>.Failure(promoResult.Errors);
 
@@ -59,7 +63,7 @@ public sealed class PurchaseCreditsCommandHandler : ICommandHandler<PurchaseCred
 
         // 3. سجّل طلب الشراء (Pending)
         var purchaseResult = CreditPurchase.Create(
-            request.UserId, request.Credits, _pricing.Currency,
+            userId, request.Credits, _pricing.Currency,
             quote.SubtotalMinor, quote.DiscountMinor, quote.TotalMinor, promo?.Id);
 
         if (purchaseResult.IsFailure)
@@ -76,7 +80,7 @@ public sealed class PurchaseCreditsCommandHandler : ICommandHandler<PurchaseCred
         else
         {
             var gatewayResult = await _gateway.CreatePaymentAsync(
-                new PaymentRequest(purchase.Id, request.UserId, quote.TotalMinor, _pricing.Currency,
+                new PaymentRequest(purchase.Id, userId, quote.TotalMinor, _pricing.Currency,
                     $"Purchase of {request.Credits} credits"),
                 cancellationToken);
 
@@ -94,11 +98,11 @@ public sealed class PurchaseCreditsCommandHandler : ICommandHandler<PurchaseCred
         if (session.IsCompleted)
         {
             var wallet = await _context.FirstOrDefaultAsync(
-                _context.UserWallets.Where(w => w.UserId == request.UserId),
+                _context.UserWallets.Where(w => w.UserId == userId),
                 cancellationToken);
 
             var isNewWallet = wallet is null;
-            wallet ??= UserWallet.Create(request.UserId);
+            wallet ??= UserWallet.Create(userId);
 
             var addResult = wallet.PurchaseCredits(
                 request.Credits, purchase.Id, $"Purchased {request.Credits} credits");
@@ -117,7 +121,7 @@ public sealed class PurchaseCreditsCommandHandler : ICommandHandler<PurchaseCred
                 if (redeemResult.IsFailure)
                     return Result<CreditPurchaseDto>.Failure(redeemResult.Errors);
 
-                _context.Add(PromoRedemption.Create(promo.Id, request.UserId, purchase.Id, quote.DiscountMinor));
+                _context.Add(PromoRedemption.Create(promo.Id, userId, purchase.Id, quote.DiscountMinor));
             }
 
             newBalance = wallet.Balance;

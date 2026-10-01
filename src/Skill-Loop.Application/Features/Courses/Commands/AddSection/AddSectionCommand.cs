@@ -1,3 +1,4 @@
+﻿using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -14,9 +15,9 @@ public sealed record AddSectionCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        "courses:all",
-        $"courses:{CourseId}",
-        $"courses:detail:{CourseId}",
-        $"course-sections:{CourseId}"
+        AppCacheKeys.CoursesPrefix,
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseSections(CourseId)
     ];
 }

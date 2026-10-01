@@ -3,6 +3,8 @@ namespace Skill_Loop.UnitTests.Features.Bookings.Queries.GetSessionBookings;
 using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using System.Collections.Generic;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Queries.GetSessionBookings;
 using Skill_Loop.Domain.Entities.Booking;
@@ -18,6 +20,7 @@ public class GetSessionBookingsQueryHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly Mock<ICurrentUser> _currentUser;
+    private readonly Mock<IUserManagementService> _userService;
     private readonly GetSessionBookingsQueryHandler _handler;
 
     // Read lazily by the Moq setup below so each test can switch the acting user.
@@ -29,7 +32,10 @@ public class GetSessionBookingsQueryHandlerTests
         _currentUser = new Mock<ICurrentUser>();
         _currentUser.Setup(c => c.UserId).Returns(() => _actingUserId);
         _currentUser.Setup(c => c.HasPermission(It.IsAny<string>())).Returns(false);
-        _handler = new GetSessionBookingsQueryHandler(_dbContext, _currentUser.Object);
+        _userService = new Mock<IUserManagementService>();
+        _userService.Setup(u => u.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserDto>());
+        _handler = new GetSessionBookingsQueryHandler(_dbContext, _currentUser.Object, _userService.Object);
     }
 
     private async Task<Session> SeedSessionAsync()

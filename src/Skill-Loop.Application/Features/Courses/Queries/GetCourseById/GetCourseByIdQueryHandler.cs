@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Features.Courses.DTOs;
 using Skill_Loop.Domain.Common.Results;
 
@@ -12,11 +13,13 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
 {
     private readonly IApplicationDbContext _context;
     private readonly ICurrentUser _currentUser;
+    private readonly IUserManagementService _userService;
 
-    public GetCourseByIdQueryHandler(IApplicationDbContext context, ICurrentUser currentUser)
+    public GetCourseByIdQueryHandler(IApplicationDbContext context, ICurrentUser currentUser, IUserManagementService userService)
     {
         _context = context;
         _currentUser = currentUser;
+        _userService = userService;
     }
 
     public async Task<Result<CourseDetailDto>> Handle(
@@ -68,6 +71,9 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
         var attachments = course.Attachments.Select(a =>
             new AttachmentDto(a.FileName, a.DriveFileId, a.SizeBytes)).ToList();
 
+        var userResult = await _userService.GetByIdAsync(course.InstructorId, cancellationToken);
+        var avatarUrl = userResult.IsSuccess ? userResult.Data?.AvatarUrl : null;
+
         var dto = new CourseDetailDto(
             course.Id,
             course.Title,
@@ -77,6 +83,7 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
             course.Category != null ? course.Category.Name : string.Empty,
             course.InstructorId,
             course.InstructorName,
+            avatarUrl,
             course.Level.ToString(),
             course.Status.ToString(),
             course.Credits,

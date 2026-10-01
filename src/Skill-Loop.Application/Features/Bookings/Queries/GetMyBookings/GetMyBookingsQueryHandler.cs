@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Pagination;
@@ -11,10 +12,12 @@ namespace Skill_Loop.Application.Features.Bookings.Queries.GetMyBookings;
 public sealed class GetMyBookingsQueryHandler : IQueryHandler<GetMyBookingsQuery, PagedResult<BookingResponse>>
 {
     private readonly IApplicationDbContext _dbContext;
+    private readonly IUserManagementService _userService;
 
-    public GetMyBookingsQueryHandler(IApplicationDbContext dbContext)
+    public GetMyBookingsQueryHandler(IApplicationDbContext dbContext, IUserManagementService userService)
     {
         _dbContext = dbContext;
+        _userService = userService;
     }
 
     public async Task<Result<PagedResult<BookingResponse>>> Handle(
@@ -54,7 +57,7 @@ public sealed class GetMyBookingsQueryHandler : IQueryHandler<GetMyBookingsQuery
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        var items = await BookingResponseFactory.CreateListAsync(_dbContext, pagedBookings, cancellationToken);
+        var items = await BookingResponseFactory.CreateListAsync(_dbContext, _userService, pagedBookings, cancellationToken);
 
         return Result<PagedResult<BookingResponse>>.Success(new PagedResult<BookingResponse>
         {

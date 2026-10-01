@@ -49,12 +49,33 @@ internal sealed class GetInstructorDashboardSummaryQueryHandler : IRequestHandle
         var balance = wallet?.Balance ?? 0;
         
 
+        var activeSessionsCount = await _context.Sessions
+            .CountAsync(s => s.InstructorId == instructor.UserId && s.Status == Skill_Loop.Domain.Enums.SessionStatus.Published, cancellationToken);
+            
+        var completedSessionsCount = await _context.Sessions
+            .CountAsync(s => s.InstructorId == instructor.UserId && s.Status == Skill_Loop.Domain.Enums.SessionStatus.Completed, cancellationToken);
+            
+        double averageRating = 0.0;
+        if (courseIds.Any()) {
+            var reviews = await _context.CourseReviews
+                .Where(r => courseIds.Contains(r.CourseId))
+                .Select(r => r.Stars)
+                .ToListAsync(cancellationToken);
+                
+            if (reviews.Any()) {
+                averageRating = reviews.Average();
+            }
+        }
+
         var response = new GetInstructorDashboardSummaryResponse(
             TotalCourses: totalCourses,
             TotalSessions: totalSessions,
             TotalBookings: totalBookings,
             TotalEnrollments: totalEnrollments,
-            WalletBalance: balance
+            WalletBalance: balance,
+            AverageRating: Math.Round(averageRating, 1),
+            ActiveSessions: activeSessionsCount,
+            CompletedSessions: completedSessionsCount
         );
 
         return Result<GetInstructorDashboardSummaryResponse>.Success(response);

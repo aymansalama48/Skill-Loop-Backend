@@ -210,10 +210,6 @@ public sealed class Session : AuditableEntity
         if (_reviews.Any(r => r.UserId == userId))
             return Result.Failure(ReviewErrors.Duplicate);
 
-        // Note: We could check if the user has a completed booking here, but we will do it in the command handler
-        // because the booking check requires querying the DB (or checking the _bookings collection if loaded).
-        // Since we only load bookings when needed, it's safer in the handler.
-
         var review = SessionReview.Create(Id, userId, stars, comment);
         _reviews.Add(review);
         
@@ -221,7 +217,45 @@ public sealed class Session : AuditableEntity
         TotalReviews++;
         AverageRating = Math.Round(totalScore / TotalReviews, 2);
 
-        // We can raise a SessionUpdatedDomainEvent if needed, but not strictly necessary for now.
+        return Result.Success();
+    }
+
+    public Result UpdateReview(Guid userId, int stars, string? comment)
+    {
+        if (stars is < 1 or > 5)
+            return Result.Failure(ReviewErrors.InvalidStars);
+
+        var review = _reviews.FirstOrDefault(r => r.UserId == userId);
+        if (review is null)
+            return Result.Failure(ReviewErrors.NotFound);
+
+        var totalScore = (AverageRating * TotalReviews) - review.Stars + stars;
+        AverageRating = Math.Round(totalScore / TotalReviews, 2);
+
+        review.Update(stars, comment);
+
+        return Result.Success();
+    }
+
+    public Result RemoveReview(Guid userId)
+    {
+        var review = _reviews.FirstOrDefault(r => r.UserId == userId);
+        if (review is null)
+            return Result.Failure(ReviewErrors.NotFound);
+
+        _reviews.Remove(review);
+
+        TotalReviews--;
+        if (TotalReviews == 0)
+        {
+            AverageRating = 0;
+        }
+        else
+        {
+            var totalScore = (AverageRating * (TotalReviews + 1)) - review.Stars;
+            AverageRating = Math.Round(totalScore / TotalReviews, 2);
+        }
+
         return Result.Success();
     }
 

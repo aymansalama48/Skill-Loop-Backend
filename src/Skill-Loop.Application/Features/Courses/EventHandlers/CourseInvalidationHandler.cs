@@ -1,3 +1,4 @@
+﻿using Skill_Loop.Application.Common.Constants;
 using MediatR;
 using Skill_Loop.Application.Common.Abstractions.Events;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
@@ -19,20 +20,20 @@ public sealed class CourseInvalidationHandler :
 
     public async Task Handle(DomainEventNotification<CourseCreatedDomainEvent> notification, CancellationToken cancellationToken)
     {
-        await _cacheService.RemoveByPrefixAsync("courses:paged:", cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(AppCacheKeys.CoursesPaged, cancellationToken);
         await _cacheService.RemoveAsync("categories:all", cancellationToken);
     }
 
     public async Task Handle(DomainEventNotification<CourseUpdatedDomainEvent> notification, CancellationToken cancellationToken)
     {
         await _cacheService.RemoveAsync($"courses:detail:{notification.DomainEvent.CourseId}", cancellationToken);
-        await _cacheService.RemoveByPrefixAsync("courses:paged:", cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(AppCacheKeys.CoursesPaged, cancellationToken);
     }
 
     public async Task Handle(DomainEventNotification<CoursePublishedDomainEvent> notification, CancellationToken cancellationToken)
     {
         await _cacheService.RemoveAsync($"courses:detail:{notification.DomainEvent.CourseId}", cancellationToken);
-        await _cacheService.RemoveByPrefixAsync("courses:paged:", cancellationToken);
+        await _cacheService.RemoveByPrefixAsync(AppCacheKeys.CoursesPaged, cancellationToken);
         await _cacheService.RemoveAsync("categories:all", cancellationToken);
     }
 }

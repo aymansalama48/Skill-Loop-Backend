@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
@@ -8,27 +8,20 @@ using Skill_Loop.Application.Common.Errors.Instructors;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Constants;
 using Skill_Loop.Domain.Entities.Instructors;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 
 namespace Skill_Loop.Application.Features.Instructors.Commands.CreateMyInstructorProfile;
 
 public sealed class CreateMyInstructorProfileCommandHandler(
     IApplicationDbContext _dbContext,
-    ICurrentUser _currentUser) : ICommandHandler<CreateMyInstructorProfileCommand, Guid>
+    ICurrentUser _currentUser,
+    IUserManagementService _userManagementService) : ICommandHandler<CreateMyInstructorProfileCommand, Guid>
 {
     public async Task<Result<Guid>> Handle(CreateMyInstructorProfileCommand request, CancellationToken cancellationToken)
     {
         if (!_currentUser.UserId.HasValue || _currentUser.UserId.Value == Guid.Empty)
         {
             return Result<Guid>.Failure(UserErrors.NotFound);
-        }
-
-        // Only an account that actually holds the Instructor role may self-register a
-        // profile. Without this check any authenticated user could mint themselves an
-        // instructor profile, because the command was only marked [AuthenticatedOnly].
-        if (!_currentUser.IsInRole(Roles.Instructor) && !_currentUser.IsInRole(Roles.Admin)
-            && !_currentUser.IsInRole(Roles.SuperAdmin))
-        {
-            return Result<Guid>.Failure(AuthErrors.Forbidden);
         }
 
         var userId = _currentUser.UserId.Value;
@@ -49,6 +42,13 @@ public sealed class CreateMyInstructorProfileCommandHandler(
 
         var profile = profileResult.Data;
         _dbContext.Add(profile);
+
+        var roleResult = await _userManagementService.AssignRoleAsync(userId, Roles.Instructor, cancellationToken);
+        if (roleResult.IsFailure)
+        {
+            return Result<Guid>.Failure(roleResult.Errors);
+        }
+
         await _dbContext.SaveChangesAsync(cancellationToken);
 
         return Result<Guid>.Success(profile.Id);

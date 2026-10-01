@@ -1,3 +1,4 @@
+﻿using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Domain.Enums;
@@ -10,8 +11,8 @@ namespace Skill_Loop.Application.Features.Courses.Commands.CreateCourse;
 public sealed record CreateCourseCommand(
     string Title,
     string Description,
-    Stream? ThumbnailStream,   // كفاية جداً
-    string? ThumbnailFileName, // عشان الامتداد
+    Stream? ThumbnailStream,   // ظƒظپط§ظٹط© ط¬ط¯ط§ظ‹
+    string? ThumbnailFileName, // ط¹ط´ط§ظ† ط§ظ„ط§ظ…طھط¯ط§ط¯
     int Credits,
     CourseLevel Level,
     Guid InstructorId,
@@ -20,9 +21,9 @@ public sealed record CreateCourseCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        "courses:all",
-        "courses:paged:",
-        $"courses:category:{CategoryId}",
-        $"courses:instructor:{InstructorId}"
+        AppCacheKeys.CoursesPrefix,
+        AppCacheKeys.CoursesPaged,
+        AppCacheKeys.CoursesByCategory(CategoryId),
+        AppCacheKeys.CoursesByInstructor(InstructorId)
     ];
 }

@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
@@ -15,13 +16,16 @@ public sealed class GetSessionBookingsQueryHandler
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly ICurrentUser _currentUser;
+    private readonly IUserManagementService _userService;
 
     public GetSessionBookingsQueryHandler(
         IApplicationDbContext dbContext,
-        ICurrentUser currentUser)
+        ICurrentUser currentUser,
+        IUserManagementService userService)
     {
         _dbContext = dbContext;
         _currentUser = currentUser;
+        _userService = userService;
     }
 
     public async Task<Result<PagedResult<BookingResponse>>> Handle(
@@ -67,7 +71,7 @@ public sealed class GetSessionBookingsQueryHandler
             .Take(request.PageSize)
             .ToListAsync(cancellationToken);
 
-        var items = await BookingResponseFactory.CreateListAsync(_dbContext, pagedBookings, cancellationToken);
+        var items = await BookingResponseFactory.CreateListAsync(_dbContext, _userService, pagedBookings, cancellationToken);
 
         return Result<PagedResult<BookingResponse>>.Success(new PagedResult<BookingResponse>
         {

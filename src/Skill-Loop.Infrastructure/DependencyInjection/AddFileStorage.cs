@@ -18,7 +18,16 @@ public static partial class DependencyInjection
         services.Configure<FileStorageOptions>(
             configuration.GetSection(FileStorageOptions.SectionName));
 
-        services.AddScoped<IFileStorage, LocalFileStorage>();
+        var provider = configuration["FileStorage:Provider"];
+
+        if (provider == "GoogleDrive")
+        {
+            services.AddScoped<IFileStorage, GoogleDriveFileStorage>();
+        }
+        else
+        {
+            services.AddScoped<IFileStorage, LocalFileStorage>();
+        }
 
         return services;
     }

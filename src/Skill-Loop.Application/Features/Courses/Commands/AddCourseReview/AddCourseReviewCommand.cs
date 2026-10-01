@@ -1,4 +1,5 @@
-﻿using Skill_Loop.Application.Common.Abstractions.External.Cache;
+﻿using Skill_Loop.Application.Common.Constants;
+using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Identity.Authorization;
 using Skill_Loop.Domain.Constants;
@@ -14,10 +15,10 @@ public sealed record AddCourseReviewCommand(
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [
-        "courses:all",
-        "courses:paged:",
-        $"courses:{CourseId}",
-        $"courses:detail:{CourseId}",
+        AppCacheKeys.CoursesPrefix,
+        AppCacheKeys.CoursesPaged,
+        AppCacheKeys.CourseById(CourseId),
+        AppCacheKeys.CourseById(CourseId),
         $"course-reviews:{CourseId}"
     ];
 }

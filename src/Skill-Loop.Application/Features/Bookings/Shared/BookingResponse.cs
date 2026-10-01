@@ -7,6 +7,8 @@ public sealed record BookingResponse(
     Guid SessionId,
     string SessionTitle,
     Guid InstructorId,
+    string InstructorName,
+    string? InstructorAvatarUrl,
     Guid LearnerUserId,
     int PriceInCredits,
     BookingStatus Status,

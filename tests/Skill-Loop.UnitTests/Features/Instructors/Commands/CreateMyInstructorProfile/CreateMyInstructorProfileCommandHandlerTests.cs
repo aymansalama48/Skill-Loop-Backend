@@ -1,6 +1,7 @@
 using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
+using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Auth;
 using Skill_Loop.Application.Common.Errors.Identity;
@@ -16,13 +17,17 @@ public class CreateMyInstructorProfileCommandHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly Mock<ICurrentUser> _currentUser;
+    private readonly Mock<IUserManagementService> _userManagementService;
     private readonly CreateMyInstructorProfileCommandHandler _handler;
 
     public CreateMyInstructorProfileCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
         _currentUser = new Mock<ICurrentUser>();
-        _handler = new CreateMyInstructorProfileCommandHandler(_dbContext, _currentUser.Object);
+        _userManagementService = new Mock<IUserManagementService>();
+        _userManagementService.Setup(u => u.AssignRoleAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Domain.Common.Results.Result.Success());
+        _handler = new CreateMyInstructorProfileCommandHandler(_dbContext, _currentUser.Object, _userManagementService.Object);
     }
 
     [Fact]
@@ -47,25 +52,6 @@ public class CreateMyInstructorProfileCommandHandlerTests
 
         result.IsFailure.Should().BeTrue();
         result.Errors.Should().Contain(e => e.Code == UserErrors.NotFound.Code);
-    }
-
-    [Fact]
-    public async Task Handle_WhenUserLacksInstructorRole_ReturnsForbidden()
-    {
-        var userId = Guid.NewGuid();
-        _currentUser.Setup(c => c.UserId).Returns(userId);
-        _currentUser.Setup(c => c.IsInRole(It.IsAny<string>())).Returns(false);
-
-        var command = new CreateMyInstructorProfileCommand(userId, "Headline", "Bio");
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        result.IsFailure.Should().BeTrue();
-        result.Errors.Should().Contain(e => e.Code == AuthErrors.Forbidden.Code);
-        result.Data.Should().BeEmpty();
-
-        var created = await _dbContext.FirstOrDefaultAsync(
-            _dbContext.InstructorProfiles.Where(p => p.UserId == userId));
-        created.Should().BeNull();
     }
 
     [Fact]

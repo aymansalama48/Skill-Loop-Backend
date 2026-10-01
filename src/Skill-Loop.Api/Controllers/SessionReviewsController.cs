@@ -18,6 +18,9 @@ public class SessionReviewsController : BaseApiController
     {
         _currentUser = currentUser;
     }
+    /// <summary>
+    /// إضافة تقييم جديد للجلسة
+    /// </summary>
     [HttpPost]
     public async Task<IResult> AddReview(
         Guid sessionId,
@@ -26,6 +29,51 @@ public class SessionReviewsController : BaseApiController
     {
         var userId = RequireUserId();
         var command = new AddSessionReviewCommand(userId, sessionId, request.Stars, request.Comment);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// عرض تقييمات الجلسة مع التصفح
+    /// </summary>
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IResult> GetReviews(
+        Guid sessionId,
+        [FromQuery] int pageNumber = 1,
+        [FromQuery] int pageSize = 10,
+        CancellationToken cancellationToken = default)
+    {
+        var query = new Skill_Loop.Application.Features.Sessions.Queries.GetSessionReviews.GetSessionReviewsQuery(sessionId, pageNumber, pageSize);
+        var result = await Mediator.Send(query, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// تعديل تقييم مسجل مسبقاً للجلسة
+    /// </summary>
+    [HttpPut]
+    public async Task<IResult> UpdateReview(
+        Guid sessionId,
+        [FromBody] UpdateSessionReviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        var userId = RequireUserId();
+        var command = new Skill_Loop.Application.Features.Sessions.Commands.UpdateSessionReview.UpdateSessionReviewCommand(sessionId, userId, request.Stars, request.Comment);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
+    /// <summary>
+    /// حذف تقييم الجلسة
+    /// </summary>
+    [HttpDelete]
+    public async Task<IResult> DeleteReview(
+        Guid sessionId,
+        CancellationToken cancellationToken)
+    {
+        var userId = RequireUserId();
+        var command = new Skill_Loop.Application.Features.Sessions.Commands.DeleteSessionReview.DeleteSessionReviewCommand(sessionId, userId);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }

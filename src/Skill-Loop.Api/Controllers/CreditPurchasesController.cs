@@ -21,15 +21,15 @@ public class CreditPurchasesController : BaseApiController
     [HttpPost("quote")]
     public async Task<IResult> Quote([FromBody] PurchaseQuoteRequest request, CancellationToken cancellationToken)
     {
-        var userId = RequireUserId();
-        var result = await Mediator.Send(new GetPurchaseQuoteQuery(userId, request.Credits, request.PromoCode), cancellationToken);
+        var userId = RequireUserId(); // Ensures user is authenticated and ID is present
+        var result = await Mediator.Send(new GetPurchaseQuoteQuery(request.Credits, request.PromoCode), cancellationToken);
         return HandleResult(result);
     }
     [HttpPost]
     public async Task<IResult> Purchase([FromBody] PurchaseCreditsRequest request, CancellationToken cancellationToken)
     {
-        var userId = RequireUserId();
-        var result = await Mediator.Send(new PurchaseCreditsCommand(userId, request.Credits, request.PromoCode), cancellationToken);
+        var userId = RequireUserId(); // Ensures user is authenticated and ID is present
+        var result = await Mediator.Send(new PurchaseCreditsCommand(request.Credits, request.PromoCode), cancellationToken);
         return HandleResult(result);
     }
 }

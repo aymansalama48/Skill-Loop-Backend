@@ -17,6 +17,7 @@ public class LocalFileStorageTests
     private readonly string _testRoot;
     private readonly LocalFileStorage _storage;
     private readonly IOptions<FileStorageOptions> _options;
+    private readonly IOptions<BaseUrlOptions> _baseUrlOptions;
 
     public LocalFileStorageTests()
     {
@@ -34,7 +35,9 @@ public class LocalFileStorageTests
             OverwriteExistingFiles = false
         });
 
-        _storage = new LocalFileStorage(_options);
+        _baseUrlOptions = Options.Create(new BaseUrlOptions { Backend = "https://localhost:5001" });
+
+        _storage = new LocalFileStorage(_options, _baseUrlOptions);
     }
 
     [Fact]
@@ -114,7 +117,8 @@ public class LocalFileStorageTests
         result.Data.Should().Contain("uploads/");
         result.Data.Should().EndWith(".txt");
 
-        var fullPath = Path.Combine(_testRoot, result.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var relativePath = result.Data!.Replace("https://localhost:5001/", "");
+        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         File.Exists(fullPath).Should().BeTrue();
     }
 
@@ -126,7 +130,8 @@ public class LocalFileStorageTests
 
         var result = await _storage.UploadAsync(stream, "test.txt", "uploads");
 
-        var fullPath = Path.Combine(_testRoot, result.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var relativePath = result.Data!.Replace("https://localhost:5001/", "");
+        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         var readContent = await File.ReadAllTextAsync(fullPath);
         readContent.Should().Be(content);
     }
@@ -158,13 +163,29 @@ public class LocalFileStorageTests
     [Fact]
     public async Task ExistsAsync_WithExistingFile_ReturnsTrue()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        var uploadResult = await _storage.UploadAsync(stream, "test.txt", "uploads");
+        var fileName = $"{Guid.NewGuid()}.txt";
+        var folderName = "uploads";
+        var directoryPath = Path.Combine(_testRoot, folderName);
+        Directory.CreateDirectory(directoryPath);
+        var fullPath = Path.Combine(directoryPath, fileName);
+        
+        try
+        {
+            await File.WriteAllTextAsync(fullPath, "test content");
+            var relativeUrl = $"https://localhost:5001/{folderName}/{fileName}";
 
-        var result = await _storage.ExistsAsync(uploadResult.Data!);
+            var result = await _storage.ExistsAsync(relativeUrl);
 
-        result.IsSuccess.Should().BeTrue();
-        result.Data.Should().BeTrue();
+            result.IsSuccess.Should().BeTrue();
+            result.Data.Should().BeTrue();
+        }
+        finally
+        {
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
     }
 
     [Fact]
@@ -188,15 +209,29 @@ public class LocalFileStorageTests
     [Fact]
     public async Task DeleteAsync_WithExistingFile_ReturnsSuccess()
     {
-        var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        var uploadResult = await _storage.UploadAsync(stream, "test.txt", "uploads");
+        var fileName = $"{Guid.NewGuid()}.txt";
+        var folderName = "uploads";
+        var directoryPath = Path.Combine(_testRoot, folderName);
+        Directory.CreateDirectory(directoryPath);
+        var fullPath = Path.Combine(directoryPath, fileName);
+        
+        try
+        {
+            await File.WriteAllTextAsync(fullPath, "test content");
+            var relativeUrl = $"https://localhost:5001/{folderName}/{fileName}";
 
-        var result = await _storage.DeleteAsync(uploadResult.Data!);
+            var result = await _storage.DeleteAsync(relativeUrl);
 
-        result.IsSuccess.Should().BeTrue();
-
-        var fullPath = Path.Combine(_testRoot, uploadResult.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
-        File.Exists(fullPath).Should().BeFalse();
+            result.IsSuccess.Should().BeTrue();
+            File.Exists(fullPath).Should().BeFalse();
+        }
+        finally
+        {
+            if (File.Exists(fullPath))
+            {
+                File.Delete(fullPath);
+            }
+        }
     }
 
     [Fact]

@@ -83,9 +83,16 @@ public class AuthController : BaseApiController
         [FromBody] RegisterUserRequest request,
         CancellationToken cancellationToken)
     {
+        /// <summary>
+        /// تقسم الاسم الكامل إلى الاسم الأول واسم العائلة بناءً على الفراغ الأول
+        /// </summary>
+        var nameParts = request.FullName?.Split(' ', 2, StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+        var firstName = nameParts.Length > 0 ? nameParts[0] : string.Empty;
+        var lastName = nameParts.Length > 1 ? nameParts[1] : string.Empty;
+
         var command = new RegisterUserCommand(
-            request.FirstName,
-            request.LastName,
+            firstName,
+            lastName,
             request.Email,
             request.Password);
         var result = await Mediator.Send(command, cancellationToken);

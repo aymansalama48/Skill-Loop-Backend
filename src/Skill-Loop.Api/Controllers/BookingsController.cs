@@ -41,6 +41,28 @@ public class BookingsController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    /// <summary>
+    /// إنشاء حجز مباشر (نظام شبيه بـ Calendly)
+    /// </summary>
+    [HttpPost("direct")]
+    public async Task<IResult> CreateDirectBooking(
+        [FromBody] CreateDirectBookingRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (_currentUser.UserId is not { } learnerId || learnerId == Guid.Empty)
+        {
+            return HandleResult(Result<Guid>.Failure(BookingErrors.NotLearner));
+        }
+        var command = new Skill_Loop.Application.Features.Bookings.Commands.CreateDirectBooking.CreateDirectBookingCommand(
+            learnerId,
+            request.InstructorId,
+            request.ScheduledAtUtc,
+            request.DurationMinutes);
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
+
     [HttpPost("{id:guid}/cancel")]
     public async Task<IResult> CancelBooking(
         Guid id,

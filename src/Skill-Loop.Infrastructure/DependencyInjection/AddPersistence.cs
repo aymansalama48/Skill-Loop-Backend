@@ -20,6 +20,7 @@ public static partial class DependencyInjection
         services.AddScoped<SoftDeleteInterceptor>();
         services.AddScoped<AuditableEntityInterceptor>();
         services.AddScoped<InsertOutboxMessagesInterceptor>();
+        services.AddScoped<AuditLogInterceptor>();
 
         // 2. تسجيل الـ DbContext وربطه بـ SQL Server
         services.AddDbContext<AppDbContext>((sp, options) =>
@@ -27,6 +28,7 @@ public static partial class DependencyInjection
             var softDeleteInterceptor = sp.GetRequiredService<SoftDeleteInterceptor>();
             var auditableInterceptor = sp.GetRequiredService<AuditableEntityInterceptor>();
             var insertOutboxInterceptor = sp.GetRequiredService<InsertOutboxMessagesInterceptor>();
+            var auditLogInterceptor = sp.GetRequiredService<AuditLogInterceptor>();
 
             options.UseSqlServer(
                        configuration.GetConnectionString("DefaultConnection"),
@@ -40,7 +42,8 @@ public static partial class DependencyInjection
                    .AddInterceptors(
                        softDeleteInterceptor,
                        auditableInterceptor,
-                       insertOutboxInterceptor);
+                       insertOutboxInterceptor,
+                       auditLogInterceptor);
         });
 
         // تسجيل الـ Adapter ليربط الواجهة بالكلاس الجديد

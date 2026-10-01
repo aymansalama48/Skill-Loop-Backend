@@ -19,4 +19,8 @@ public static class ReviewErrors
         "This review is already duplicate.",
         ErrorType.Validation);
 
+    public static readonly Error NotFound = new Error(
+        "Review.NotFound",
+        "The review was not found.",
+        ErrorType.NotFound);
 }

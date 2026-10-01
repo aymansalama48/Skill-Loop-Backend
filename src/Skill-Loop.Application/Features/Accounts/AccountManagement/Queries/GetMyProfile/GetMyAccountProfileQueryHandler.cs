@@ -1,8 +1,10 @@
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Identity;
 using Skill_Loop.Domain.Common.Results;
+using Microsoft.EntityFrameworkCore;
 
 namespace Skill_Loop.Application.Features.Accounts.AccountManagement.Queries.GetMyProfile;
 
@@ -10,11 +12,13 @@ public sealed class GetMyAccountProfileQueryHandler : IQueryHandler<GetMyAccount
 {
     private readonly ICurrentUser _currentUser;
     private readonly IUserManagementService _userService;
+    private readonly IApplicationDbContext _dbContext;
 
-    public GetMyAccountProfileQueryHandler(ICurrentUser currentUser, IUserManagementService userService)
+    public GetMyAccountProfileQueryHandler(ICurrentUser currentUser, IUserManagementService userService, IApplicationDbContext dbContext)
     {
         _currentUser = currentUser;
         _userService = userService;
+        _dbContext = dbContext;
     }
 
     public async Task<Result<MyAccountProfileResponse>> Handle(GetMyAccountProfileQuery request, CancellationToken cancellationToken)
@@ -32,6 +36,9 @@ public sealed class GetMyAccountProfileQueryHandler : IQueryHandler<GetMyAccount
         }
 
         var userDetails = userResult.Data;
+        var userId = _currentUser.UserId.Value;
+        var instructorProfile = await _dbContext.InstructorProfiles
+            .FirstOrDefaultAsync(p => p.UserId == userId, cancellationToken);
 
         return Result<MyAccountProfileResponse>.Success(new MyAccountProfileResponse(
             userDetails!.FirstName,
@@ -39,7 +46,12 @@ public sealed class GetMyAccountProfileQueryHandler : IQueryHandler<GetMyAccount
             userDetails.FullName,
             userDetails.Email,
             userDetails.PhoneNumber,
-            userDetails.AvatarUrl
+            userDetails.AvatarUrl,
+            instructorProfile?.Headline,
+            instructorProfile?.Bio,
+            instructorProfile?.IsApproved,
+            instructorProfile?.Rating,
+            instructorProfile?.SessionsCompleted
         ));
     }
 }

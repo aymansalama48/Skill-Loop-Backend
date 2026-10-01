@@ -13,7 +13,7 @@ public sealed record CreateCourseRequest(
     
 public sealed record AddLessonRequest(
     string Title,
-    string VideoUrl,
+    Microsoft.AspNetCore.Http.IFormFile? VideoFile,
     TimeSpan Duration,
     int OrderIndex,
     bool IsPreviewable,
@@ -21,6 +21,10 @@ public sealed record AddLessonRequest(
     string? ExternalProviderId);
 
 public sealed record AddCourseReviewRequest(
+    int Stars,
+    string? Comment);
+
+public sealed record UpdateCourseReviewRequest(
     int Stars,
     string? Comment);
 
@@ -51,7 +55,7 @@ public sealed record ReorderSectionsRequest(Dictionary<Guid, int> SectionOrders)
 
 public sealed record UpdateLessonRequest(
     string Title,
-    string VideoUrl,
+    Microsoft.AspNetCore.Http.IFormFile? VideoFile,
     TimeSpan Duration,
     string? StreamingResolution,
     string? ExternalProviderId,

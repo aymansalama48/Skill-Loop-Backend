@@ -10,7 +10,7 @@ public sealed class UpdateLessonCommandValidator : AbstractValidator<UpdateLesso
         RuleFor(x => x.SectionId).NotEmpty();
         RuleFor(x => x.LessonId).NotEmpty();
         RuleFor(x => x.Title).NotEmpty().MaximumLength(200);
-        RuleFor(x => x.VideoUrl).NotEmpty();
+
         RuleFor(x => x.OrderIndex).GreaterThanOrEqualTo(0);
     }
 }

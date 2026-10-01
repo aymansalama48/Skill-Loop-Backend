@@ -10,6 +10,7 @@ using Skill_Loop.Application.Features.Promotions.Common;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Entities.Promotions;
 using Skill_Loop.Domain.Entities.Wallets;
+using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 
 namespace Skill_Loop.Application.Features.CreditPurchases.Queries.GetPurchaseQuote;
 
@@ -18,13 +19,12 @@ namespace Skill_Loop.Application.Features.CreditPurchases.Queries.GetPurchaseQuo
 /// شاشة الدفع بتناديها لما المستخدم يكتب كود الخصم عشان يشوف السعر الجديد.
 /// </summary>
 [AuthenticatedOnly]
-public sealed record GetPurchaseQuoteQuery(Guid UserId, int Credits, string? PromoCode) : IQuery<PurchaseQuoteDto>;
+public sealed record GetPurchaseQuoteQuery(int Credits, string? PromoCode) : IQuery<PurchaseQuoteDto>;
 
 public sealed class GetPurchaseQuoteQueryValidator : AbstractValidator<GetPurchaseQuoteQuery>
 {
     public GetPurchaseQuoteQueryValidator()
     {
-        RuleFor(x => x.UserId).NotEmpty();
         RuleFor(x => x.Credits)
             .InclusiveBetween(CreditPurchase.MinCredits, CreditPurchase.MaxCredits)
             .WithMessage($"عدد الكريديت لازم يكون بين {CreditPurchase.MinCredits} و {CreditPurchase.MaxCredits}.");
@@ -35,20 +35,23 @@ public sealed class GetPurchaseQuoteQueryHandler : IQueryHandler<GetPurchaseQuot
 {
     private readonly IApplicationDbContext _context;
     private readonly ICreditPricing _pricing;
+    private readonly ICurrentUser _currentUser;
 
-    public GetPurchaseQuoteQueryHandler(IApplicationDbContext context, ICreditPricing pricing)
+    public GetPurchaseQuoteQueryHandler(IApplicationDbContext context, ICreditPricing pricing, ICurrentUser currentUser)
     {
         _context = context;
         _pricing = pricing;
+        _currentUser = currentUser;
     }
 
     public async Task<Result<PurchaseQuoteDto>> Handle(GetPurchaseQuoteQuery request, CancellationToken cancellationToken)
     {
+        var userId = _currentUser.UserId.Value;
         PromoCode? promo = null;
 
         if (!string.IsNullOrWhiteSpace(request.PromoCode))
         {
-            var promoResult = await PromoCodeLookup.ResolveAsync(_context, request.PromoCode, request.UserId, cancellationToken);
+            var promoResult = await PromoCodeLookup.ResolveAsync(_context, request.PromoCode, userId, cancellationToken);
             if (promoResult.IsFailure)
                 return Result<PurchaseQuoteDto>.Failure(promoResult.Errors);
 
