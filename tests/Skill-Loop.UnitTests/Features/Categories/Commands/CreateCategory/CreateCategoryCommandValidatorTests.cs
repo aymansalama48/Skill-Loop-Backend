@@ -17,7 +17,7 @@ public class CreateCategoryCommandValidatorTests
     [Fact]
     public void Validate_ValidCommand_PassesValidation()
     {
-        var command = new CreateCategoryCommand("Programming", "programming", null, null, "Desc", 1);
+        var command = new CreateCategoryCommand("Programming", "Desc", 1);
 
         var result = _validator.TestValidate(command);
 
@@ -29,51 +29,31 @@ public class CreateCategoryCommandValidatorTests
     [InlineData(" ")]
     public void Validate_EmptyName_HasValidationError(string name)
     {
-        var command = new CreateCategoryCommand(name, "programming", null, null, null, 0);
+        var command = new CreateCategoryCommand(name, null, 0);
 
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Name);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void Validate_EmptySlug_HasValidationError(string slug)
-    {
-        var command = new CreateCategoryCommand("Programming", slug, null, null, null, 0);
-
-        var result = _validator.TestValidate(command);
-
-        result.ShouldHaveValidationErrorFor(x => x.Slug);
-    }
 
     [Fact]
     public void Validate_NameExceeds100Characters_HasValidationError()
     {
-        var command = new CreateCategoryCommand(new string('A', 101), "programming", null, null, null, 0);
+        var command = new CreateCategoryCommand(new string('A', 101), null, 0);
 
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Name);
     }
 
-    [Fact]
-    public void Validate_SlugExceeds150Characters_HasValidationError()
-    {
-        var command = new CreateCategoryCommand("Programming", new string('A', 151), null, null, null, 0);
-
-        var result = _validator.TestValidate(command);
-
-        result.ShouldHaveValidationErrorFor(x => x.Slug);
-    }
 
     [Theory]
     [InlineData(-1)]
     [InlineData(-10)]
     public void Validate_NegativeDisplayOrder_HasValidationError(int displayOrder)
     {
-        var command = new CreateCategoryCommand("Programming", "programming", null, null, null, displayOrder);
+        var command = new CreateCategoryCommand("Programming", null, displayOrder);
 
         var result = _validator.TestValidate(command);
 

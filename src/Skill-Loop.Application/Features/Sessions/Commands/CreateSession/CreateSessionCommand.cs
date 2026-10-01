@@ -16,6 +16,7 @@ public sealed record CreateSessionCommand(
     int CreditsPrice = 0,
     SessionLocationType LocationType = SessionLocationType.Online,
     string? LocationDetails = null,
+    string? LiveSessionUrl = null,
     int MaxParticipants = 1) : ICommand<Guid>, ICacheInvalidatorCommand
 {
     public IReadOnlyCollection<string> CacheKeys => ["sessions:all"];

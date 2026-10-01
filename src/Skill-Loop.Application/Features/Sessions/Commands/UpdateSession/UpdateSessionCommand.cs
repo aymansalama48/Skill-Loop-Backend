@@ -21,6 +21,7 @@ public sealed record UpdateSessionCommand(
     int? CreditsPrice = null,
     SessionLocationType? LocationType = null,
     string? LocationDetails = null,
+    string? LiveSessionUrl = null,
     int? MaxParticipants = null) : ICommand, ICacheInvalidatorCommand, ISessionCommand
 {
     public Guid SessionId => Id;

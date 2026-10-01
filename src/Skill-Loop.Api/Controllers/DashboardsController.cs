@@ -12,6 +12,7 @@ namespace Skill_Loop.Api.Controllers;
 /// لوحة التحكم والإحصائيات الخاصة بالمستخدمين بمختلف أدوارهم
 /// </summary>
 [Route("api/v1/[controller]")]
+[Authorize]
 public class DashboardsController : BaseApiController
 {
     /// <summary>

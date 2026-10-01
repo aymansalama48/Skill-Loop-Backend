@@ -11,7 +11,7 @@ namespace Skill_Loop.Api.Controllers.System;
 /// متحكم لعرض سجلات النظام (متاح فقط للـ SuperAdmin)
 /// </summary>
 [Route("api/v1/system/audit-logs")]
-[Authorize(Roles = Roles.SuperAdmin)]
+[Authorize]
 [Tags("System")]
 public class AuditLogsController : BaseApiController
 {

@@ -12,13 +12,13 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/v1/courses/{courseId:guid}")]
 [Tags("Course Materials")]
+[Authorize]
 public class CourseMaterialsController : BaseApiController
 {
     [HttpPost("materials")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<IResult> UploadCourseMaterial(
-        Guid courseId,
+        [FromRoute] Guid courseId,
         [FromForm] UploadCourseMaterialRequest request,
         CancellationToken cancellationToken)
     {
@@ -34,10 +34,9 @@ public class CourseMaterialsController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("materials/{materialId:guid}")]
-    [Authorize]
     public async Task<IResult> RemoveCourseMaterial(
-        Guid courseId,
-        Guid materialId,
+        [FromRoute] Guid courseId,
+        [FromRoute] Guid materialId,
         CancellationToken cancellationToken)
     {
         var command = new RemoveCourseMaterialCommand(courseId, materialId);
@@ -45,12 +44,11 @@ public class CourseMaterialsController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("sections/{sectionId:guid}/lessons/{lessonId:guid}/materials")]
-    [Authorize]
     [Consumes("multipart/form-data")]
     public async Task<IResult> UploadLessonMaterial(
-        Guid courseId,
-        Guid sectionId,
-        Guid lessonId,
+        [FromRoute] Guid courseId,
+        [FromRoute] Guid sectionId,
+        [FromRoute] Guid lessonId,
         [FromForm] UploadLessonMaterialRequest request,
         CancellationToken cancellationToken)
     {
@@ -68,12 +66,11 @@ public class CourseMaterialsController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("sections/{sectionId:guid}/lessons/{lessonId:guid}/materials/{materialId:guid}")]
-    [Authorize]
     public async Task<IResult> RemoveLessonMaterial(
-        Guid courseId,
-        Guid sectionId,
-        Guid lessonId,
-        Guid materialId,
+        [FromRoute] Guid courseId,
+        [FromRoute] Guid sectionId,
+        [FromRoute] Guid lessonId,
+        [FromRoute] Guid materialId,
         CancellationToken cancellationToken)
     {
         var command = new RemoveLessonMaterialCommand(courseId, sectionId, lessonId, materialId);

@@ -14,7 +14,7 @@ namespace Skill_Loop.Api.Controllers.v1.Admin;
 /// with an unrestricted recipient to expose the platform SMTP relay as an open spam relay.
 /// </summary>
 [Route("api/v1/Admin/Emails")]
-[Authorize(Roles = "Admin,SuperAdmin")]
+[Authorize]
 public class AdminEmailsController : BaseApiController
 {
     [HttpPost("test")]

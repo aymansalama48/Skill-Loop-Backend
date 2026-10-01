@@ -36,13 +36,14 @@ public class SessionsController : BaseApiController
         // 2. تمريره للـ Command
         var command = new CreateSessionCommand(
             request.Title,
-            instructorId,
+            request.InstructorId ?? instructorId,
             request.Description,
             request.ScheduledAtUtc,
             request.DurationMinutes,
             request.CreditsPrice,
             request.LocationType,
             request.LocationDetails,
+            request.LiveSessionUrl,
             request.MaxParticipants);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
@@ -62,6 +63,7 @@ public class SessionsController : BaseApiController
             request.CreditsPrice,
             request.LocationType,
             request.LocationDetails,
+            request.LiveSessionUrl,
             request.MaxParticipants);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);

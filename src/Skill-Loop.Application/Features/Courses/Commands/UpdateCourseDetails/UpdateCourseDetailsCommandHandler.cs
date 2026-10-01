@@ -41,7 +41,7 @@ public sealed class UpdateCourseDetailsCommandHandler : ICommandHandler<UpdateCo
         var updateResult = course.UpdateDetails(
             request.Title,
             request.Description,
-            request.ThumbnailUrl,
+            course.ThumbnailUrl, // Keep the existing thumbnail, it is updated separately
             request.Credits,
             request.Level,
             request.CategoryId);

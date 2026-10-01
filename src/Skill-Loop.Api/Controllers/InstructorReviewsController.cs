@@ -12,6 +12,7 @@ using Skill_Loop.Application.Features.Instructors.Commands.UpdateInstructorRevie
 /// </summary>
 [Route("api/v1/instructor-profiles/{profileId:guid}/reviews")]
 [Tags("Instructor Reviews")]
+[Authorize]
 public class InstructorReviewsController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
@@ -20,7 +21,6 @@ public class InstructorReviewsController : BaseApiController
         _currentUser = currentUser;
     }
     [HttpPost]
-    [Authorize]
     public async Task<IResult> AddReview(
         [FromRoute] Guid profileId,
         [FromBody] AddInstructorReviewRequest request,
@@ -37,7 +37,6 @@ public class InstructorReviewsController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut("{reviewId:guid}")]
-    [Authorize]
     public async Task<IResult> UpdateReview(
         [FromRoute] Guid profileId,
         [FromRoute] Guid reviewId,
@@ -56,7 +55,6 @@ public class InstructorReviewsController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("{reviewId:guid}")]
-    [Authorize]
     public async Task<IResult> RemoveReview(
         [FromRoute] Guid profileId,
         [FromRoute] Guid reviewId,

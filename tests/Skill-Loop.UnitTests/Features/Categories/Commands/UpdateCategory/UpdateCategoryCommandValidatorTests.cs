@@ -16,7 +16,7 @@ public class UpdateCategoryCommandValidatorTests
     [Fact]
     public void Validate_ValidCommand_PassesValidation()
     {
-        var command = new UpdateCategoryCommand(Guid.NewGuid(), "Programming", "programming", null, null, "Desc", 1);
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), "Programming", "Desc", 1);
 
         var result = _validator.TestValidate(command);
 
@@ -26,7 +26,7 @@ public class UpdateCategoryCommandValidatorTests
     [Fact]
     public void Validate_EmptyId_HasValidationError()
     {
-        var command = new UpdateCategoryCommand(Guid.Empty, "Programming", "programming", null, null, null, 0);
+        var command = new UpdateCategoryCommand(Guid.Empty, "Programming", null, 0);
 
         var result = _validator.TestValidate(command);
 
@@ -38,22 +38,11 @@ public class UpdateCategoryCommandValidatorTests
     [InlineData(" ")]
     public void Validate_EmptyName_HasValidationError(string name)
     {
-        var command = new UpdateCategoryCommand(Guid.NewGuid(), name, "programming", null, null, null, 0);
+        var command = new UpdateCategoryCommand(Guid.NewGuid(), name, null, 0);
 
         var result = _validator.TestValidate(command);
 
         result.ShouldHaveValidationErrorFor(x => x.Name);
     }
 
-    [Theory]
-    [InlineData("")]
-    [InlineData(" ")]
-    public void Validate_EmptySlug_HasValidationError(string slug)
-    {
-        var command = new UpdateCategoryCommand(Guid.NewGuid(), "Programming", slug, null, null, null, 0);
-
-        var result = _validator.TestValidate(command);
-
-        result.ShouldHaveValidationErrorFor(x => x.Slug);
-    }
 }

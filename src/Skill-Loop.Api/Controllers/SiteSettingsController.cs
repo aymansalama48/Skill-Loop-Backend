@@ -25,7 +25,6 @@ public class SiteSettingsController : BaseApiController
     }
 
     [HttpPut]
-    [Authorize(Roles = "SuperAdmin")]
     public async Task<IResult> UpdateSettings(
         [FromBody] UpdateSiteSettingsCommand command,
         CancellationToken cancellationToken)

@@ -42,6 +42,7 @@ public class CreateBookingCommandHandlerTests
             60,
             creditsPrice,
             SessionLocationType.Online,
+            null,
             "https://meet.example.com/abc",
             maxParticipants);
 

@@ -7,10 +7,7 @@ namespace Skill_Loop.Application.Features.Categories.Commands.CreateCategory;
 
 [Permission(Permissions.Catalog.CategoriesManage)]
 public sealed record CreateCategoryCommand(
-string Name,
-    string Slug,
-    Stream? IconStream,
-    string? IconFileName,
+    string Name,
     string? Description,
     int DisplayOrder) : ICommand<Guid>, ICacheInvalidatorCommand
 {

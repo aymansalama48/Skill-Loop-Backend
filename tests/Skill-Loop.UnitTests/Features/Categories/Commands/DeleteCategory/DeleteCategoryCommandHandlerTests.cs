@@ -40,7 +40,7 @@ public class DeleteCategoryCommandHandlerTests
     [Fact]
     public async Task Handle_WhenCategoryHasCourses_ReturnsConflictFailure()
     {
-        var category = Category.Create("Programming", "programming").Data!;
+        var category = Category.Create("Programming").Data!;
         _dbContext.Add(category);
 
         var course = Course.Create(
@@ -64,7 +64,7 @@ public class DeleteCategoryCommandHandlerTests
     [Fact]
     public async Task Handle_WithNoCourses_DeletesCategoryAndReturnsSuccess()
     {
-        var category = Category.Create("Programming", "programming").Data!;
+        var category = Category.Create("Programming").Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -81,7 +81,7 @@ public class DeleteCategoryCommandHandlerTests
     [Fact]
     public async Task Handle_WithIconUrl_DeletesIconFromStorage()
     {
-        var category = Category.Create("Programming", "programming", "categories/icon.png", null, 0).Data!;
+        var category = Category.Create("Programming", "categories/icon.png", null, 0).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -96,7 +96,7 @@ public class DeleteCategoryCommandHandlerTests
     [Fact]
     public async Task Handle_WithoutIconUrl_DoesNotCallDeleteOnStorage()
     {
-        var category = Category.Create("Programming", "programming", null, null, 0).Data!;
+        var category = Category.Create("Programming", null, null, 0).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 

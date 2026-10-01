@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Constants;
+using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -15,11 +15,6 @@ public sealed record UpdateLessonCommand(
     Guid SectionId, 
     Guid LessonId,
     string Title, 
-    Stream? VideoStream, 
-    string? VideoFileName, 
-    TimeSpan Duration, 
-    string? StreamingResolution, 
-    string? ExternalProviderId, 
     int OrderIndex, 
     bool IsPreviewable) : ICommand, ICacheInvalidatorCommand, ICourseCommand
 {

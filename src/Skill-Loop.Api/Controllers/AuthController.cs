@@ -22,6 +22,7 @@ using Skill_Loop.Api.Contracts.Auth;
 /// إدارة المصادقة وتسجيل الدخول للمستخدمين
 /// </summary>
 [Route("api/v1/[controller]")]
+[Authorize]
 public class AuthController : BaseApiController
 {
     // =========================================================================
@@ -113,7 +114,6 @@ public class AuthController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("logout")]
-    [Authorize]
     public async Task<IResult> Logout(
         [FromBody] LogoutRequest request,
         CancellationToken cancellationToken)

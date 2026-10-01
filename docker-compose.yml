@@ -72,7 +72,7 @@ services:
       # TrustServerCertificate=True معناه نثق في شهادة السيرفر الذاتية
       # MultipleActiveResultSets=true بتسمح بأكتر من reader على نفس الاتصال
       ConnectionStrings__DefaultConnection: "Server=sqlserver;Database=Skill-Loop;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
-
+      ConnectionStrings__HangfireConnection: "Server=sqlserver;Database=Skill-Loop;User Id=sa;Password=${SQL_SA_PASSWORD};TrustServerCertificate=True;MultipleActiveResultSets=true"
       # ============ Redis ============
       # الاتصال بالـ Redis (اسم الـ service: redis)
       Redis__ConnectionString: redis:6379

@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Constants;
+using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -15,7 +15,6 @@ public sealed record UpdateCourseDetailsCommand(
     Guid CourseId,
     string Title,
     string Description,
-    string ThumbnailUrl,
     int Credits,
     CourseLevel Level,
     Guid CategoryId) : ICommand, ICacheInvalidatorCommand, ICourseCommand

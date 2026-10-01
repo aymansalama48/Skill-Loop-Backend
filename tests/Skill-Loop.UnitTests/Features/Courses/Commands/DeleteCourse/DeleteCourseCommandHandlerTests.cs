@@ -41,7 +41,7 @@ public class DeleteCourseCommandHandlerTests : IDisposable
     public async Task Handle_WithValidCommand_DeletesCourseAndReturnsSuccess()
     {
         // Arrange
-        var category = Category.Create("Cat", "cat", null, null, 1).Data!;
+        var category = Category.Create("Cat", null, null, 1).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 

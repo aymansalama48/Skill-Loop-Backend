@@ -12,7 +12,7 @@ namespace Skill_Loop.Api.Controllers.Dev;
 /// </summary>
 [ApiController]
 [Route("api/v1/dev")]
-[AllowAnonymous]
+[Authorize]
 public class DevController : BaseApiController
 {
     private readonly UserManager<ApplicationUser> _userManager;
@@ -28,6 +28,7 @@ public class DevController : BaseApiController
         _env = env;
     }
     [HttpPost("quick-login")]
+    [AllowAnonymous]
     public async Task<IResult> QuickLogin(
         CancellationToken cancellationToken)
     {
@@ -58,6 +59,7 @@ public class DevController : BaseApiController
         });
     }
     [HttpGet("users")]
+    [AllowAnonymous]
     public async Task<IResult> GetDevUsers(CancellationToken cancellationToken)
     {
         if (!_env.IsDevelopment())

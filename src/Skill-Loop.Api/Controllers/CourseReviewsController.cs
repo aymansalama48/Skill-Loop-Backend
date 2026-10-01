@@ -11,6 +11,7 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/v1/courses/{courseId:guid}/reviews")]
 [Tags("Course Reviews")]
+[Authorize]
 public class CourseReviewsController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
@@ -22,7 +23,6 @@ public class CourseReviewsController : BaseApiController
     /// إضافة تقييم جديد للكورس
     /// </summary>
     [HttpPost]
-    [Authorize]
     public async Task<IResult> AddReview(
         Guid courseId,
         [FromBody] AddCourseReviewRequest request,
@@ -53,7 +53,6 @@ public class CourseReviewsController : BaseApiController
     /// تعديل تقييم مسجل مسبقاً
     /// </summary>
     [HttpPut]
-    [Authorize]
     public async Task<IResult> UpdateReview(
         Guid courseId,
         [FromBody] UpdateCourseReviewRequest request,
@@ -69,7 +68,6 @@ public class CourseReviewsController : BaseApiController
     /// حذف تقييم الكورس
     /// </summary>
     [HttpDelete]
-    [Authorize]
     public async Task<IResult> DeleteReview(
         Guid courseId,
         CancellationToken cancellationToken)

@@ -10,10 +10,10 @@ using Skill_Loop.Application.Features.Instructors.Commands.RemoveInstructorAvail
 /// </summary>
 [Route("api/v1/instructor-profiles/{profileId:guid}/availabilities")]
 [Tags("Instructor Availabilities")]
+[Authorize]
 public class InstructorAvailabilitiesController : BaseApiController
 {
     [HttpPost]
-    [Authorize]
     public async Task<IResult> AddAvailability(
         [FromRoute] Guid profileId,
         [FromBody] AddAvailabilityRequest request,
@@ -29,7 +29,6 @@ public class InstructorAvailabilitiesController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("{availabilityId:guid}")]
-    [Authorize]
     public async Task<IResult> RemoveAvailability(
         [FromRoute] Guid profileId,
         [FromRoute] Guid availabilityId,

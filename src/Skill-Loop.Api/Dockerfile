@@ -5,6 +5,9 @@
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS base
 WORKDIR /app
 
+# Install ffmpeg for video analysis
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # ✅ التعديل الجديد: نعمل فولدر رفع الملفات وإحنا لسه root
 # ونديه صلاحيات المستخدم العادي (APP_UID) اللي التطبيق هيشتغل بيه.
 # من غير السطر ده، التطبيق مش هيقدر يكتب في /app/UploadedFiles

@@ -89,6 +89,7 @@ public static partial class DependencyInjection
 
         services.AddScoped<IInvitationService, InvitationService>();
         services.AddScoped<ISiteSettingsService, SiteSettingsService>();
+        services.AddScoped<Skill_Loop.Application.Common.Abstractions.External.Media.IVideoAnalyzer, Skill_Loop.Infrastructure.External.Media.VideoAnalyzer>();
 
 
 
