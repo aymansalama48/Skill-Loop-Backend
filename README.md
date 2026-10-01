@@ -1,4 +1,4 @@
-<![CDATA[<p align="center">
+<p align="center">
   <h1 align="center">🔄 Skill Loop</h1>
   <p align="center">
     <strong>A modern skill-sharing and management platform — built with Clean Architecture on .NET 10</strong>
@@ -856,4 +856,3 @@ This project is licensed under the **MIT License**.
 <p align="center">
   Built with ❤️ as a Graduation Project
 </p>
-]]>
