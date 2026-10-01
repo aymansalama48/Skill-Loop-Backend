@@ -21,8 +21,7 @@ namespace Skill_Loop.UnitTests.Features.Courses.Commands.CreateCourse;
 public class CreateCourseCommandHandlerTests : IDisposable
 {
     private readonly IApplicationDbContext _dbContext;
-private readonly Mock<ICurrentUser> _currentUser;
-    private readonly Mock<IFileStorage> _fileStorage;
+    private readonly Mock<ICurrentUser> _currentUser;
     private readonly CreateCourseCommandHandler _handler;
 
     public CreateCourseCommandHandlerTests()
@@ -33,11 +32,7 @@ _currentUser = new Mock<ICurrentUser>();
         _currentUser.Setup(c => c.FullName).Returns("Actual Caller");
         _currentUser.Setup(c => c.HasPermission(Permissions.Courses.ManageAll)).Returns(false);
 
-        _fileStorage = new Mock<IFileStorage>();
-
-        // The handler takes both the caller (for the instructor ownership check) and the
-        // storage (for the optional thumbnail upload) after the two branches were merged.
-        _handler = new CreateCourseCommandHandler(_dbContext, _currentUser.Object, _fileStorage.Object);
+        _handler = new CreateCourseCommandHandler(_dbContext, _currentUser.Object);
     }
 
     private static readonly Guid CurrentUserId = Guid.Parse("11111111-1111-1111-1111-111111111111");
@@ -49,8 +44,6 @@ _currentUser = new Mock<ICurrentUser>();
         var command = new CreateCourseCommand(
             "Course Title",
             "Description",
-            null,
-            null,
             50,
             CourseLevel.Beginner,
             Guid.NewGuid(),
@@ -69,7 +62,7 @@ _currentUser = new Mock<ICurrentUser>();
     public async Task Handle_WithValidCommand_CreatesCourseAndReturnsSuccess()
     {
         // Arrange
-        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        var category = Category.Create("Test Category", null, null, 1).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -77,8 +70,6 @@ _currentUser = new Mock<ICurrentUser>();
         var command = new CreateCourseCommand(
             "New Course Title",
             "Description of the new course",
-            null,
-            null,
             100,
             CourseLevel.Intermediate,
             instructorId,
@@ -112,7 +103,7 @@ _currentUser = new Mock<ICurrentUser>();
     public async Task Handle_WithoutManageAll_IgnoresClientSuppliedInstructor()
     {
         // Arrange
-        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        var category = Category.Create("Test Category", null, null, 1).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -120,8 +111,6 @@ _currentUser = new Mock<ICurrentUser>();
         var command = new CreateCourseCommand(
             "Impostor Course",
             "Description",
-            null, // ThumbnailStream
-            null, // ThumbnailFileName
             100,
             CourseLevel.Beginner,
             victimId,
@@ -147,7 +136,7 @@ _currentUser = new Mock<ICurrentUser>();
         // Arrange
         _currentUser.Setup(c => c.HasPermission(Permissions.Courses.ManageAll)).Returns(true);
 
-        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        var category = Category.Create("Test Category", null, null, 1).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
@@ -155,8 +144,6 @@ _currentUser = new Mock<ICurrentUser>();
         var command = new CreateCourseCommand(
             "Staff Created Course",
             "Description",
-            null, // ThumbnailStream
-            null, // ThumbnailFileName
             100,
             CourseLevel.Beginner,
             targetInstructorId,
@@ -176,58 +163,18 @@ _currentUser = new Mock<ICurrentUser>();
         createdCourse.InstructorName.Should().Be("Assigned Instructor");
     }
 
-    [Fact]
-    public async Task Handle_WithThumbnail_UploadsThumbnailAndSetsUrl()
-    {
-        // Arrange
-        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
-        _dbContext.Add(category);
-        await _dbContext.SaveChangesAsync(CancellationToken.None);
-
-        var instructorId = Guid.NewGuid();
-        using var stream = new MemoryStream(new byte[] { 1, 2, 3 });
-        const string expectedUrl = "https://storage.example.com/Courses/thumbnail.png";
-
-        _fileStorage
-            .Setup(f => f.UploadAsync(stream, "thumbnail.png", "Courses"))
-            .ReturnsAsync(Result<string>.Success(expectedUrl));
-
-        var command = new CreateCourseCommand(
-            "New Course With Thumbnail",
-            "Description of course with thumbnail",
-            stream,
-            "thumbnail.png",
-            150,
-            CourseLevel.Advanced,
-            instructorId,
-            "Jane Doe",
-            category.Id);
-
-        // Act
-        var result = await _handler.Handle(command, CancellationToken.None);
-
-        // Assert
-        result.IsSuccess.Should().BeTrue();
-        var createdCourse = await _dbContext.FirstOrDefaultAsync(
-            _dbContext.Courses, c => c.Id == result.Data);
-
-        createdCourse.Should().NotBeNull();
-        createdCourse!.ThumbnailUrl.Should().Be(expectedUrl);
-    }
 
     [Fact]
     public async Task Handle_WithEmptyTitle_ReturnsFailure()
     {
         // Arrange
-        var category = Category.Create("Test Category", "test-category", null, null, 1).Data!;
+        var category = Category.Create("Test Category", null, null, 1).Data!;
         _dbContext.Add(category);
         await _dbContext.SaveChangesAsync(CancellationToken.None);
 
         var command = new CreateCourseCommand(
             "", // Invalid title
             "Description",
-            null,
-            null,
             100,
             CourseLevel.Beginner,
             Guid.NewGuid(),

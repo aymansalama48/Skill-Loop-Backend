@@ -18,10 +18,6 @@ public sealed class AddLessonCommandValidator : AbstractValidator<AddLessonComma
             .NotEmpty().WithMessage("Title is required.")
             .MaximumLength(200).WithMessage("Title cannot exceed 200 characters.");
 
-        RuleFor(x => x.Duration)
-            .GreaterThan(TimeSpan.Zero)
-            .WithMessage("Duration must be greater than zero.");
-
         RuleFor(x => x.OrderIndex)
             .GreaterThanOrEqualTo(0)
             .WithMessage("Order index must be zero or greater.");

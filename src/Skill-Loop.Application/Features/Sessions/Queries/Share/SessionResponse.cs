@@ -19,6 +19,7 @@ public sealed record SessionResponse(
     int CreditsPrice,
     SessionLocationType LocationType,
     string? LocationDetails,
+    string? LiveSessionUrl,
     int MaxParticipants,
     int BookedParticipants,
     int AvailableSlots,

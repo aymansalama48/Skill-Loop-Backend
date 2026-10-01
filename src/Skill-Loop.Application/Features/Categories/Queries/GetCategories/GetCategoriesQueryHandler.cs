@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Abstractions.Messaging;
+using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Domain.Common.Results;
 using Skill_Loop.Domain.Enums;
@@ -22,7 +22,6 @@ public sealed class GetCategoriesQueryHandler : IQueryHandler<GetCategoriesQuery
             .Select(c => new CategoryResponse(
                 c.Id,
                 c.Name,
-                c.Slug,
                 c.IconUrl,
                 c.Description,
                 c.DisplayOrder,

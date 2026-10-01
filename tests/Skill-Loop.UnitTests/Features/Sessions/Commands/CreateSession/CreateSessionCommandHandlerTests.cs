@@ -14,11 +14,13 @@ public class CreateSessionCommandHandlerTests
 {
     private readonly IApplicationDbContext _dbContext;
     private readonly CreateSessionCommandHandler _handler;
+    private readonly Moq.Mock<Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser.ICurrentUser> _currentUserMock;
 
     public CreateSessionCommandHandlerTests()
     {
         _dbContext = InMemoryDbContextHelper.Create();
-        _handler = new CreateSessionCommandHandler(_dbContext);
+        _currentUserMock = new Moq.Mock<Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser.ICurrentUser>();
+        _handler = new CreateSessionCommandHandler(_dbContext, _currentUserMock.Object);
     }
 
     [Fact]
@@ -26,6 +28,7 @@ public class CreateSessionCommandHandlerTests
     {
         // Arrange
         var instructorId = Guid.NewGuid();
+        _currentUserMock.Setup(c => c.UserId).Returns(instructorId);
         var command = new CreateSessionCommand("Introduction to ASP.NET Core", instructorId);
 
         // Act

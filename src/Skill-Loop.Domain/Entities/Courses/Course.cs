@@ -136,23 +136,16 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
-    public Result AddLessonToSection(Guid sectionId, string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable = false)
+    public Result AddLessonToSection(Guid sectionId, string title, int orderIndex, bool isPreviewable = false)
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
             return Result.Failure(SectionErrors.NotFound);
 
-        if (string.IsNullOrWhiteSpace(videoUrl))
-            return Result.Failure(LessonErrors.EmptyVideoUrl);
-
-        if (duration <= TimeSpan.Zero)
-            return Result.Failure(LessonErrors.InvalidDuration);
-
-        var lesson = Lesson.Create(sectionId, title, videoUrl, duration, streamingResolution, externalProviderId, orderIndex, isPreviewable);
+        var lesson = Lesson.Create(sectionId, title, orderIndex, isPreviewable);
         section.AddLesson(lesson);
 
         TotalLessonsCount++;
-        TotalDuration += duration;
 
         AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
         return Result.Success();
@@ -208,7 +201,23 @@ public sealed class Course : SoftDeleteEntity
         return Result.Success();
     }
 
-    public Result UpdateLesson(Guid sectionId, Guid lessonId, string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable)
+    public Result UpdateLesson(Guid sectionId, Guid lessonId, string title, int orderIndex, bool isPreviewable)
+    {
+        var section = _sections.FirstOrDefault(s => s.Id == sectionId);
+        if (section is null)
+            return Result.Failure(SectionErrors.NotFound);
+
+        var lesson = section.Lessons.FirstOrDefault(l => l.Id == lessonId);
+        if (lesson is null)
+            return Result.Failure(LessonErrors.NotFound);
+
+        lesson.UpdateDetails(title, orderIndex, isPreviewable);
+        
+        AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
+        return Result.Success();
+    }
+
+    public Result UpdateLessonVideo(Guid sectionId, Guid lessonId, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId)
     {
         var section = _sections.FirstOrDefault(s => s.Id == sectionId);
         if (section is null)
@@ -227,7 +236,7 @@ public sealed class Course : SoftDeleteEntity
         // Update totals
         TotalDuration = TotalDuration - lesson.Duration + duration;
 
-        lesson.UpdateDetails(title, videoUrl, duration, streamingResolution, externalProviderId, orderIndex, isPreviewable);
+        lesson.UpdateVideo(videoUrl, duration, streamingResolution, externalProviderId);
         
         AddDomainEvent(new CourseUpdatedDomainEvent(Id, Title));
         return Result.Success();

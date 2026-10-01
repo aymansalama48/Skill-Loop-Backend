@@ -11,12 +11,9 @@ namespace Skill_Loop.Application.Features.Courses.Commands.AddLesson;
 public sealed class AddLessonCommandHandler : ICommandHandler<AddLessonCommand, Guid>
 {
     private readonly IApplicationDbContext _context;
-    private readonly IFileStorage _fileStorage;
-
-    public AddLessonCommandHandler(IApplicationDbContext context, IFileStorage fileStorage)
+    public AddLessonCommandHandler(IApplicationDbContext context)
     {
         _context = context;
-        _fileStorage = fileStorage;
     }
 
     public async Task<Result<Guid>> Handle(AddLessonCommand request, CancellationToken cancellationToken)
@@ -33,27 +30,9 @@ public sealed class AddLessonCommandHandler : ICommandHandler<AddLessonCommand, 
             return Result<Guid>.Failure(CourseErrors.NotFound);
         }
 
-        string videoUrl = string.Empty;
-        if (request.VideoStream is not null && !string.IsNullOrWhiteSpace(request.VideoFileName))
-        {
-            var uploadResult = await _fileStorage.UploadAsync(
-                request.VideoStream,
-                request.VideoFileName,
-                $"courses/{request.CourseId}/lessons");
-            
-            if (uploadResult.IsFailure)
-                return Result<Guid>.Failure(uploadResult.Errors.First());
-            
-            videoUrl = uploadResult.Data;
-        }
-
         var addLessonResult = course.AddLessonToSection(
             request.SectionId,
             request.Title,
-            videoUrl,
-            request.Duration,
-            request.StreamingResolution ?? "1080p",
-            request.ExternalProviderId,
             request.OrderIndex,
             request.IsPreviewable);
 

@@ -12,6 +12,7 @@ using Skill_Loop.Api.Contracts.Auth;
 /// </summary>
 [Route("api/v1/auth/password")]
 [Tags("Passwords")]
+[Authorize]
 public class PasswordsController : BaseApiController
 {
     [HttpPost("forgot")]

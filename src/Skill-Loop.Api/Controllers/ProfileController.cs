@@ -36,9 +36,10 @@ public class ProfileController : BaseApiController
     [HttpPatch("picture")]
     [Consumes("multipart/form-data")]
     public async Task<IResult> UpdateMyProfilePicture(
-        IFormFile file,
+        [FromForm] Skill_Loop.Api.Contracts.Common.UploadFileRequest request,
         CancellationToken cancellationToken)
     {
+        var file = request.File;
         if (file is null || file.Length == 0)
         {
             return Results.BadRequest(new { message = "���� ������ ��� ���� �����." });

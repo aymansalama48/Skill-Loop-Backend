@@ -37,7 +37,7 @@ public class CourseAggregateTests
 
 
     [Fact]
-    public void AddLessonToSection_ShouldIncrementTotalLessonsCountAndDuration()
+    public void AddLessonToSection_ShouldIncrementTotalLessonsCount()
     {
         // Arrange
         var course = Course.Create(
@@ -53,12 +53,37 @@ public class CourseAggregateTests
         course.AddSection("Introduction", 0);
         var section = course.Sections.First();
 
-        // Act
-        var addResult = course.AddLessonToSection(section.Id, "Welcome & Overview", "https://cdn.skillloop.com/videos/lesson1.mp4", TimeSpan.FromMinutes(15), "1080p", null, 0, isPreviewable: true);
+        var addResult = course.AddLessonToSection(section.Id, "Welcome & Overview", 0, isPreviewable: true);
 
         // Assert
         addResult.IsSuccess.Should().BeTrue();
         course.TotalLessonsCount.Should().Be(1);
+    }
+
+    [Fact]
+    public void UpdateLessonVideo_ShouldUpdateTotalDuration()
+    {
+        // Arrange
+        var course = Course.Create(
+            "UI/UX Design Masterclass",
+            "Learn Figma and Prototyping.",
+            "https://cdn.skillloop.com/thumbnails/uiux.png",
+            0,
+            CourseLevel.Intermediate,
+            Guid.NewGuid(),
+            "Hala Designer",
+            Guid.NewGuid()).Data!;
+
+        course.AddSection("Introduction", 0);
+        var section = course.Sections.First();
+        course.AddLessonToSection(section.Id, "Welcome & Overview", 0, isPreviewable: true);
+        var lesson = section.Lessons.First();
+
+        // Act
+        var updateResult = course.UpdateLessonVideo(section.Id, lesson.Id, "https://video.url", TimeSpan.FromMinutes(15), "1080p", "providerId");
+
+        // Assert
+        updateResult.IsSuccess.Should().BeTrue();
         course.TotalDuration.Should().Be(TimeSpan.FromMinutes(15));
     }
 

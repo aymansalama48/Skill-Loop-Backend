@@ -12,6 +12,7 @@ using Skill_Loop.Api.Contracts.Auth;
 /// </summary>
 [Route("api/v1/auth/otp")]
 [Tags("OTP Management")]
+[Authorize]
 public class OtpController : BaseApiController
 {
     [HttpPost("verify")]

@@ -16,17 +16,12 @@ public sealed class CategoryConfiguration : IEntityTypeConfiguration<Category>
             .IsRequired()
             .HasMaxLength(100);
 
-        builder.Property(c => c.Slug)
-            .IsRequired()
-            .HasMaxLength(120);
-
         builder.Property(c => c.IconUrl)
             .HasMaxLength(1000);
 
         builder.Property(c => c.Description)
             .HasMaxLength(500);
 
-        builder.HasIndex(c => c.Slug).IsUnique();
         builder.HasIndex(c => c.DisplayOrder);
     }
 }

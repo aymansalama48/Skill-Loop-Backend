@@ -47,6 +47,7 @@ public sealed class UpdateSessionCommandHandler : ICommandHandler<UpdateSessionC
             request.CreditsPrice,
             request.LocationType,
             request.LocationDetails,
+            request.LiveSessionUrl,
             request.MaxParticipants);
 
         _dbContext.Update(session);

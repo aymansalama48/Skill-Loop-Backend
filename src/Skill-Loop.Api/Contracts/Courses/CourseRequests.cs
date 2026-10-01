@@ -6,19 +6,14 @@ namespace Skill_Loop.Api.Contracts.Courses;
 public sealed record CreateCourseRequest(
     string Title,
     string Description,
-    Microsoft.AspNetCore.Http.IFormFile ThumbnailImage, // تم التعديل هنا لاستقبال ملف
     int Credits,
     CourseLevel Level,
     Guid CategoryId);
     
 public sealed record AddLessonRequest(
     string Title,
-    Microsoft.AspNetCore.Http.IFormFile? VideoFile,
-    TimeSpan Duration,
     int OrderIndex,
-    bool IsPreviewable,
-    string? StreamingResolution,
-    string? ExternalProviderId);
+    bool IsPreviewable);
 
 public sealed record AddCourseReviewRequest(
     int Stars,
@@ -44,7 +39,6 @@ public sealed record AddSectionRequest(string Title, int OrderIndex);
 public sealed record UpdateCourseDetailsRequest(
     string Title,
     string Description,
-    string ThumbnailUrl,
     int Credits,
     CourseLevel Level,
     Guid CategoryId);
@@ -55,10 +49,6 @@ public sealed record ReorderSectionsRequest(Dictionary<Guid, int> SectionOrders)
 
 public sealed record UpdateLessonRequest(
     string Title,
-    Microsoft.AspNetCore.Http.IFormFile? VideoFile,
-    TimeSpan Duration,
-    string? StreamingResolution,
-    string? ExternalProviderId,
     int OrderIndex,
     bool IsPreviewable);
 

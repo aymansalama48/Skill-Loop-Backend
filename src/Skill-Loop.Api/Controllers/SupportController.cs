@@ -20,6 +20,7 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/support")]
 [ApiController]
+[Authorize]
 public class SupportController : BaseApiController
 {
     private readonly IMediator _mediator;
@@ -52,7 +53,6 @@ public class SupportController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("questions/{id:guid}/email-answer")]
-    [Authorize]
     public async Task<IResult> SendFaqAnswerByEmail(
         Guid id,
         CancellationToken cancellationToken)
@@ -61,7 +61,6 @@ public class SupportController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("contact")]
-    [Authorize]
     // Throttled per IP: the contact form sends an email per submission, so an authenticated
     // user could otherwise flood the support inbox and the SMTP provider's quota.
     [EnableRateLimiting(RateLimitingExtensions.ContactFormPolicy)]
@@ -77,7 +76,6 @@ public class SupportController : BaseApiController
         return HandleResult(result);
     }
     [HttpGet("questions/mine")]
-    [Authorize]
     public async Task<IResult> GetMySupportQuestions(
         [FromQuery] GetMySupportQuestionsRequest request,
         CancellationToken cancellationToken)

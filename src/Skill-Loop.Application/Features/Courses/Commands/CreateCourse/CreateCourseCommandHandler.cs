@@ -13,16 +13,12 @@ public sealed class CreateCourseCommandHandler : ICommandHandler<CreateCourseCom
 {
     private readonly IApplicationDbContext _context;
 private readonly ICurrentUser _currentUser;
-    private readonly IFileStorage _fileStorage; // real storage dependency
-
     public CreateCourseCommandHandler(
         IApplicationDbContext context,
-        ICurrentUser currentUser,
-        IFileStorage fileStorage)
+        ICurrentUser currentUser)
     {
         _context = context;
         _currentUser = currentUser;
-        _fileStorage = fileStorage;
     }
 
     public async Task<Result<Guid>> Handle(CreateCourseCommand request, CancellationToken cancellationToken)
@@ -48,26 +44,8 @@ var instructorName = canManageAll
     ? request.InstructorName
     : _currentUser.FullName ?? string.Empty;
 
-// 2. Thumbnail upload, when one was supplied.
+// 2. Thumbnail upload is now handled separately. We just use the URL if provided.
 string uploadedThumbnailUrl = string.Empty;
-
-if (request.ThumbnailStream is not null && !string.IsNullOrWhiteSpace(request.ThumbnailFileName))
-{
-    // The "Courses" parameter determines the storage folder.
-    var uploadResult = await _fileStorage.UploadAsync(
-        request.ThumbnailStream,
-        request.ThumbnailFileName,
-        "Courses");
-
-    // If the upload fails, abort with the same error and do not proceed.
-    if (uploadResult.IsFailure)
-    {
-        return Result<Guid>.Failure(uploadResult.Errors.First());
-    }
-
-    // A successful upload yields the relative file path.
-    uploadedThumbnailUrl = uploadResult.Data!;
-}
 
 // 3. Course persistence (zero or one thumbnail)
         var courseResult = Course.Create(

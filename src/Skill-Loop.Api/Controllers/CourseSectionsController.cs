@@ -12,10 +12,10 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/v1/courses/{courseId:guid}/sections")]
 [Tags("Course Sections")]
+[Authorize]
 public class CourseSectionsController : BaseApiController
 {
     [HttpPost]
-    [Authorize]
     public async Task<IResult> AddSection(
         Guid courseId,
         [FromBody] AddSectionRequest request,
@@ -26,7 +26,6 @@ public class CourseSectionsController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut("{sectionId:guid}")]
-    [Authorize]
     public async Task<IResult> UpdateSection(
         Guid courseId, 
         Guid sectionId, 
@@ -38,7 +37,6 @@ public class CourseSectionsController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("{sectionId:guid}")]
-    [Authorize]
     public async Task<IResult> RemoveSection(
         Guid courseId, 
         Guid sectionId, 
@@ -49,7 +47,6 @@ public class CourseSectionsController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut("reorder")]
-    [Authorize]
     public async Task<IResult> ReorderSections(
         Guid courseId, 
         [FromBody] ReorderSectionsRequest request, 

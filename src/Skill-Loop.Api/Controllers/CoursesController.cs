@@ -19,6 +19,7 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/v1/[controller]")]
 [Tags("Courses")]
+[Authorize]
 public class CoursesController : BaseApiController
 {
     private readonly ICurrentUser _currentUser;
@@ -46,7 +47,6 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpGet("drafts")]
-    [Authorize]
     public async Task<IResult> GetMyDraftCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
     {
         var query = new GetCoursesPagedQuery
@@ -70,7 +70,6 @@ public class CoursesController : BaseApiController
     /// جلب الكورسات المنشورة الخاصة بالمدرب الحالي
     /// </summary>
     [HttpGet("me")]
-    [Authorize]
     public async Task<IResult> GetMyPublishedCourses([FromQuery] GetCoursesRequest request, CancellationToken cancellationToken)
     {
         var query = new GetCoursesPagedQuery
@@ -91,7 +90,6 @@ public class CoursesController : BaseApiController
     }
 
     [HttpGet("bookmarks")]
-    [Authorize]
     public async Task<IResult> GetMyBookmarks(
         [FromQuery] int pageNumber = 1,
         [FromQuery] int pageSize = 10,
@@ -110,21 +108,14 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost]
-    [Authorize]
-    [Consumes("multipart/form-data")]
-    public async Task<IResult> CreateCourse([FromForm] CreateCourseRequest request, CancellationToken cancellationToken)
+    public async Task<IResult> CreateCourse([FromBody] CreateCourseRequest request, CancellationToken cancellationToken)
     {
         var instructorId = RequireUserId();
         var instructorName = _currentUser.FullName ?? "Instructor";
 
-        await using var thumbnailStream = request.ThumbnailImage?.OpenReadStream();
-
-        // نمرر الـ Stream والاسم مباشرة، ولو مفيش صورة هيبعت null
         var command = new CreateCourseCommand(
             request.Title,
             request.Description,
-            thumbnailStream,
-            request.ThumbnailImage?.FileName,
             request.Credits,
             request.Level,
             instructorId,
@@ -134,8 +125,27 @@ public class CoursesController : BaseApiController
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    [HttpPost("{courseId:guid}/thumbnail")]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadCourseThumbnail([FromRoute] Guid courseId, [FromForm] Skill_Loop.Api.Contracts.Common.UploadFileRequest request, CancellationToken cancellationToken)
+    {
+        var file = request.File;
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest("Thumbnail file is required.");
+        }
+
+        await using var stream = file.OpenReadStream();
+        var command = new Skill_Loop.Application.Features.Courses.Commands.UploadCourseThumbnail.UploadCourseThumbnailCommand(
+            courseId,
+            stream,
+            file.FileName);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
     [HttpPost("{courseId:guid}/publish")]
-    [Authorize]
     public async Task<IResult> PublishCourse(Guid courseId, CancellationToken cancellationToken)
     {
         var command = new PublishCourseCommand(courseId);
@@ -143,7 +153,6 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("{courseId:guid}/bookmark")]
-    [Authorize]
     public async Task<IResult> ToggleBookmark(Guid courseId, CancellationToken cancellationToken)
     {
         var userId = RequireUserId();
@@ -152,7 +161,6 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPut("{courseId:guid}")]
-    [Authorize]
     public async Task<IResult> UpdateCourseDetails(
         Guid courseId,
         [FromBody] UpdateCourseDetailsRequest request,
@@ -162,7 +170,6 @@ public class CoursesController : BaseApiController
             courseId,
             request.Title,
             request.Description,
-            request.ThumbnailUrl,
             request.Credits,
             request.Level,
             request.CategoryId);
@@ -170,7 +177,6 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost("{courseId:guid}/archive")]
-    [Authorize]
     public async Task<IResult> ArchiveCourse(Guid courseId, CancellationToken cancellationToken)
     {
         var command = new ArchiveCourseCommand(courseId);
@@ -178,7 +184,6 @@ public class CoursesController : BaseApiController
         return HandleResult(result);
     }
     [HttpDelete("{courseId:guid}")]
-    [Authorize]
     public async Task<IResult> DeleteCourse(Guid courseId, CancellationToken cancellationToken)
     {
         var command = new DeleteCourseCommand(courseId);

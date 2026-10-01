@@ -13,22 +13,15 @@ namespace Skill_Loop.Api.Controllers;
 [Authorize]
 public class CreditPurchasesController : BaseApiController
 {
-    private readonly ICurrentUser _currentUser;
-    public CreditPurchasesController(ICurrentUser currentUser)
-    {
-        _currentUser = currentUser;
-    }
     [HttpPost("quote")]
     public async Task<IResult> Quote([FromBody] PurchaseQuoteRequest request, CancellationToken cancellationToken)
     {
-        var userId = RequireUserId(); // Ensures user is authenticated and ID is present
         var result = await Mediator.Send(new GetPurchaseQuoteQuery(request.Credits, request.PromoCode), cancellationToken);
         return HandleResult(result);
     }
     [HttpPost]
     public async Task<IResult> Purchase([FromBody] PurchaseCreditsRequest request, CancellationToken cancellationToken)
     {
-        var userId = RequireUserId(); // Ensures user is authenticated and ID is present
         var result = await Mediator.Send(new PurchaseCreditsCommand(request.Credits, request.PromoCode), cancellationToken);
         return HandleResult(result);
     }

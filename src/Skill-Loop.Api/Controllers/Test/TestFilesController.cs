@@ -20,10 +20,12 @@ public class TestFilesController : BaseApiController
     /// تجربة رفع ملف
     /// </summary>
     [HttpPost("upload")]
+    [Consumes("multipart/form-data")]
     public async Task<IResult> Upload(
-        IFormFile file,
+        [FromForm] Skill_Loop.Api.Contracts.Common.UploadFileRequest request,
         [FromQuery] string folderName = "test-uploads")
     {
+        var file = request.File;
         if (file is null || file.Length == 0)
         {
             return Results.BadRequest("الرجاء اختيار ملف صالح للرفع.");

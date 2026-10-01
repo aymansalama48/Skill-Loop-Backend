@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Application.Common.Constants;
+using Skill_Loop.Application.Common.Constants;
 using Skill_Loop.Application.Common.Abstractions.External.Cache;
 using Skill_Loop.Application.Common.Abstractions.Messaging;
 using Skill_Loop.Application.Features.Courses.Common;
@@ -12,13 +12,8 @@ public sealed record AddLessonCommand(
     Guid CourseId,
     Guid SectionId,
     string Title,
-    Stream? VideoStream,
-    string? VideoFileName,
-    TimeSpan Duration,
     int OrderIndex,
-    bool IsPreviewable,
-    string? StreamingResolution,
-    string? ExternalProviderId) : ICommand<Guid>, ICacheInvalidatorCommand, ICourseCommand
+    bool IsPreviewable) : ICommand<Guid>, ICacheInvalidatorCommand, ICourseCommand
 {
     public IReadOnlyCollection<string> CacheKeys =>
     [

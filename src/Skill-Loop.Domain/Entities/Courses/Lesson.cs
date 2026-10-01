@@ -19,31 +19,35 @@ public sealed class Lesson : BaseEntity
 
     private Lesson() { }
 
-    internal static Lesson Create(Guid sectionId, string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable) =>
+    internal static Lesson Create(Guid sectionId, string title, int orderIndex, bool isPreviewable) =>
         new()
         {
             Id = Guid.CreateVersion7(),
             SectionId = sectionId,
             Title = title.Trim(),
-            VideoUrl = videoUrl,
-            Duration = duration,
-            StreamingResolution = streamingResolution,
-            ExternalProviderId = externalProviderId,
+            VideoUrl = string.Empty,
+            Duration = TimeSpan.Zero,
+            StreamingResolution = null,
+            ExternalProviderId = null,
             OrderIndex = orderIndex,
             IsPreviewable = isPreviewable
         };
 
     public void AddResource(LessonMaterial attachment) => _resources.Add(attachment);
 
-    internal void UpdateDetails(string title, string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId, int orderIndex, bool isPreviewable)
+    internal void UpdateDetails(string title, int orderIndex, bool isPreviewable)
     {
         Title = title.Trim();
+        OrderIndex = orderIndex;
+        IsPreviewable = isPreviewable;
+    }
+
+    internal void UpdateVideo(string videoUrl, TimeSpan duration, string? streamingResolution, string? externalProviderId)
+    {
         VideoUrl = videoUrl;
         Duration = duration;
         StreamingResolution = streamingResolution;
         ExternalProviderId = externalProviderId;
-        OrderIndex = orderIndex;
-        IsPreviewable = isPreviewable;
     }
 
     internal void UpdateOrder(int orderIndex)

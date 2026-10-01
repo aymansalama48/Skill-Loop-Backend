@@ -21,7 +21,7 @@ public sealed class SessionMaterialsController(
     [HttpPost("{sessionId:guid}/materials")]
     [Consumes("multipart/form-data")] // هذا السطر هو السحر الذي يفهمه Scalar
     public async Task<IResult> UploadSessionMaterial(
-        Guid sessionId,
+        [FromRoute] Guid sessionId,
         [FromForm] UploadSessionMaterialRequest request,
         CancellationToken cancellationToken)
     {

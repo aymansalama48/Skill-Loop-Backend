@@ -49,6 +49,7 @@ public static class SessionAvailabilityHelper
             session.CreditsPrice,
             session.LocationType,
             session.LocationDetails,
+            session.LiveSessionUrl,
             session.MaxParticipants,
             bookedParticipants,
             session.AvailableSlots(bookedParticipants),

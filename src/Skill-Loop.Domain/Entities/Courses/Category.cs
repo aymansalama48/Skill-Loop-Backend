@@ -7,7 +7,6 @@ namespace Skill_Loop.Domain.Entities.Courses;
 public sealed class Category : AuditableEntity
 {
     public string Name { get; private set; } = string.Empty;
-    public string Slug { get; private set; } = string.Empty;
     public string? IconUrl { get; private set; }
     public string? Description { get; private set; }
     public int DisplayOrder { get; private set; }
@@ -17,39 +16,36 @@ public sealed class Category : AuditableEntity
 
     private Category() { }
 
-    public static Result<Category> Create(string name, string slug, string? iconUrl = null, string? description = null, int displayOrder = 0)
+    public static Result<Category> Create(string name, string? iconUrl = null, string? description = null, int displayOrder = 0)
     {
         if (string.IsNullOrWhiteSpace(name))
             return Result<Category>.Failure(CategoryErrors.EmptyName);
-
-        if (string.IsNullOrWhiteSpace(slug))
-            return Result<Category>.Failure(CategoryErrors.EmptySlug);
 
         return Result<Category>.Success(new Category
         {
             Id = Guid.CreateVersion7(),
             Name = name.Trim(),
-            Slug = slug.Trim().ToLowerInvariant(),
             IconUrl = iconUrl,
             Description = description,
             DisplayOrder = displayOrder
         });
  
     }
-    public Result Update(string name, string slug, string? iconUrl, string? description, int displayOrder)
+    public Result Update(string name, string? iconUrl, string? description, int displayOrder)
     {
         if (string.IsNullOrWhiteSpace(name))
             return Result.Failure(CategoryErrors.EmptyName);
 
-        if (string.IsNullOrWhiteSpace(slug))
-            return Result.Failure(CategoryErrors.EmptySlug);
-
         Name = name.Trim();
-        Slug = slug.Trim().ToLowerInvariant();
         IconUrl = iconUrl;
         Description = description;
         DisplayOrder = displayOrder;
 
         return Result.Success();
+    }
+
+    public void UpdateIcon(string iconUrl)
+    {
+        IconUrl = iconUrl;
     }
 }

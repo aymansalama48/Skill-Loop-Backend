@@ -12,6 +12,7 @@ namespace Skill_Loop.Api.Controllers;
 /// إدارة التصنيفات الخاصة بالكورسات والمجالات
 /// </summary>
 [Route("api/v1/[controller]")]
+[Authorize]
 public class CategoriesController : BaseApiController
 {
     [HttpGet]
@@ -23,54 +24,52 @@ public class CategoriesController : BaseApiController
         return HandleResult(result);
     }
     [HttpPost]
-    [Authorize]
-    [Consumes("multipart/form-data")]                       // ✅ 1
     public async Task<IResult> CreateCategory(
-        [FromForm] CreateCategoryRequest request,           // ✅ 2
+        [FromBody] CreateCategoryRequest request,
         CancellationToken cancellationToken)
     {
-        // ✅ 3: Map Request → Command، مع فتح Stream للصورة
-        Stream? iconStream = null;
-        if (request.IconFile is not null && request.IconFile.Length > 0)
-        {
-            iconStream = request.IconFile.OpenReadStream();
-        }
         var command = new CreateCategoryCommand(
             request.Name,
-            request.Slug,
-            iconStream,
-            request.IconFile?.FileName,
             request.Description,
             request.DisplayOrder);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
     [HttpPut("{id:guid}")]
-    [Authorize]
-    [Consumes("multipart/form-data")]                       // ✅
     public async Task<IResult> UpdateCategory(
         Guid id,
-        [FromForm] UpdateCategoryRequest request,           // ✅
+        [FromBody] UpdateCategoryRequest request,
         CancellationToken cancellationToken)
     {
-        Stream? iconStream = null;
-        if (request.IconFile is not null && request.IconFile.Length > 0)
-        {
-            iconStream = request.IconFile.OpenReadStream();
-        }
         var command = new UpdateCategoryCommand(
             id,
             request.Name,
-            request.Slug,
-            iconStream,
-            request.IconFile?.FileName,
             request.Description,
             request.DisplayOrder);
         var result = await Mediator.Send(command, cancellationToken);
         return HandleResult(result);
     }
+
+    [HttpPost("{id:guid}/icon")]
+    [Consumes("multipart/form-data")]
+    public async Task<IResult> UploadCategoryIcon([FromRoute] Guid id, [FromForm] Skill_Loop.Api.Contracts.Common.UploadFileRequest request, CancellationToken cancellationToken)
+    {
+        var file = request.File;
+        if (file == null || file.Length == 0)
+        {
+            return Results.BadRequest("Icon file is required.");
+        }
+
+        await using var stream = file.OpenReadStream();
+        var command = new Skill_Loop.Application.Features.Categories.Commands.UploadCategoryIcon.UploadCategoryIconCommand(
+            id,
+            stream,
+            file.FileName);
+
+        var result = await Mediator.Send(command, cancellationToken);
+        return HandleResult(result);
+    }
     [HttpDelete("{id:guid}")]
-    [Authorize]
     public async Task<IResult> DeleteCategory(Guid id, CancellationToken cancellationToken)
     {
         var command = new DeleteCategoryCommand(id);

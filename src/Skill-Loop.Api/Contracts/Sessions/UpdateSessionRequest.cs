@@ -1,4 +1,4 @@
-﻿using Skill_Loop.Domain.Enums;
+using Skill_Loop.Domain.Enums;
 
 namespace Skill_Loop.Api.Contracts.Sessions;
 
@@ -10,4 +10,5 @@ public sealed record UpdateSessionRequest(
     int? CreditsPrice = null,
     SessionLocationType? LocationType = null,
     string? LocationDetails = null,
+    string? LiveSessionUrl = null,
     int? MaxParticipants = null);

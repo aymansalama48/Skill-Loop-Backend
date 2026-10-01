@@ -43,11 +43,12 @@ public sealed class GetCourseByIdQueryHandler : IQueryHandler<GetCourseByIdQuery
         bool isInstructor = _currentUser.UserId == course.InstructorId;
         bool isEnrolled = false;
 
-        if (_currentUser.IsAuthenticated && !isAdmin && !isInstructor)
+        if (_currentUser.IsAuthenticated && !isAdmin && !isInstructor && _currentUser.UserId.HasValue)
         {
+            var userId = _currentUser.UserId.Value;
             isEnrolled = await _context.AnyAsync(_context.Enrollments.Where(e => 
                 e.CourseId == course.Id && 
-                e.UserId == _currentUser.UserId), cancellationToken);
+                e.UserId == userId), cancellationToken);
         }
 
         bool canAccessPremiumContent = isAdmin || isInstructor || isEnrolled;

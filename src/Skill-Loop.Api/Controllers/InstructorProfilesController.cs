@@ -15,9 +15,11 @@ namespace Skill_Loop.Api.Controllers;
 /// </summary>
 [Route("api/v1/instructor-profiles")]
 [Tags("Instructor Profiles")]
+[Authorize]
 public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiController
 {
     [HttpGet]
+    [AllowAnonymous]
     public async Task<IResult> GetInstructorsPaged(
         [FromQuery] GetInstructorsRequest request,
         CancellationToken cancellationToken)
@@ -33,6 +35,7 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
         return HandleResult(result);
     }
     [HttpGet("{userId:guid}")]
+    [AllowAnonymous]
     public async Task<IResult> GetProfileByUserId(
         [FromRoute] Guid userId,
         CancellationToken cancellationToken)
@@ -42,7 +45,6 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
         return HandleResult(result);
     }
     [HttpGet("me")]
-    [Authorize]
     public async Task<IResult> GetMyProfile(CancellationToken cancellationToken)
     {
         if (!_currentUser.UserId.HasValue)
@@ -54,7 +56,6 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
         return HandleResult(result);
     }
     [HttpPost("me")]
-    [Authorize]
     public async Task<IResult> CreateMyProfile(
         [FromBody] CreateInstructorProfileRequest request,
         CancellationToken cancellationToken)
@@ -71,7 +72,6 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
         return HandleResult(result);
     }
     [HttpPut("me")]
-    [Authorize]
     public async Task<IResult> UpdateMyProfile(
         [FromBody] UpdateInstructorProfileRequest request,
         CancellationToken cancellationToken)
@@ -88,7 +88,6 @@ public class InstructorProfilesController(ICurrentUser _currentUser) : BaseApiCo
         return HandleResult(result);
     }
     [HttpPatch("{userId:guid}/approval-status")]
-    [Authorize]
     public async Task<IResult> ChangeApprovalStatus(
         [FromRoute] Guid userId,
         [FromBody] ChangeInstructorApprovalStatusRequest request,

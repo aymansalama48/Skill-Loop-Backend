@@ -26,6 +26,7 @@ public sealed class Session : AuditableEntity
     public int CreditsPrice { get; private set; }
     public SessionLocationType LocationType { get; private set; } = SessionLocationType.Online;
     public string? LocationDetails { get; private set; }
+    public string? LiveSessionUrl { get; private set; }
     public int MaxParticipants { get; private set; } = 1;
 
     // استخدام Backing Field زي ما عملنا في Course و InstructorProfile
@@ -53,6 +54,7 @@ public sealed class Session : AuditableEntity
         int creditsPrice = 0,
         SessionLocationType locationType = SessionLocationType.Online,
         string? locationDetails = null,
+        string? liveSessionUrl = null,
         int maxParticipants = 1)
     {
         return new Session
@@ -67,6 +69,7 @@ public sealed class Session : AuditableEntity
             CreditsPrice = Math.Max(0, creditsPrice),
             LocationType = locationType,
             LocationDetails = Normalize(locationDetails),
+            LiveSessionUrl = Normalize(liveSessionUrl),
             MaxParticipants = ClampMaxParticipants(maxParticipants),
             Status = SessionStatus.Draft
         };
@@ -93,6 +96,7 @@ public sealed class Session : AuditableEntity
         int? creditsPrice = null,
         SessionLocationType? locationType = null,
         string? locationDetails = null,
+        string? liveSessionUrl = null,
         int? maxParticipants = null)
     {
         if (scheduledAtUtc.HasValue)
@@ -118,6 +122,11 @@ public sealed class Session : AuditableEntity
         if (locationDetails is not null)
         {
             LocationDetails = Normalize(locationDetails);
+        }
+
+        if (liveSessionUrl is not null)
+        {
+            LiveSessionUrl = Normalize(liveSessionUrl);
         }
 
         if (maxParticipants.HasValue)
