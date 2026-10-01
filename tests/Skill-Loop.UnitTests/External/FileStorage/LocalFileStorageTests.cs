@@ -117,7 +117,8 @@ public class LocalFileStorageTests
         result.Data.Should().Contain("uploads/");
         result.Data.Should().EndWith(".txt");
 
-        var fullPath = Path.Combine(_testRoot, result.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var relativePath = result.Data!.Replace("https://localhost:5001/", "");
+        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         File.Exists(fullPath).Should().BeTrue();
     }
 
@@ -129,7 +130,8 @@ public class LocalFileStorageTests
 
         var result = await _storage.UploadAsync(stream, "test.txt", "uploads");
 
-        var fullPath = Path.Combine(_testRoot, result.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var relativePath = result.Data!.Replace("https://localhost:5001/", "");
+        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         var readContent = await File.ReadAllTextAsync(fullPath);
         readContent.Should().Be(content);
     }
@@ -198,7 +200,8 @@ public class LocalFileStorageTests
 
         result.IsSuccess.Should().BeTrue();
 
-        var fullPath = Path.Combine(_testRoot, uploadResult.Data!.Replace("/", Path.DirectorySeparatorChar.ToString()));
+        var relativePath = uploadResult.Data!.Replace("https://localhost:5001/", "");
+        var fullPath = Path.Combine(_testRoot, relativePath.Replace("/", Path.DirectorySeparatorChar.ToString()));
         File.Exists(fullPath).Should().BeFalse();
     }
 

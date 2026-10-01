@@ -3,6 +3,7 @@ namespace Skill_Loop.UnitTests.Features.Bookings.Queries.GetMyBookings;
 using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using System.Collections.Generic;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Queries.GetMyBookings;
 using Skill_Loop.Domain.Entities.Booking;
@@ -25,6 +26,8 @@ public class GetMyBookingsQueryHandlerTests
     {
         _dbContext = InMemoryDbContextHelper.Create();
         _userService = new Mock<IUserManagementService>();
+        _userService.Setup(u => u.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserDto>());
         _handler = new GetMyBookingsQueryHandler(_dbContext, _userService.Object);
     }
 

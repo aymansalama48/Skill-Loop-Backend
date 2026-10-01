@@ -176,6 +176,12 @@ internal sealed class LocalFileStorage(
         if (relativePath.IndexOfAny(Path.GetInvalidPathChars()) >= 0)
             return false;
 
+        var baseUrl = _baseUrlOptions.Backend.TrimEnd('/');
+        if (relativePath.StartsWith(baseUrl, StringComparison.OrdinalIgnoreCase))
+        {
+            relativePath = relativePath.Substring(baseUrl.Length).TrimStart('/');
+        }
+
         var currentDirectory = Path.GetFullPath(Directory.GetCurrentDirectory());
         var root = StorageRoot;
         var candidates = new List<string>();

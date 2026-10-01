@@ -4,6 +4,7 @@ using FluentAssertions;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using System.Collections.Generic;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Features.Bookings.Queries.GetSessionBookings;
 using Skill_Loop.Domain.Entities.Booking;
@@ -32,6 +33,8 @@ public class GetSessionBookingsQueryHandlerTests
         _currentUser.Setup(c => c.UserId).Returns(() => _actingUserId);
         _currentUser.Setup(c => c.HasPermission(It.IsAny<string>())).Returns(false);
         _userService = new Mock<IUserManagementService>();
+        _userService.Setup(u => u.GetUsersByIdsAsync(It.IsAny<IEnumerable<Guid>>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(new List<UserDto>());
         _handler = new GetSessionBookingsQueryHandler(_dbContext, _currentUser.Object, _userService.Object);
     }
 

@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Moq;
 using Skill_Loop.Application.Common.Abstractions.Identity.CurrentUser;
 using Skill_Loop.Application.Common.Abstractions.Identity.UserManagement;
+using System.Collections.Generic;
 using Skill_Loop.Application.Common.Abstractions.Persistence.Data;
 using Skill_Loop.Application.Common.Errors.Bookings;
 using Skill_Loop.Application.Features.Bookings.Queries.GetBookingById;
@@ -35,6 +36,8 @@ public class GetBookingByIdQueryHandlerTests
         _currentUser.Setup(c => c.UserId).Returns(() => _actingUserId);
         _currentUser.Setup(c => c.HasPermission(It.IsAny<string>())).Returns(false);
         _userService = new Mock<IUserManagementService>();
+        _userService.Setup(u => u.GetByIdAsync(It.IsAny<Guid>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Domain.Common.Results.Result<UserDto>.Success(new UserDto { Id = Guid.NewGuid(), FullName = "Instructor" }));
         _handler = new GetBookingByIdQueryHandler(_dbContext, _currentUser.Object, _userService.Object);
     }
 

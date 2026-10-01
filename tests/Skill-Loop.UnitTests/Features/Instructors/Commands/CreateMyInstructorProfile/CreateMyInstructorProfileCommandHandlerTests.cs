@@ -25,6 +25,8 @@ public class CreateMyInstructorProfileCommandHandlerTests
         _dbContext = InMemoryDbContextHelper.Create();
         _currentUser = new Mock<ICurrentUser>();
         _userManagementService = new Mock<IUserManagementService>();
+        _userManagementService.Setup(u => u.AssignRoleAsync(It.IsAny<Guid>(), It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync(Domain.Common.Results.Result.Success());
         _handler = new CreateMyInstructorProfileCommandHandler(_dbContext, _currentUser.Object, _userManagementService.Object);
     }
 
