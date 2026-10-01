@@ -13,17 +13,26 @@ public static partial class DependencyInjection
     /// تسجيل إعدادات وخدمات التوثيق والـ JWT Bearer
     /// </summary>
     private static IServiceCollection AddJwtAuthentication(
-        this IServiceCollection services,
-        IConfiguration configuration)
+            this IServiceCollection services,
+            IConfiguration configuration)
     {
-        // 1. ربط ملف الإعدادات appsettings بكلاس JwtOptions
-        services.Configure<JwtOptions>(
-            configuration.GetSection(JwtOptions.SectionName));
+        var section = configuration.GetSection(JwtOptions.SectionName);
 
-        var jwtOptions = configuration.GetSection(JwtOptions.SectionName).Get<JwtOptions>()
-                         ?? new JwtOptions();
+        // 1. ربط ملف الإعدادات
+        services.Configure<JwtOptions>(section);
 
-        // 2. إعداد الـ Authentication Scheme والتحقق من التوكن
+        // 2. القراءة المباشرة (بدون إخفاء الأخطاء)
+        var jwtKey = section["Key"];
+        var jwtIssuer = section["Issuer"];
+        var jwtAudience = section["Audience"];
+
+        // 🚨 حائط الصد: لو المفتاح مقريش السيرفر هيقف ويفضح المشكلة
+        if (string.IsNullOrWhiteSpace(jwtKey))
+        {
+            throw new InvalidOperationException("💥 خطأ قاتل: المفتاح السري (Jwt:Key) غير موجود أو لم يتم قراءته من appsettings.json!");
+        }
+
+        // 3. إعداد الـ Authentication Scheme
         services
             .AddAuthentication(options =>
             {
@@ -39,16 +48,16 @@ public static partial class DependencyInjection
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
 
-                    ValidIssuer = jwtOptions.Issuer,
-                    ValidAudience = jwtOptions.Audience,
+                    ValidIssuer = jwtIssuer,
+                    ValidAudience = jwtAudience,
 
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(jwtOptions.Key)),
+                    // هنا بنمرر المفتاح السليم غصب عنه
+                    IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtKey)),
 
                     ClockSkew = TimeSpan.Zero
                 };
             });
 
-        return services; // إرجاع الخدمات لتمكين الـ Method Chaining
+        return services;
     }
 }
